@@ -215,3 +215,43 @@ def biome_from_str(value: str) -> Biome:
         if b.value == value:
             return b
     raise ValueError(f"Unknown biome: '{value}'")
+
+# ---------------------------------------------------------------------------
+# TerrainType — renderer compatibility shim
+# The upstream rendering layer (styles.py, terrain_layer.py, html_exporter.py
+# etc.) imports TerrainType. We preserve it here so the renderer keeps working
+# without modification. Pipeline code uses Biome. Renderer uses TerrainType.
+# ---------------------------------------------------------------------------
+
+from dataclasses import dataclass
+
+class TerrainType(Enum):
+    WATER    = "water"
+    CLEAR    = "clear"
+    ROUGH    = "rough"
+    FOREST   = "forest"
+    MOUNTAIN = "mountain"
+    MARSH    = "marsh"
+    DESERT   = "desert"
+    URBAN    = "urban"
+
+
+@dataclass(frozen=True)
+class TerrainData:
+    """Game-mechanical properties for renderer use."""
+    movement_cost: int
+    defensive_modifier: int
+    blocks_los: bool
+    description: str
+
+
+TERRAIN_EFFECTS: dict[TerrainType, TerrainData] = {
+    TerrainType.WATER:    TerrainData(99, 0, False, "Impassable except by naval/amphibious movement"),
+    TerrainType.CLEAR:    TerrainData(1,  0, False, "Open terrain, no obstacles"),
+    TerrainType.ROUGH:    TerrainData(2,  1, False, "Uneven ground, scrub, broken terrain"),
+    TerrainType.FOREST:   TerrainData(2,  1, True,  "Wooded terrain, limited visibility"),
+    TerrainType.MOUNTAIN: TerrainData(3,  2, True,  "High elevation, steep slopes"),
+    TerrainType.MARSH:    TerrainData(3,  0, False, "Wetlands, bogs, swamps"),
+    TerrainType.DESERT:   TerrainData(2,  0, False, "Arid terrain, sand, limited water"),
+    TerrainType.URBAN:    TerrainData(1,  2, True,  "Cities, towns, built-up areas"),
+}
