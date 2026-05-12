@@ -213,18 +213,18 @@ class HexSampler:
             )
 
             # -- Road level --
+            # Use WGS84 hex polygon to match roads_gdf CRS (EPSG:4326)
             road_level = "none"
             if not is_water and not is_lake and roads_gdf is not None:
-                road_level = _best_road_in_hex(
-                    grid.hex_polygon(q, r), roads_gdf
-                )
+                hex_poly_wgs84 = _hex_polygon_wgs84(q, r, grid)
+                road_level = _best_road_in_hex(hex_poly_wgs84, roads_gdf)
 
             # -- Rail level --
             rail_level = "none"
             if not is_water and not is_lake and railways_gdf is not None:
-                rail_level = _best_rail_in_hex(
-                    grid.hex_polygon(q, r), railways_gdf
-                )
+                if 'hex_poly_wgs84' not in dir():
+                    hex_poly_wgs84 = _hex_polygon_wgs84(q, r, grid)
+                rail_level = _best_rail_in_hex(hex_poly_wgs84, railways_gdf)
 
             # -- River edges --
             river_edges: list[int] = []
@@ -359,13 +359,16 @@ def _best_road_in_hex(hex_poly, roads_gdf) -> str:
     """Return the best road level of any road intersecting this hex polygon."""
     priority = {"highway": 3, "paved": 2, "dirt": 1, "none": 0}
     best = "none"
-    candidates = list(roads_gdf.sindex.intersection(hex_poly.bounds))
-    for idx in candidates:
-        row = roads_gdf.iloc[idx]
-        if hex_poly.intersects(row.geometry):
-            level = row.get("road_level", "dirt")
-            if priority.get(level, 0) > priority.get(best, 0):
-                best = level
+    try:
+        candidates = list(roads_gdf.sindex.intersection(hex_poly.bounds))
+        for idx in candidates:
+            row = roads_gdf.iloc[idx]
+            if hex_poly.intersects(row.geometry):
+                level = row.get("road_level", "none")
+                if priority.get(level, 0) > priority.get(best, 0):
+                    best = level
+    except Exception:
+        pass
     return best
 
 
@@ -373,13 +376,16 @@ def _best_rail_in_hex(hex_poly, railways_gdf) -> str:
     """Return the best rail level of any railway intersecting this hex polygon."""
     priority = {"double": 3, "standard": 2, "narrow": 1, "none": 0}
     best = "none"
-    candidates = list(railways_gdf.sindex.intersection(hex_poly.bounds))
-    for idx in candidates:
-        row = railways_gdf.iloc[idx]
-        if hex_poly.intersects(row.geometry):
-            level = row.get("rail_level", "standard")
-            if priority.get(level, 0) > priority.get(best, 0):
-                best = level
+    try:
+        candidates = list(railways_gdf.sindex.intersection(hex_poly.bounds))
+        for idx in candidates:
+            row = railways_gdf.iloc[idx]
+            if hex_poly.intersects(row.geometry):
+                level = row.get("rail_level", "standard")
+                if priority.get(level, 0) > priority.get(best, 0):
+                    best = level
+    except Exception:
+        pass
     return best
 
 
@@ -400,11 +406,35 @@ def _river_edges_for_hex(q: int, r: int, grid: HexGrid, waterways_gdf) -> list[i
         v2 = verts[(i + 1) % 6]
         edges.append(LineString([v1, v2]))
 
-    # Project waterways to same CRS as grid for intersection
-    # (waterways are WGS84; grid is projected)
+def _river_edges_for_hex(q: int, r: int, grid: HexGrid, waterways_gdf) -> list[int]:
+    """Return list of edge indices (0-5) where a waterway crosses the hex boundary."""
     from pyproj import Transformer
-    to_proj = Transformer.from_crs("EPSG:4326", grid.crs, always_xy=True)
+    from shapely.geometry import LineString, Polygon
 
+    # Build hex edges in WGS84 to match waterways_gdf CRS
+    to_geo = grid._to_geo
+    verts_proj = grid.hex_vertices(q, r)
+    verts_wgs84 = [to_geo.transform(x, y) for x, y in verts_proj]
+
+    hex_poly_wgs84 = Polygon(verts_wgs84)
+    edges = []
+    for i in range(6):
+        v1 = verts_wgs84[i]
+        v2 = verts_wgs84[(i + 1) % 6]
+        edges.append(LineString([v1, v2]))
+
+    crossed: list[int] = []
+    candidates = list(waterways_gdf.sindex.intersection(hex_poly_wgs84.bounds))
+
+    for idx in candidates:
+        wway = waterways_gdf.iloc[idx].geometry
+        if wway is None or not hex_poly_wgs84.intersects(wway):
+            continue
+        for edge_idx, edge in enumerate(edges):
+            if edge.intersects(wway) and edge_idx not in crossed:
+                crossed.append(edge_idx)
+
+    return sorted(crossed)
     crossed: list[int] = []
     candidates = list(waterways_gdf.sindex.intersection(hex_poly.bounds))
 
@@ -478,3 +508,14 @@ def _derive_anthrome(biome: Biome, landuse_type: str | None, settlement_type: st
     if settlement_type == "town":
         return "residential"
     return "none"
+
+def _hex_polygon_wgs84(q: int, r: int, grid: HexGrid):
+    """Return hex polygon in WGS84 (EPSG:4326) for intersection with OSM data."""
+    from pyproj import Transformer
+    from shapely.geometry import Polygon
+
+    verts_proj = grid.hex_vertices(q, r)
+    to_geo = grid._to_geo  # projected → WGS84 transformer on the grid
+    verts_wgs84 = [to_geo.transform(x, y) for x, y in verts_proj]
+    # transform returns (lon, lat) — shapely wants (x, y) = (lon, lat) ✓
+    return Polygon(verts_wgs84)   

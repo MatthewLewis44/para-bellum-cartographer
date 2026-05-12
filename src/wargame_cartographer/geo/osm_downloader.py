@@ -243,7 +243,7 @@ out body;
         query = f"""
 [out:json][timeout:90];
 (
-  way["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|track|path|motorway_link|trunk_link|primary_link)$"]({b});
+  way["highway"~"^(motorway|trunk|primary|secondary|motorway_link|trunk_link|primary_link|secondary_link)$"]({b});
 );
 out geom;
 """
@@ -477,10 +477,6 @@ def _classify_road(highway_tag: str) -> str:
     """Map OSM highway tag to road_level string."""
     if highway_tag in ("motorway", "trunk", "motorway_link", "trunk_link"):
         return "highway"
-    if highway_tag in ("primary", "secondary", "tertiary", "primary_link"):
+    if highway_tag in ("primary", "secondary", "primary_link", "secondary_link"):
         return "paved"
-    if highway_tag in ("unclassified", "residential"):
-        return "paved"
-    if highway_tag in ("track", "path", "service"):
-        return "dirt"
-    return "dirt"
+    return "none"
