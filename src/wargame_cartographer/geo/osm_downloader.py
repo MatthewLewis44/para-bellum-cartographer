@@ -98,35 +98,33 @@ class OSMDownloader:
     # ------------------------------------------------------------------
 
     def get_landuse(self, bbox: BoundingBox) -> gpd.GeoDataFrame:
-        """Fetch OSM landuse and natural area polygons.
-
-        Returns GeoDataFrame with columns: geometry, landuse_type
-        where landuse_type is one of:
-            forest, farmland, residential, industrial, wetland,
-            heath, sand, scrub, grass, military, quarry
-        """
+        """Fetch OSM landuse and natural area polygons."""
         cache_path = self.cache_dir / f"landuse_{_bbox_hash(bbox)}.gpkg"
         if _is_fresh(cache_path):
             return gpd.read_file(cache_path)
-
+    
         console.print("  Fetching OSM landuse/natural areas...", style="dim")
 
         b = f"{bbox.min_lat},{bbox.min_lon},{bbox.max_lat},{bbox.max_lon}"
+        # Fetch only the most strategically relevant landuse types
+        # Use 'out body' (no geometry) then separate geometry fetch for efficiency
         query = f"""
-[out:json][timeout:120];
-(
-  way["landuse"~"^(forest|farmland|farmyard|residential|industrial|commercial|retail|military|quarry|wetland|meadow|grass|village_green|allotments)$"]({b});
-  way["natural"~"^(wood|wetland|heath|scrub|grassland|sand|bare_rock|glacier|beach|water)$"]({b});
-  relation["landuse"~"^(forest|farmland|residential|industrial|wetland)$"]({b});
-  relation["natural"~"^(wood|wetland|water)$"]({b});
-);
-out geom;
-"""
+    [out:json][timeout:120];
+    (
+      way["natural"~"^(wood|wetland|sand|glacier|beach)$"]({b});
+      way["landuse"~"^(forest|farmland|residential|industrial|wetland|military)$"]({b});
+      relation["natural"~"^(wood|wetland)$"]({b});
+      relation["landuse"~"^(forest|residential|industrial)$"]({b});
+    );
+    out geom qt;
+    """
         try:
             data = _overpass_query(query, timeout=120)
         except Exception as e:
             console.print(f"  [yellow]Landuse fetch failed: {e}[/yellow]")
-            return gpd.GeoDataFrame(columns=["geometry", "landuse_type"], crs="EPSG:4326")
+            return gpd.GeoDataFrame(
+                columns=["geometry", "landuse_type"], crs="EPSG:4326"
+            )
 
         records = []
         for el in data.get("elements", []):
@@ -134,21 +132,27 @@ out geom;
             if geom is None:
                 continue
             tags = el.get("tags", {})
-
-            # Map OSM tags → our landuse_type
             landuse_type = _classify_landuse_tag(tags)
             if landuse_type is None:
                 continue
-
             records.append({"geometry": geom, "landuse_type": landuse_type})
 
         if not records:
-            return gpd.GeoDataFrame(columns=["geometry", "landuse_type"], crs="EPSG:4326")
+            console.print("  [yellow]Landuse: no polygons returned[/yellow]")
+            return gpd.GeoDataFrame(
+                columns=["geometry", "landuse_type"], crs="EPSG:4326"
+            )
 
         gdf = gpd.GeoDataFrame(records, crs="EPSG:4326")
-        # Only keep polygon geometries for area landuse
-        gdf = gdf[gdf.geometry.geom_type.isin(["Polygon", "MultiPolygon"])].copy()
-        gdf = gdf.reset_index(drop=True)
+        gdf = gdf[gdf.geometry.geom_type.isin(
+            ["Polygon", "MultiPolygon"]
+        )].reset_index(drop=True)
+
+        console.print(
+            f"  Landuse: {len(gdf)} polygons "
+            f"({gdf.landuse_type.value_counts().to_dict()})",
+            style="dim"
+        )
 
         if not gdf.empty:
             gdf.to_file(cache_path, driver="GPKG")
