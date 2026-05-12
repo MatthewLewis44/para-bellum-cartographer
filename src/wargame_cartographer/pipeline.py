@@ -1,4 +1,14 @@
-"""Main pipeline: MapSpec → Data → Grid → Terrain → Render → Export."""
+"""Main pipeline: MapSpec → Data → Grid → Terrain → Render → Export.
+
+Para Bellum fork — extends the upstream pipeline with:
+    - OSM landuse / settlement / road / rail / waterway / bridge layers
+    - Full Para Bellum JSON schema output via game_data_exporter
+    - BiomeClassifier replacing the hash-based TerrainClassifier
+
+Rendering (PNG, PDF, HTML) is preserved from upstream for debug/QA use.
+The visual renderer still uses the upstream TerrainType enum internally;
+Para Bellum Biome data lives only in the JSON output.
+"""
 
 from __future__ import annotations
 
@@ -12,21 +22,21 @@ import matplotlib.pyplot as plt
 from wargame_cartographer.config.map_spec import MapSpec
 from wargame_cartographer.geo.elevation import ElevationProcessor
 from wargame_cartographer.geo.projection import select_crs
-from wargame_cartographer.geo.vector import load_vector_data
+from wargame_cartographer.geo.vector import load_vector_data, load_osm_layers
 from wargame_cartographer.hex.grid import HexGrid
 from wargame_cartographer.hex.sampler import HexSampler
 from wargame_cartographer.rendering.renderer import MapRenderer, RenderContext
 from wargame_cartographer.rendering.styles import get_style
+from wargame_cartographer.terrain.types import Biome
 
 
 def run_pipeline(
     spec_path: str | Path,
     status_callback: Callable[[str], None] | None = None,
 ) -> dict:
-    """Execute the full map generation pipeline.
+    """Execute the full Para Bellum map generation pipeline.
 
-    Returns a dict with:
-        hex_count, terrain_distribution, output_files
+    Returns dict with: hex_count, biome_distribution, output_files
     """
 
     def status(msg: str):
@@ -38,21 +48,37 @@ def run_pipeline(
     spec = MapSpec.from_yaml(spec_path)
     style = get_style(spec.designer_style, font_scale=spec.font_scale)
 
-    # 2. Select CRS and build hex grid
+    # 2. Build hex grid
     status(f"Building hex grid ({spec.hex_size_km} km hexes)...")
     crs = select_crs(spec.bbox) if spec.crs is None else None
     grid = HexGrid(bbox=spec.bbox, hex_size_km=spec.hex_size_km, crs=crs)
     status(f"Grid ready: {grid.hex_count} hexes")
 
-    # 3. Download geographic data
-    status("Downloading geographic data...")
+    # 3. Download Natural Earth vector data (upstream layers)
+    status("Downloading Natural Earth data...")
     vector_data = None
     try:
         vector_data = load_vector_data(spec.bbox, spec)
     except Exception as e:
-        status(f"Vector data partially loaded: {e}")
+        status(f"Natural Earth data partially loaded: {e}")
 
-    # 4. Get elevation data + hillshade
+    # 4. Download OSM layers (Para Bellum addition)
+    status("Downloading OSM layers (landuse, settlements, roads, rails, waterways)...")
+    osm_data = None
+    try:
+        osm_data = load_osm_layers(spec.bbox)
+        status(
+            f"OSM ready: "
+            f"{len(osm_data.landuse)} landuse polygons, "
+            f"{len(osm_data.settlements)} settlements, "
+            f"{len(osm_data.roads)} road segments, "
+            f"{len(osm_data.railways)} rail segments, "
+            f"{len(osm_data.waterways)} waterways"
+        )
+    except Exception as e:
+        status(f"OSM data partially loaded: {e}")
+
+    # 5. Get elevation + hillshade
     status("Processing elevation data...")
     elev_proc = ElevationProcessor()
     elevation, elev_metadata = elev_proc.get_elevation(spec.bbox)
@@ -62,24 +88,32 @@ def run_pipeline(
         altitude=style.hillshade_altitude,
     ) if spec.show_elevation_shading else None
 
-    # 5. Classify terrain per hex
-    status("Classifying terrain...")
+    # 6. Classify terrain per hex (Para Bellum BiomeClassifier)
+    status("Classifying hex terrain (biome, settlement, infrastructure)...")
     sampler = HexSampler()
-    hex_terrain = sampler.build_hex_terrain(grid, spec.bbox, vector_data)
+    hex_terrain = sampler.build_hex_terrain(
+        grid, spec.bbox,
+        vector_data=vector_data,
+        osm_data=osm_data,
+    )
 
-    # Terrain distribution
-    terrain_counts = {}
+    # Biome distribution summary
+    biome_counts: dict[str, int] = {}
     for info in hex_terrain.values():
-        t = info["terrain"]
-        name = t.value if hasattr(t, "value") else str(t)
-        terrain_counts[name] = terrain_counts.get(name, 0) + 1
+        b = info.get("biome")
+        name = b.value if isinstance(b, Biome) else str(b)
+        biome_counts[name] = biome_counts.get(name, 0) + 1
 
-    # 6. Render
+    # 7. Render (upstream renderer — uses biome→legacy terrain mapping)
     status("Rendering map layers...")
+
+    # Map biome back to legacy terrain string for renderer compatibility
+    render_terrain = _biome_to_render_terrain(hex_terrain)
+
     context = RenderContext(
         spec=spec,
         grid=grid,
-        hex_terrain=hex_terrain,
+        hex_terrain=render_terrain,
         style=style,
         elevation=elevation,
         hillshade=hillshade,
@@ -89,10 +123,12 @@ def run_pipeline(
     renderer = MapRenderer()
     fig = renderer.render(context)
 
-    # 7. Export
+    # 8. Export
     output_dir = Path(spec.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    safe_name = "".join(c if c.isalnum() or c in "_-" else "_" for c in spec.name)[:40].lower()
+    safe_name = (
+        "".join(c if c.isalnum() or c in "_-" else "_" for c in spec.name)[:40].lower()
+    )
 
     output_files = {}
 
@@ -111,21 +147,103 @@ def run_pipeline(
     if "html" in spec.output_formats:
         status("Exporting interactive HTML...")
         from wargame_cartographer.output.html_exporter import export_html
-        html_path = export_html(grid, hex_terrain, spec, output_dir / f"{safe_name}_interactive.html")
+        html_path = export_html(
+            grid, render_terrain, spec,
+            output_dir / f"{safe_name}_interactive.html"
+        )
         output_files["html"] = str(html_path.resolve())
 
     if "json" in spec.output_formats:
-        status("Exporting game data JSON...")
+        status("Exporting Para Bellum hex JSON...")
         from wargame_cartographer.output.game_data_exporter import export_game_data
-        json_path = export_game_data(grid, hex_terrain, spec, output_dir / f"{safe_name}_hex_terrain.json")
+        json_path = export_game_data(
+            grid, hex_terrain, spec,
+            output_dir / f"{safe_name}_hex_terrain.json"
+        )
         output_files["json"] = str(json_path.resolve())
 
     plt.close(fig)
-
     status("Done!")
 
     return {
         "hex_count": grid.hex_count,
-        "terrain_distribution": terrain_counts,
+        "biome_distribution": dict(sorted(biome_counts.items())),
         "output_files": output_files,
     }
+
+
+# ---------------------------------------------------------------------------
+# Renderer compatibility shim
+# ---------------------------------------------------------------------------
+
+# Maps our Biome values back to the legacy TerrainType strings the renderer
+# expects. The renderer is visual-only — this mapping only affects PNG/HTML.
+_BIOME_TO_RENDER: dict[str, str] = {
+    "plains":           "clear",
+    "steppe":           "clear",
+    "forest":           "forest",
+    "jungle":           "forest",
+    "rainforest":       "forest",
+    "desert":           "desert",
+    "badlands":         "rough",
+    "savanna":          "clear",
+    "hill":             "rough",
+    "mountain":         "mountain",
+    "highland_plateau": "rough",
+    "glacier":          "mountain",
+    "tundra":           "rough",
+    "taiga":            "forest",
+    "marsh":            "marsh",
+    "swamp":            "marsh",
+    "mangrove":         "marsh",
+    "beach":            "clear",
+    "atoll":            "clear",
+    "volcanic_island":  "rough",
+    "water":            "water",
+    "coastal_water":    "water",
+    "lake":             "water",
+    "urban":            "urban",
+}
+
+
+def _biome_to_render_terrain(
+    hex_terrain: dict[tuple[int, int], dict],
+) -> dict[tuple[int, int], dict]:
+    """Convert Para Bellum hex_terrain to renderer-compatible format."""
+    from wargame_cartographer.terrain.types import Biome as B
+
+    # Import legacy TerrainType for renderer
+    try:
+        # The upstream types.py is now replaced — use a string-based shim
+        from enum import Enum
+        class _LegacyTerrain(str, Enum):
+            WATER    = "water"
+            CLEAR    = "clear"
+            ROUGH    = "rough"
+            FOREST   = "forest"
+            MOUNTAIN = "mountain"
+            MARSH    = "marsh"
+            DESERT   = "desert"
+            URBAN    = "urban"
+
+        render = {}
+        for (q, r), info in hex_terrain.items():
+            biome = info.get("biome")
+            biome_str = biome.value if isinstance(biome, B) else str(biome)
+            legacy_str = _BIOME_TO_RENDER.get(biome_str, "clear")
+            legacy = _LegacyTerrain(legacy_str)
+
+            render[(q, r)] = {
+                "terrain":           legacy,
+                "elevation_m":       info.get("elevation_m", 0),
+                "slope_deg":         info.get("slope_deg", 0),
+                "movement_cost":     1 if legacy_str in ("clear", "urban") else
+                                     2 if legacy_str in ("rough", "forest", "desert") else
+                                     3 if legacy_str in ("mountain", "marsh") else 99,
+                "defensive_modifier": 0,
+                "blocks_los":        legacy_str in ("forest", "mountain", "urban"),
+            }
+        return render
+    except Exception:
+        # Hard fallback: return hex_terrain unchanged, renderer will handle
+        return hex_terrain
