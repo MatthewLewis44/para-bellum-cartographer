@@ -98,13 +98,12 @@ class BiomeClassifier:
             return Biome.BEACH
 
         # --- 4. Urban ---
-        # Cities and towns always → urban. Villages only if also residential landuse.
-        if has_settlement:
-            if settlement_place_type in ("city", "town"):
-                return Biome.URBAN
-            if settlement_place_type == "village" and landuse_type == "residential":
-                return Biome.URBAN
-        if landuse_type in ("residential", "industrial"):
+        # Cities and towns → always urban biome
+        # Villages → plains biome (settlement data still tagged, just not urban biome)
+        # Industrial landuse → urban regardless of settlement
+        if has_settlement and settlement_place_type in ("city", "town"):
+            return Biome.URBAN
+        if landuse_type == "industrial":
             return Biome.URBAN
 
         # --- 5. Wetland ---
