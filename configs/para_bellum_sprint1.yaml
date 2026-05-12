@@ -1,0 +1,26 @@
+name: "para_bellum_sprint1"
+title: "PARA BELLUM"
+subtitle: "Sprint 1 Test Region"
+scenario: "1 September 1939"
+
+bbox:
+  min_lon: 2.5
+  min_lat: 49.5
+  max_lon: 9.0
+  max_lat: 53.5
+
+# 10km per hex — Para Bellum standard
+hex_size_km: 10.0
+
+designer_style: simonitch
+font_scale: 1.0
+dpi: 150
+
+show_elevation_shading: true
+show_rivers: true
+show_cities: true
+show_ports: true
+
+# All three outputs — PNG for visual check, HTML for QA, JSON for Unity
+output_formats: [png, html, json]
+output_dir: ./output
