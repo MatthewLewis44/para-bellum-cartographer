@@ -65,7 +65,7 @@ class ElevationProcessor:
 
         # Limit: if too many tiles, use synthetic instead
         n_tiles = (lat_max - lat_min + 1) * (lon_max - lon_min + 1)
-        if n_tiles > 20:
+        if n_tiles > 100:
             console.print(f"  [yellow]Area requires {n_tiles} SRTM tiles (max 20), using synthetic elevation[/yellow]")
             raise RuntimeError(f"Too many SRTM tiles needed: {n_tiles}")
 
