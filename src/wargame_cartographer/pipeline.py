@@ -148,7 +148,7 @@ def run_pipeline(
         status("Exporting interactive HTML...")
         from wargame_cartographer.output.html_exporter import export_html
         html_path = export_html(
-            grid, render_terrain, spec,
+            grid, hex_terrain, spec,
             output_dir / f"{safe_name}_interactive.html"
         )
         output_files["html"] = str(html_path.resolve())
