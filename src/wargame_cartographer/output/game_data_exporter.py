@@ -262,8 +262,8 @@ def export_game_data(
                 "max_lat": spec.bbox.max_lat,
             },
             "grid": {
-                "orientation": "pointy_top",
-                "offset": "odd_col_north",
+                "orientation": "flat_top",
+                "offset": "odd_row_east",
                 "col_min": col_min,
                 "col_max": col_max,
                 "row_min": row_min,
