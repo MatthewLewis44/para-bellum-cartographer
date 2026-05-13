@@ -42,7 +42,7 @@ class BiomeClassifier:
 
     # Slope thresholds (degrees)
     SLOPE_MOUNTAIN  = 20.0   # Above → mountain
-    SLOPE_HILL      = 8.0    # Above → hill
+    SLOPE_HILL      = 4.0    # Above → hill (originally 8- changed to 4 for rolling hills. change if everything hills)
     SLOPE_HILLY     = 3.0    # Above → at minimum hilly elevation tier
 
     # Elevation thresholds (metres)

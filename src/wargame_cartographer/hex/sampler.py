@@ -160,12 +160,9 @@ class HexSampler:
             elev_m = max(0.0, elev_m) if not is_water else elev_m
 
             transform = elev_metadata["transform"]
-            c_idx, r_idx = ~transform * (cell.center_lon, cell.center_lat)
-            r_idx, c_idx = int(round(r_idx)), int(round(c_idx))
-            if 0 <= r_idx < slope_grid.shape[0] and 0 <= c_idx < slope_grid.shape[1]:
-                slope_deg = float(slope_grid[r_idx, c_idx])
-            else:
-                slope_deg = 0.0
+            slope_deg = _sample_max_slope_in_hex(
+                slope_grid, transform, grid.hex_polygon(q, r), grid
+            )
 
             # -- Landuse --
             landuse_type = None
@@ -519,3 +516,42 @@ def _hex_polygon_wgs84(q: int, r: int, grid: HexGrid):
     verts_wgs84 = [to_geo.transform(x, y) for x, y in verts_proj]
     # transform returns (lon, lat) — shapely wants (x, y) = (lon, lat) ✓
     return Polygon(verts_wgs84)   
+
+def _sample_max_slope_in_hex(
+    slope_grid: np.ndarray,
+    transform,
+    hex_poly_proj,
+    grid: HexGrid,
+) -> float:
+    """Sample the 90th percentile slope within the hex polygon bounds.
+
+    Converts projected hex bounds to WGS84 before indexing into the
+    raster (which is in EPSG:4326 / degrees).
+    """
+    # Convert projected bounds to WGS84
+    to_geo = grid._to_geo
+    minx, miny, maxx, maxy = hex_poly_proj.bounds
+    lon_min, lat_min = to_geo.transform(minx, miny)
+    lon_max, lat_max = to_geo.transform(maxx, maxy)
+
+    # Ensure correct ordering
+    lon_min, lon_max = min(lon_min, lon_max), max(lon_min, lon_max)
+    lat_min, lat_max = min(lat_min, lat_max), max(lat_min, lat_max)
+
+    # Convert WGS84 bounds to raster pixel indices
+    col_min, row_min = ~transform * (lon_min, lat_max)  # top-left
+    col_max, row_max = ~transform * (lon_max, lat_min)  # bottom-right
+
+    row_min = max(0, int(np.floor(row_min)))
+    row_max = min(slope_grid.shape[0] - 1, int(np.ceil(row_max)))
+    col_min = max(0, int(np.floor(col_min)))
+    col_max = min(slope_grid.shape[1] - 1, int(np.ceil(col_max)))
+
+    if row_min >= row_max or col_min >= col_max:
+        return 0.0
+
+    patch = slope_grid[row_min:row_max + 1, col_min:col_max + 1]
+    if patch.size == 0:
+        return 0.0
+
+    return float(np.percentile(patch, 90))
