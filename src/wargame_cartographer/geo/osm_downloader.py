@@ -180,7 +180,7 @@ class OSMDownloader:
         query = f"""
 [out:json][timeout:60];
 (
-  node["place"~"^(city|town|village|hamlet|suburb|borough)$"]({b});
+  node["place"~"^(city|town|village)$"]({b});
 );
 out body;
 """
@@ -212,6 +212,12 @@ out body;
                 pop = int(tags.get("population", 0))
             except (ValueError, TypeError):
                 pop = 0
+
+            # Drop hamlets and low-population villages
+            if place in ("hamlet", "suburb", "borough"):
+                continue
+            if place == "village" and 0 < pop < 500:
+                continue
 
             records.append({
                 "geometry":   geom,
@@ -351,8 +357,8 @@ out geom;
         query = f"""
 [out:json][timeout:60];
 (
-  way["waterway"~"^(river|canal|stream)$"]({b});
-  relation["waterway"="river"]({b});
+    way["waterway"~"^(river|canal)$"]({b});
+    relation["waterway"="river"]({b});
 );
 out geom;
 """
