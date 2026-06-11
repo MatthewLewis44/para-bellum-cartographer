@@ -12,6 +12,7 @@ Para Bellum Biome data lives only in the JSON output.
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from typing import Callable
 
@@ -43,16 +44,32 @@ def run_pipeline(
         if status_callback:
             status_callback(msg)
 
+    # Structured per-stage log: name, elapsed seconds, input/output counts.
+    # Returned in the result dict and echoed through the status callback.
+    stage_log: list[dict] = []
+    _stage_t0 = time.perf_counter()
+
+    def stage_done(name: str, **counts):
+        nonlocal _stage_t0
+        elapsed = time.perf_counter() - _stage_t0
+        entry = {"stage": name, "elapsed_s": round(elapsed, 2), **counts}
+        stage_log.append(entry)
+        kv = " ".join(f"{k}={v}" for k, v in counts.items())
+        status(f"[stage {name}] {elapsed:.2f}s {kv}".rstrip())
+        _stage_t0 = time.perf_counter()
+
     # 1. Load spec
     status("Loading map specification...")
     spec = MapSpec.from_yaml(spec_path)
     style = get_style(spec.designer_style, font_scale=spec.font_scale)
+    stage_done("load_spec", bbox=f"{spec.bbox.min_lon},{spec.bbox.min_lat},{spec.bbox.max_lon},{spec.bbox.max_lat}")
 
     # 2. Build hex grid
     status(f"Building hex grid ({spec.hex_size_km} km hexes)...")
     crs = select_crs(spec.bbox) if spec.crs is None else None
     grid = HexGrid(bbox=spec.bbox, hex_size_km=spec.hex_size_km, crs=crs)
     status(f"Grid ready: {grid.hex_count} hexes")
+    stage_done("build_grid", hexes=grid.hex_count)
 
     # 3. Download Natural Earth vector data (upstream layers)
     status("Downloading Natural Earth data...")
@@ -61,6 +78,7 @@ def run_pipeline(
         vector_data = load_vector_data(spec.bbox, spec)
     except Exception as e:
         status(f"Natural Earth data partially loaded: {e}")
+    stage_done("natural_earth", loaded=vector_data is not None)
 
     # 4. Download OSM layers (Para Bellum addition)
     status("Downloading OSM layers (landuse, settlements, roads, rails, waterways)...")
@@ -77,6 +95,14 @@ def run_pipeline(
         )
     except Exception as e:
         status(f"OSM data partially loaded: {e}")
+    stage_done(
+        "osm_layers",
+        landuse=len(osm_data.landuse) if osm_data else 0,
+        settlements=len(osm_data.settlements) if osm_data else 0,
+        roads=len(osm_data.roads) if osm_data else 0,
+        railways=len(osm_data.railways) if osm_data else 0,
+        waterways=len(osm_data.waterways) if osm_data else 0,
+    )
 
     # 4b. Load 1930 political boundaries (Para Bellum addition)
     status("Loading 1930 political boundaries...")
@@ -87,6 +113,7 @@ def run_pipeline(
         status(f"Boundaries ready: {len(boundaries_gdf)} countries")
     except Exception as e:
         status(f"1930 boundaries unavailable: {e}")
+    stage_done("boundaries_1930", countries=len(boundaries_gdf) if boundaries_gdf is not None else 0)
 
     # 5. Get elevation + hillshade
     status("Processing elevation data...")
@@ -97,6 +124,7 @@ def run_pipeline(
         azimuth=style.hillshade_azimuth,
         altitude=style.hillshade_altitude,
     ) if spec.show_elevation_shading else None
+    stage_done("elevation", shape=f"{elevation.shape[0]}x{elevation.shape[1]}")
 
     # 6. Classify terrain per hex (Para Bellum BiomeClassifier)
     status("Classifying hex terrain (biome, settlement, infrastructure)...")
@@ -114,6 +142,10 @@ def run_pipeline(
         b = info.get("biome")
         name = b.value if isinstance(b, Biome) else str(b)
         biome_counts[name] = biome_counts.get(name, 0) + 1
+
+    settled = sum(1 for i in hex_terrain.values() if i.get("settlement_type", "none") != "none")
+    with_country = sum(1 for i in hex_terrain.values() if i.get("country_at_start"))
+    stage_done("sample_hexes", hexes=len(hex_terrain), settled=settled, with_country=with_country)
 
     # 7. Render (upstream renderer — uses biome→legacy terrain mapping)
     status("Rendering map layers...")
@@ -133,6 +165,7 @@ def run_pipeline(
     )
     renderer = MapRenderer()
     fig = renderer.render(context)
+    stage_done("render")
 
     # 8. Export
     output_dir = Path(spec.output_dir)
@@ -174,12 +207,15 @@ def run_pipeline(
         output_files["json"] = str(json_path.resolve())
 
     plt.close(fig)
-    status("Done!")
+    stage_done("export", formats=",".join(output_files.keys()))
+    total_s = round(sum(e["elapsed_s"] for e in stage_log), 2)
+    status(f"Done! ({total_s}s total)")
 
     return {
         "hex_count": grid.hex_count,
         "biome_distribution": dict(sorted(biome_counts.items())),
         "output_files": output_files,
+        "stage_log": stage_log,
     }
 
 

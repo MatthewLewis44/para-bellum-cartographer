@@ -125,6 +125,11 @@ changes tracked here:
   Belgium test: BEL 122 / FRA 88 / NLD 25 / DEU 16 / LUX 9 / water 20 —
   cross-validated against modern Natural Earth (11 border-hex diffs only).
   Validation: `uv run python check_boundaries.py`.
+- **Sprint 2 done gate**: `uv run python validate_sprint2.py` — 21 checks over
+  schema, settlements, rivers, boundaries, biomes; exits non-zero on failure.
+- **Stage logging**: `run_pipeline` returns `stage_log` (stage name, elapsed
+  seconds, input/output counts per stage) and echoes `[stage ...]` lines via
+  the status callback. Belgium test full run ≈ 65 s.
 
 ### Known Issues / Quirks
 
