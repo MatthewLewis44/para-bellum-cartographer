@@ -341,11 +341,27 @@ out geom;
     # Waterways (for river_edges)
     # ------------------------------------------------------------------
 
+    # Strategic-significance floor for waterways: a named river/canal only
+    # appears on the map when its total named length within the fetched
+    # area exceeds this (geodesic metres). OSM tags 2 m brooks as
+    # waterway=river, so tag-level filters can't separate the Meuse from a
+    # drainage ditch — but majors accumulate >100 km of named ways while
+    # brooks total a few km. Globally scalable: no name lists, no
+    # bbox-specific logic. Calibrated on the Belgium test bbox: keeps
+    # Meuse/Maas, Schelde, Sambre, Ourthe, Albertkanaal, Oise, Semois,
+    # Chiers → 71/280 river hexes (25%), zero isolated river hexes.
+    MIN_WATERWAY_TOTAL_M = 110_000
+
     def get_waterways(self, bbox: BoundingBox) -> gpd.GeoDataFrame:
-        """Fetch OSM waterway linestrings (rivers, canals).
+        """Fetch OSM waterway linestrings (rivers, canals) of strategic size.
 
         Returns GeoDataFrame with columns: geometry, waterway_type, name
-        where waterway_type is: river | canal | stream
+        where waterway_type is: river | canal
+
+        Only named waterways whose per-name total geodesic length within the
+        bbox exceeds MIN_WATERWAY_TOTAL_M are kept — at 10 km hex scale a
+        river edge must represent a real crossing obstacle, not every named
+        stream Belgium drains through.
         """
         cache_path = self.cache_dir / f"waterways_{_bbox_hash(bbox)}.gpkg"
         if _is_fresh(cache_path):
@@ -355,15 +371,15 @@ out geom;
 
         b = f"{bbox.min_lat},{bbox.min_lon},{bbox.max_lat},{bbox.max_lon}"
         query = f"""
-[out:json][timeout:60];
+[out:json][timeout:120];
 (
-    way["waterway"~"^(river|canal)$"]({b});
-    relation["waterway"="river"]({b});
+  way["waterway"="river"]["name"]({b});
+  way["waterway"="canal"]["name"]({b});
 );
 out geom;
 """
         try:
-            data = _overpass_query(query, timeout=60)
+            data = _overpass_query(query, timeout=120)
         except Exception as e:
             console.print(f"  [yellow]Waterway fetch failed: {e}[/yellow]")
             return gpd.GeoDataFrame(columns=["geometry", "waterway_type", "name"], crs="EPSG:4326")
@@ -384,6 +400,28 @@ out geom;
             return gpd.GeoDataFrame(columns=["geometry", "waterway_type", "name"], crs="EPSG:4326")
 
         gdf = gpd.GeoDataFrame(records, crs="EPSG:4326")
+
+        # Significance filter: per-name total geodesic length. Geodesic (not
+        # EPSG:3857) so the threshold means the same thing at any latitude.
+        from pyproj import Geod
+        geod = Geod(ellps="WGS84")
+        lengths = gdf.geometry.apply(geod.geometry_length)
+        name_total = lengths.groupby(gdf["name"]).sum()
+        keep_names = set(name_total[name_total > self.MIN_WATERWAY_TOTAL_M].index)
+        kept = gdf[gdf["name"].isin(keep_names)].reset_index(drop=True)
+
+        console.print(
+            f"  Waterways: {len(gdf)} ways / {gdf['name'].nunique()} names fetched; "
+            f"kept {len(kept)} ways / {len(keep_names)} names over "
+            f"{self.MIN_WATERWAY_TOTAL_M / 1000:.0f} km total "
+            f"({sorted(keep_names)})",
+            style="dim",
+        )
+        gdf = kept
+
+        if gdf.empty:
+            return gpd.GeoDataFrame(columns=["geometry", "waterway_type", "name"], crs="EPSG:4326")
+
         gdf.to_file(cache_path, driver="GPKG")
         return gdf
 

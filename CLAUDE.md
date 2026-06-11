@@ -130,6 +130,17 @@ changes tracked here:
 - **Stage logging**: `run_pipeline` returns `stage_log` (stage name, elapsed
   seconds, input/output counts per stage) and echoes `[stage ...]` lines via
   the status callback. Belgium test full run ≈ 65 s.
+- **River significance filter** (`get_waterways()`): fetches all named
+  river+canal ways, then keeps only names whose per-name total *geodesic*
+  length in the fetch area exceeds `MIN_WATERWAY_TOTAL_M` (110 km). OSM tags
+  2 m brooks as `waterway=river`, and width tags are too sparse to use
+  (measured brooks, unmeasured Meuse) — accumulated named length is the
+  scalable significance proxy. Belgium test: 244 → 71 river hexes (25%),
+  zero isolated hexes, one connected network (Meuse+Maas, Schelde, Sambre,
+  Ourthe, Albertkanaal, Oise, Semois, Chiers). Validation:
+  `uv run python check_rivers.py`. Caveats: rivers renamed across language
+  borders fragment per-name totals (Escaut|Schelde count separately); very
+  small bboxes can clip majors below the threshold.
 
 ### Known Issues / Quirks
 

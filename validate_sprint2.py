@@ -46,7 +46,7 @@ check('> 60% hexes untagged', untagged_pct > 60.0, f'{untagged_pct:.1f}% untagge
 
 # --- Rivers ---------------------------------------------------------------
 river_hexes = [h for h in hexes if h['terrain']['river_edges']]
-check('river hexes present (Meuse/Scheldt expected)', len(river_hexes) >= 20,
+check('river hexes in strategic band [30, 80]', 30 <= len(river_hexes) <= 80,
       f'{len(river_hexes)} hexes with river edges')
 bad_edges = [e for h in hexes for e in h['terrain']['river_edges'] if not (0 <= e <= 5)]
 check('river edge indices all 0-5', not bad_edges, f'bad: {bad_edges[:5]}')
