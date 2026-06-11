@@ -113,6 +113,10 @@ changes tracked here:
 - (pre-session) Waterways restricted to river|canal; settlements query
   restricted to city|town|village with village pop≥500 filter (note: villages
   with *unknown* population pass that filter — superseded by sampler floors).
+- **Schema v1.0.1** (AD-007): `country_1939` → `country_at_start`, `province`
+  → `province_at_start` everywhere (sampler, exporter, debug geojson);
+  `SCHEMA_VERSION` bumped. Breaking for Unity loader (coordinated). Schema
+  documented in `docs/hex-schema.md`; decisions in `PARA_BELLUM_DECISIONS.md`.
 
 ### Known Issues / Quirks
 

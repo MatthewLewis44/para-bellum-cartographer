@@ -2,7 +2,7 @@
 
 Produces the canonical hex JSON consumed by Unity 6.6 LTS.
 This is the contract between the cartography pipeline and the game engine.
-Schema version: 1.0.0
+Schema version: 1.0.1
 
 OUT OF SCOPE (not written here, implemented in Unity or later pipeline stages):
     - Tactical battle map selection logic
@@ -44,7 +44,7 @@ from wargame_cartographer.infrastructure.types import (
 # Schema version — bump when any field is added/removed/renamed.
 # Unity C# loader checks this on load and rejects incompatible versions.
 # ---------------------------------------------------------------------------
-SCHEMA_VERSION = "1.0.0"
+SCHEMA_VERSION = "1.0.1"
 
 
 def _safe_enum_value(val, default: str) -> str:
@@ -136,9 +136,8 @@ def export_game_data(
         river_edges = info.get("river_edges", [])  # list of ints 0-5
 
         # --- Political ---
-        country = info.get("country_1939", "")
-        province = info.get("province", "")
-
+        country = info.get("country_at_start", "")
+        province = info.get("province_at_start", "")
         # --- Settlement ---
         settlement_type = _safe_enum_value(
             info.get("settlement_type"), SettlementType.NONE.value
@@ -198,8 +197,8 @@ def export_game_data(
                 "river_edges": river_edges,
             },
             "political": {
-                "country_1939": country,
-                "province": province,
+                "country_at_start": country,
+                "province_at_start": province,
             },
             "settlement": {
                 "type": settlement_type,
@@ -244,7 +243,7 @@ def export_game_data(
         "map_metadata": {
             "name": spec.name,
             "title": getattr(spec, "title", spec.name),
-            "scenario_date": "1939-09-01",
+            "scenario_date": "1930-01-01",
             "hex_size_km": spec.hex_size_km,
             "hex_size_miles": round(spec.hex_size_km * 0.621371, 2),
             "generated_at": datetime.now(timezone.utc).isoformat(),

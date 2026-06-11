@@ -80,8 +80,8 @@ def hex_grid_to_geojson(
                 "settlement":      settlement_display,
                 "road":            road,
                 "rail":            rail,
-                "country":         info.get("country_1939", ""),
-                "province":        info.get("province", ""),
+                "country":         info.get("country_at_start", ""),
+                "province":        info.get("province_at_start", ""),
             },
         }
         features.append(feature)

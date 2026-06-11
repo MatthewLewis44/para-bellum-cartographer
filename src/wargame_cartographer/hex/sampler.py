@@ -273,9 +273,9 @@ class HexSampler:
                 "steel":          False,
                 "agriculture":    landuse_type == "farmland",
                 "industry_level": 1 if landuse_type == "industrial" else 0,
-                # Political (Sprint 2 — GADM)
-                "country_1939":   "",
-                "province":       "",
+                # Political (Sprint 2 — 1930 boundaries; province is Sprint 3)
+                "country_at_start":  "",
+                "province_at_start": "",
             }
 
         # ----------------------------------------------------------------
