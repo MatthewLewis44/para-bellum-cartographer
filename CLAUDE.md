@@ -97,6 +97,15 @@ is a bug — precompute feature→hex assignments or use spatial indexes. The
 settlement scan was rewritten for exactly this reason (was 280×5,243 distance
 calls; now one O(settlements) pass).
 
+## Configs
+
+- `configs/para_bellum_belgium_test.yaml` — 280 hexes, fully cached, ~65 s.
+  Use for fast iteration.
+- `configs/para_bellum_benelux_germany_test.yaml` — Sprint 2 target region
+  (Benelux + Western Germany, 2.5–8.8°E / 49.4–53.6°N), 840 hexes.
+  First run fetches OSM via 6 sub-bbox queries (AD-008) + 35 SRTM tiles.
+  Gate: `uv run python validate_full_bbox.py`.
+
 ## Architecture Decisions & Change Log
 
 Decision records live in `PARA_BELLUM_DECISIONS.md` (AD-NNN). Sprint-level
@@ -124,12 +133,22 @@ changes tracked here:
   point-in-polygon; sampler stores ISO3 in `country_at_start` for land hexes.
   Belgium test: BEL 122 / FRA 88 / NLD 25 / DEU 16 / LUX 9 / water 20 —
   cross-validated against modern Natural Earth (11 border-hex diffs only).
-  Validation: `uv run python check_boundaries.py`.
+  Validation: `uv run python check_boundaries.py`. Coastal hexes not
+  covered by the coarse 1930 coastline snap to the nearest country within
+  0.2° (AD-010).
 - **Sprint 2 done gate**: `uv run python validate_sprint2.py` — 21 checks over
   schema, settlements, rivers, boundaries, biomes; exits non-zero on failure.
 - **Stage logging**: `run_pipeline` returns `stage_log` (stage name, elapsed
   seconds, input/output counts per stage) and echoes `[stage ...]` lines via
   the status callback. Belgium test full run ≈ 65 s.
+- **Sprint 2 target bbox shipped** (840 hexes, Benelux + W. Germany):
+  OSM fetched via 6 sub-bbox queries with retry/backoff (AD-008) — cold run
+  28.6 min (85% Overpass), warm-cache run 3.1 min. Layer sizes: landuse
+  2.24M polygons, roads 640k, rail 162k, bridges 241k, settlements 13k.
+  **Peak RAM 30.4 GB** — landuse GeoDataFrame + 343M-cell SRTM rasters all
+  in memory; this is THE scale-spike blocker for 100k hexes (needs
+  streaming/tiled sampling, not all-in-RAM). Gate: `validate_full_bbox.py`
+  28/28 PASS. Coastal snap added to assign_country (AD-010).
 - **River significance filter** (`get_waterways()`): fetches all named
   river+canal ways, then keeps only names whose per-name total *geodesic*
   length in the fetch area exceeds `MIN_WATERWAY_TOTAL_M` (110 km). OSM tags

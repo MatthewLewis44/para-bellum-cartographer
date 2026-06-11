@@ -84,6 +84,15 @@ def _prepared_geoms(boundaries_gdf: gpd.GeoDataFrame) -> list:
     return cached
 
 
+# Coastal snap tolerance (degrees, ~0.2° ≈ 20 km ≈ 2 hexes). The 1930
+# dataset's coastline is coarse (BORDERPRECISION=3): real coastal land
+# (Den Helder, Wadden islands, East Frisia) and post-1930 polders
+# (Flevoland) fall just outside every polygon. A hex center is a 10 km
+# quantized sample — snap such points to the nearest country within
+# tolerance instead of leaving inhabited coast country-less.
+COASTAL_SNAP_DEG = 0.2
+
+
 def assign_country(
     lon: float,
     lat: float,
@@ -93,8 +102,9 @@ def assign_country(
 
     Uses the GeoDataFrame spatial index to shortlist candidate polygons and
     prepared geometries for the containment test, so per-point cost stays
-    O(1)-ish at the 100k-hex scale. Empty string means no 1930 country
-    covers the point (open sea) or the country is not in _NAME_TO_ISO3.
+    O(1)-ish at the 100k-hex scale. Points not covered by any polygon snap
+    to the nearest country within COASTAL_SNAP_DEG (coarse-coastline guard);
+    beyond that, empty string (open sea / unmapped country).
     """
     if boundaries_gdf is None or boundaries_gdf.empty:
         return ""
@@ -109,4 +119,16 @@ def assign_country(
             code = codes[idx]
             if code:
                 return str(code)
-    return ""
+
+    # Coastal snap: nearest polygon within tolerance.
+    best_code = ""
+    best_dist = COASTAL_SNAP_DEG
+    geoms = boundaries_gdf.geometry.values
+    for idx in boundaries_gdf.sindex.query(pt.buffer(COASTAL_SNAP_DEG)):
+        if not codes[idx]:
+            continue
+        d = geoms[idx].distance(pt)
+        if d < best_dist:
+            best_dist = d
+            best_code = str(codes[idx])
+    return best_code
