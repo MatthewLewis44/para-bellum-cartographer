@@ -1,0 +1,28 @@
+name: "para_bellum_benelux_germany_test"
+title: "PARA BELLUM"
+subtitle: "Benelux + Western Germany — Sprint 2 Target Region"
+scenario: "1 September 1939"
+
+# Sprint 2 target bbox: Belgium (full), Netherlands (full), Luxembourg (full),
+# Western Germany (Rhineland/Ruhr/parts of Westphalia, to Cologne/Frankfurt),
+# NE France bleed-over. max_lon 8.8 (not 8.5) so Frankfurt (8.68 E) is inside.
+bbox:
+  min_lon: 2.5
+  min_lat: 49.4
+  max_lon: 8.8
+  max_lat: 53.6
+
+# 10km per hex — Para Bellum standard
+hex_size_km: 10.0
+
+designer_style: simonitch
+font_scale: 1.0
+dpi: 150
+
+show_elevation_shading: true
+show_rivers: true
+show_cities: true
+show_ports: true
+
+output_formats: [png, html, json]
+output_dir: ./output
