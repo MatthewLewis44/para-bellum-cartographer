@@ -33,6 +33,7 @@ from shapely.ops import unary_union
 from shapely.prepared import prep
 
 from wargame_cartographer.config.map_spec import BoundingBox
+from wargame_cartographer.geo.boundaries import assign_country
 from wargame_cartographer.geo.elevation import ElevationProcessor
 from wargame_cartographer.hex.grid import HexGrid
 from wargame_cartographer.hex.coords import (
@@ -63,6 +64,7 @@ class HexSampler:
         bbox: BoundingBox,
         vector_data=None,      # upstream VectorData (Natural Earth layers)
         osm_data=None,         # OSMLayerData (our new OSM layers)
+        boundaries_gdf=None,   # 1930 political boundaries (geo/boundaries.py)
     ) -> dict[tuple[int, int], dict]:
         """Build complete per-hex data for every hex in the grid.
 
@@ -137,6 +139,13 @@ class HexSampler:
         settlement_by_hex: dict[tuple[int, int], dict] = {}
         if settlements_gdf is not None:
             settlement_by_hex = _assign_settlements_to_hexes(grid, settlements_gdf)
+
+        # 1930 political boundaries — prep geometry + spatial index once,
+        # not per-hex (assign_country caches prepared polygons internally).
+        has_boundaries = boundaries_gdf is not None and not boundaries_gdf.empty
+        if has_boundaries:
+            boundaries_gdf.sindex  # build index up front
+            assign_country(0.0, 0.0, boundaries_gdf)  # warm prepared-geometry cache
 
         # ----------------------------------------------------------------
         # 3. First pass — classify every hex
@@ -246,6 +255,13 @@ class HexSampler:
             # -- Anthrome --
             anthrome = _derive_anthrome(biome, landuse_type, settlement_type_str)
 
+            # -- Country at start (1930 boundaries) --
+            country_code = ""
+            if has_boundaries and not is_water and not is_lake:
+                country_code = assign_country(
+                    cell.center_lon, cell.center_lat, boundaries_gdf
+                )
+
             result[(q, r)] = {
                 # Core terrain
                 "biome":          biome,
@@ -273,8 +289,8 @@ class HexSampler:
                 "steel":          False,
                 "agriculture":    landuse_type == "farmland",
                 "industry_level": 1 if landuse_type == "industrial" else 0,
-                # Political (Sprint 2 — 1930 boundaries; province is Sprint 3)
-                "country_at_start":  "",
+                # Political (1930 boundaries; province is Sprint 3)
+                "country_at_start":  country_code,
                 "province_at_start": "",
             }
 

@@ -251,7 +251,7 @@ def export_game_data(
             "data_sources": {
                 "terrain": "OpenStreetMap (ODbL)",
                 "elevation": "SRTM3 (NASA, public domain)",
-                "boundaries": "GADM 4.1",
+                "boundaries": "historical-basemaps world_1930 (aourednik, CC BY-NC-SA)",
                 "resources": "not_yet_implemented",
             },
             "bounds": {

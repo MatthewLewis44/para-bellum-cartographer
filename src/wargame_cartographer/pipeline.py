@@ -78,6 +78,16 @@ def run_pipeline(
     except Exception as e:
         status(f"OSM data partially loaded: {e}")
 
+    # 4b. Load 1930 political boundaries (Para Bellum addition)
+    status("Loading 1930 political boundaries...")
+    boundaries_gdf = None
+    try:
+        from wargame_cartographer.geo.boundaries import download_boundaries_1930
+        boundaries_gdf = download_boundaries_1930()
+        status(f"Boundaries ready: {len(boundaries_gdf)} countries")
+    except Exception as e:
+        status(f"1930 boundaries unavailable: {e}")
+
     # 5. Get elevation + hillshade
     status("Processing elevation data...")
     elev_proc = ElevationProcessor()
@@ -95,6 +105,7 @@ def run_pipeline(
         grid, spec.bbox,
         vector_data=vector_data,
         osm_data=osm_data,
+        boundaries_gdf=boundaries_gdf,
     )
 
     # Biome distribution summary

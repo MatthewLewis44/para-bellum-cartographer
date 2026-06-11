@@ -117,6 +117,14 @@ changes tracked here:
   → `province_at_start` everywhere (sampler, exporter, debug geojson);
   `SCHEMA_VERSION` bumped. Breaking for Unity loader (coordinated). Schema
   documented in `docs/hex-schema.md`; decisions in `PARA_BELLUM_DECISIONS.md`.
+- **1930 political boundaries** (`geo/boundaries.py`): downloads
+  aourednik/historical-basemaps `world_1930.geojson` (cached at
+  `~/wargame-cartographer/cache/boundaries/`, no TTL — static data, never
+  commit it). `assign_country()` does sindex + prepared-geometry
+  point-in-polygon; sampler stores ISO3 in `country_at_start` for land hexes.
+  Belgium test: BEL 122 / FRA 88 / NLD 25 / DEU 16 / LUX 9 / water 20 —
+  cross-validated against modern Natural Earth (11 border-hex diffs only).
+  Validation: `uv run python check_boundaries.py`.
 
 ### Known Issues / Quirks
 
