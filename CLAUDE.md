@@ -1,155 +1,127 @@
-# Wargame Cartographer
+# Para Bellum Cartography Pipeline
 
-Generate historically accurate, playable wargame-style hex maps from real geographic data.
+Python pipeline producing hex JSON for **Para Bellum**, a WW2 grand strategy game
+(Unity 6). Forked from the upstream "wargame-cartographer" map renderer — the
+renderer (PNG/PDF/HTML) is kept for debug/QA; the **JSON output is the product**.
 
 ## Quick Start
 
 ```bash
-uv sync
-uv run wargame-map generate configs/examples/normandy_hex.yaml
-uv run wargame-map quick --name "Gettysburg" --bbox "-77.30,39.78,-77.20,39.86" --hex-size 1
+uv run wargame-map generate configs/para_bellum_belgium_test.yaml   # run pipeline
+uv run python inspect_output.py                                     # general inspection
+uv run python check_settlements.py                                  # settlement validation
 ```
+
+- **All Python execution uses `uv run`** — never plain `python`.
+- **Windows console**: set `PYTHONIOENCODING=utf-8` before running, or rich's
+  spinner glyphs crash on the legacy cp1252 console at the end of the run.
+
+## Pipeline-to-Unity Contract
+
+`output/<name>_hex_terrain.json` is a **versioned schema** consumed by the Unity 6
+C# loader (separate repo). Current version: see `SCHEMA_VERSION` in
+`output/game_data_exporter.py`. Bump it on ANY field add/remove/rename and
+coordinate with the Unity loader. Full schema doc: `docs/hex-schema.md`.
+
+## Hex Grid Convention
+
+- **Flat-top** hexes (changed from pointy-top in Sprint 1.5)
+- Offset coords `(col, row)`, 1-based; axial `(q, r)` used internally only
+- `hex_size_km: 10` = center-to-vertex radius 10 km (`HexGrid.hex_radius_m`)
+- Hex ID = `CCCRR` zero-padded (`"00501"` = col 5, row 1)
+- Grid layout: col spacing `1.5·r`, row spacing `√3·r`, odd columns shifted
+  down half a row — a proper tessellation, so *containing hex = nearest center*
+  (used by `sampler._point_to_hex` for O(1) point→hex lookup)
 
 ## Architecture
 
 ```
 src/wargame_cartographer/
-├── cli.py              # Click CLI: generate, quick, styles, validate, terrain-effects
-├── pipeline.py         # Orchestrates: spec → data → grid → classify → render → export
-├── config/
-│   ├── map_spec.py     # Pydantic MapSpec + BoundingBox models
-│   └── defaults.py     # Default values
+├── pipeline.py            — orchestrator: spec → data → grid → sample → render → export
+├── cli.py                 — Click CLI (generate, quick, ...)
+├── config/map_spec.py     — Pydantic MapSpec + BoundingBox (YAML loader)
 ├── geo/
-│   ├── elevation.py    # SRTM tile download + hillshade (30-day cache)
-│   ├── vector.py       # Natural Earth coastlines/rivers/cities + OSM Overpass
-│   ├── downloader.py   # HTTP with caching to ~/.wargame-cartographer/cache/
-│   └── projection.py   # UTM auto-projection from bbox center
+│   ├── downloader.py      — Natural Earth + ports (upstream; ports Overpass query
+│   │                        currently failing with HTTP 406 — known issue)
+│   ├── osm_downloader.py  — Para Bellum OSM layers: landuse/settlements/roads/
+│   │                        rail/waterways/bridges. Cached as .gpkg keyed by
+│   │                        bbox hash at ~/wargame-cartographer/cache/osm_pb/
+│   │                        (30-day TTL). NOTE: cache key ignores query content —
+│   │                        clear cache manually after changing a query.
+│   ├── elevation.py       — SRTM download + hillshade + slope
+│   └── projection.py      — UTM CRS auto-selection from bbox
 ├── hex/
-│   ├── grid.py         # Flat-top hex grid generation in projected CRS
-│   ├── sampler.py      # Sample elevation/land-use per hex → terrain type
-│   └── geojson.py      # GeoJSON export of hex grid
+│   ├── grid.py            — HexGrid (flat-top, axial coords, projected CRS)
+│   ├── coords.py          — cube/offset conversion, neighbors, river edges
+│   └── sampler.py         — ★ ALL per-hex tagging happens here (HexSampler)
 ├── terrain/
-│   ├── types.py        # 8 terrain types with movement costs + defense modifiers
-│   ├── classifier.py   # Elevation + land-use → terrain classification
-│   └── palette.py      # Per-style color palettes
-├── rendering/
-│   ├── renderer.py     # Layer compositor (matplotlib)
-│   ├── terrain_layer.py    # Hex fill colors + patterns (forest hatching, etc.)
-│   ├── grid_layer.py       # Hex outlines + numbering
-│   ├── elevation_layer.py  # Hillshade overlay
-│   ├── vector_layer.py     # Coastlines, rivers, roads
-│   ├── label_layer.py      # City/town labels
-│   ├── nato_layer.py       # NATO unit symbols (counters)
-│   ├── symbol_layer.py     # Map symbols
-│   ├── cartouche_layer.py  # Title block / cartouche
-│   └── styles.py           # 3 designer style definitions
+│   ├── types.py           — Biome enum (24), ElevationTier, Vegetation, Moisture
+│   └── classifier.py      — BiomeClassifier (elevation+slope+landuse+settlement)
+├── infrastructure/types.py — RoadLevel, RailLevel, SettlementType, Anthrome,
+│                             FortificationLevel enums + population bands
+├── rendering/             — upstream debug renderer (biomes mapped to 8 legacy
+│                             terrain types via shim in pipeline.py — visual only)
 └── output/
-    ├── static_exporter.py    # PNG + PDF (matplotlib savefig)
-    ├── html_exporter.py      # Interactive Folium/Leaflet map
-    └── game_data_exporter.py # JSON with hex IDs, terrain, movement costs
+    ├── game_data_exporter.py — ★ the Unity JSON contract (SCHEMA_VERSION here)
+    ├── html_exporter.py      — Folium debug viewer
+    └── static_exporter.py    — PNG/PDF
 ```
 
-## Workflow
+Validation scripts live in the project root: `inspect_output.py`,
+`check_settlements.py`.
 
-1. **Write a YAML spec** (or use `quick` command with CLI flags)
-2. **Run `generate`** — pipeline downloads geo data, builds hex grid, classifies terrain, renders layers, exports
-3. **Output** goes to `./output/` — PNG, PDF, HTML, JSON as configured
+## Sampling Flow (sampler.build_hex_terrain)
 
-## YAML Spec Format
+1. Water detection (Natural Earth land polygons)
+2. Elevation + slope (SRTM, 90th-percentile slope per hex)
+3. Landuse (OSM polygons, point-in-polygon at hex center)
+4. Settlement (precomputed settlement→hex assignment, see below)
+5. Biome classification, vegetation, moisture
+6. Road/rail level (best class intersecting WGS84 hex polygon)
+7. River edges (waterway × hex edge index 0–5), bridges, ports
+8. Pass 2: coastal flag from water-hex adjacency
 
-```yaml
-name: "Map Name"
-title: "TITLE IN CAPS"
-subtitle: "Optional subtitle"
-scenario: "Historical context"
+### Settlement assignment rules (Sprint 2)
 
-bbox:
-  min_lon: -1.80
-  min_lat: 48.80
-  max_lon: 0.50
-  max_lat: 49.80
+One pass over settlement nodes (`_assign_settlements_to_hexes`), each assigned
+to its containing hex, **most significant wins** per hex. Type resolved from
+population bands when population is known (OSM place tags are noisy), from the
+place tag otherwise: >300k metropolis, ≥50k city, ≥2k town. Significance floor
+at 10 km hexes: city+ always tags, towns only at pop ≥ 20k, villages never tag
+(they remain visible via landuse/anthrome). Belgium test: 86 tagged / 280 hexes.
 
-designer_style: simonitch   # simonitch | simonsen | kibler
-hex_size_km: 5.0
-dpi: 300
+## Performance Discipline
 
-show_elevation_shading: true
-show_rivers: true
-show_roads: false
-show_railways: false
-show_cities: true
-show_ports: true
-show_airfields: false
-show_hex_numbers: true
-show_legend: true
-show_scale_bar: true
-show_compass: true
+Target scale is **~100,000 hexes** (full Europe). Anything O(hexes × features)
+is a bug — precompute feature→hex assignments or use spatial indexes. The
+settlement scan was rewritten for exactly this reason (was 280×5,243 distance
+calls; now one O(settlements) pass).
 
-output_formats: [png, html, json]
-output_dir: ./output
-```
+## Architecture Decisions & Change Log
 
-## Designer Styles
+Decision records live in `PARA_BELLUM_DECISIONS.md` (AD-NNN). Sprint-level
+changes tracked here:
 
-- **simonitch** — GMT Games feel. Warm earth tones, muted greens, thin grid lines.
-- **simonsen** — SPI/Avalon Hill feel. High contrast, bold colors, strong grid.
-- **kibler** — Avalon Hill painterly feel. Saturated colors, organic textures.
+### Sprint 2 (June 2026)
 
-## Terrain Types (8)
+- **Settlement matching rewritten** (`hex/sampler.py`): replaced per-hex
+  nearest-node scan (let villages outcompete cities → 0 cities in output) with
+  one-pass containing-hex assignment + importance priority + significance
+  floors. Brussels/Antwerp/Gent/Liège/Namur now present; tagged hexes 243→86.
+- Settlement types now follow `SettlementType` population bands when OSM
+  population is known; `town` nodes ≥50k upgrade to `city`, etc.
+- (pre-session) Waterways restricted to river|canal; settlements query
+  restricted to city|town|village with village pop≥500 filter (note: villages
+  with *unknown* population pass that filter — superseded by sampler floors).
 
-| Type | MP Cost | Defense | LOS Block |
-|------|---------|---------|-----------|
-| Clear | 1 | 0 | No |
-| Forest | 2 | +1 | Yes |
-| Rough | 2 | +1 | No |
-| Mountain | 3 | +2 | Yes |
-| Marsh | 3 | 0 | No |
-| Urban | 1 | +2 | Yes |
-| Water | Impassable | — | No |
-| Coastal | 1 | 0 | No |
+### Known Issues / Quirks
 
-## External Data Sources
-
-All auto-downloaded and cached at `~/.wargame-cartographer/cache/` (30-day TTL):
-
-- **SRTM elevation** — ~90m resolution DEM tiles via rasterio/GDAL
-- **Natural Earth 10m** — Coastlines, rivers, populated places (shapefile bundles)
-- **OSM Overpass API** — Roads, railways, airfields, ports for the bbox
-
-All degrade gracefully if unavailable (synthetic elevation, no coastlines, etc.).
-
-## Well-Known Bounding Boxes
-
-For natural-language requests, use these:
-
-| Scenario | bbox (min_lon, min_lat, max_lon, max_lat) |
-|----------|-------------------------------------------|
-| Normandy 1944 | -1.80, 48.80, 0.50, 49.80 |
-| Eastern Front | 20.0, 45.0, 42.0, 60.0 |
-| Stalingrad | 43.8, 48.4, 44.8, 49.0 |
-| Gettysburg | -77.30, 39.78, -77.20, 39.86 |
-| Battle of the Bulge | 5.5, 49.5, 6.8, 50.5 |
-| North Africa | -5.0, 28.0, 25.0, 38.0 |
-| Pacific Theater | 90.0, -10.0, 180.0, 50.0 |
-
-For other areas, estimate from geography or use OSM Nominatim.
-
-## Scale Guidelines
-
-- **Tactical** (1-5 km hexes): Individual battles, city fights
-- **Operational** (5-25 km hexes): Campaigns, theater sectors
-- **Strategic** (25-100+ km hexes): Entire fronts, continental scale
-
-## Performance Notes
-
-- First run for an area downloads ~50-200MB of geo data
-- Large maps (1000+ hexes) take 1-3 minutes at 300 DPI
-- Subsequent runs use cached data (fast)
-- Max ~20 SRTM tiles per request
-
-## Development
-
-- Python 3.12+, managed with `uv`
-- All source in `src/wargame_cartographer/`
-- Example configs in `configs/examples/`
-- No tests yet — validate with `uv run wargame-map validate <spec.yaml>`
+- Upstream ports fetch (geo/downloader.py) fails with Overpass HTTP 406 →
+  `port: false` everywhere. Pre-existing; not Sprint 2 scope.
+- `hex/sampler.py` has a duplicated `_river_edges_for_hex` definition — the
+  second (WGS84-based) shadows the first; first is dead code with unreachable
+  tail. Works correctly; cleanup deferred.
+- Stray top-level `wargame_cartographer/hex/coords.py` duplicate outside
+  `src/` (untracked). Probably accidental; not imported.
+- `game_data_exporter.py` metadata says `boundaries: "GADM 4.1"` — actual
+  source is the 1930 historical-basemaps GeoJSON as of Sprint 2 Task C.

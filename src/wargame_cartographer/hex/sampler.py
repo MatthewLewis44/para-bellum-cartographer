@@ -130,6 +130,14 @@ class HexSampler:
             if not vector_data.ports.empty:
                 ports_gdf = vector_data.ports
 
+        # Assign each settlement node to its containing hex once (O(settlements)),
+        # keeping only the most significant settlement per hex. Replaces the old
+        # per-hex nearest-node scan, which was O(hexes × settlements) and let
+        # village nodes outcompete city nodes for the same hex.
+        settlement_by_hex: dict[tuple[int, int], dict] = {}
+        if settlements_gdf is not None:
+            settlement_by_hex = _assign_settlements_to_hexes(grid, settlements_gdf)
+
         # ----------------------------------------------------------------
         # 3. First pass — classify every hex
         # ----------------------------------------------------------------
@@ -176,18 +184,13 @@ class HexSampler:
             settlement_type_str = "none"
             pop_class = 0
 
-            if not is_water and not is_lake and settlements_gdf is not None:
-                threshold_deg = (grid.hex_radius_m / 111320.0)
-                match = _find_nearest_settlement(
-                    pt, settlements_gdf, threshold_deg
-                )
+            if not is_water and not is_lake:
+                match = settlement_by_hex.get((q, r))
                 if match is not None:
                     has_settlement = True
                     settlement_place_type = match["place_type"]
                     settlement_name = match["name"]
-                    settlement_type_str = _place_to_settlement_type(
-                        settlement_place_type, match.get("population", 0)
-                    )
+                    settlement_type_str = match["settlement_type"]
                     pop_class = _pop_class(settlement_type_str)
 
             # -- Biome --
@@ -323,26 +326,113 @@ def _sample_landuse(
     return None
 
 
-def _find_nearest_settlement(pt: Point, settlements_gdf, threshold_deg: float):
-    """Find the nearest settlement within threshold_deg of pt."""
-    best = None
-    best_dist = float("inf")
-    for _, row in settlements_gdf.iterrows():
-        d = pt.distance(row.geometry)
-        if d < threshold_deg and d < best_dist:
-            best_dist = d
-            best = row
+# Settlement significance floors at the 10 km hex scale. A hex only gets a
+# settlement tag for strategically relevant centers; smaller places remain
+# visible through landuse/anthrome instead. Population bands follow
+# infrastructure.types.SettlementType.
+_METROPOLIS_MIN_POP = 300_000   # > this → metropolis
+_CITY_MIN_POP = 50_000          # ≥ this → city
+_TOWN_MIN_POP_BAND = 2_000      # ≥ this → town (band lower bound)
+_TOWN_TAG_MIN_POP = 20_000      # towns below this don't tag a hex
+
+_PLACE_TIER = {"city": 3, "town": 2, "village": 1}
+_TYPE_TIER = {"metropolis": 5, "city": 4, "town": 3, "village": 2, "none": 0}
+
+
+def _assign_settlements_to_hexes(grid: HexGrid, settlements_gdf) -> dict[tuple[int, int], dict]:
+    """Assign each settlement node to the hex containing it; best wins per hex.
+
+    Returns dict keyed by (q, r) → {place_type, name, population, settlement_type}.
+
+    - Containing hex is found by inverting the flat-top grid layout (the
+      nearest hex center is the containing hex in a proper tessellation),
+      so this is O(settlements), independent of hex count.
+    - Per hex, the most significant settlement wins: higher resolved type
+      tier first, then larger population.
+    - Significance floor: cities/metropolises always tag; towns only with
+      population ≥ _TOWN_TAG_MIN_POP; villages never tag at this hex scale.
+    """
+    xs, ys = grid._to_proj.transform(
+        settlements_gdf.geometry.x.values, settlements_gdf.geometry.y.values
+    )
+
+    best: dict[tuple[int, int], dict] = {}
+    for x, y, name, place_type, population in zip(
+        xs, ys,
+        settlements_gdf["name"].values,
+        settlements_gdf["place_type"].values,
+        settlements_gdf["population"].values,
+    ):
+        pop = int(population) if population == population else 0  # NaN guard
+        stype = _place_to_settlement_type(str(place_type), pop)
+
+        # Significance floor
+        if stype == "village":
+            continue
+        if stype == "town" and pop < _TOWN_TAG_MIN_POP:
+            continue
+
+        qr = _point_to_hex(grid, x, y)
+        if qr is None:
+            continue
+
+        cur = best.get(qr)
+        if cur is None or (_TYPE_TIER[stype], pop) > (_TYPE_TIER[cur["settlement_type"]], cur["population"]):
+            best[qr] = {
+                "place_type": str(place_type),
+                "name": str(name),
+                "population": pop,
+                "settlement_type": stype,
+            }
     return best
 
 
+def _point_to_hex(grid: HexGrid, x: float, y: float) -> tuple[int, int] | None:
+    """Return the (q, r) of the hex containing projected point (x, y), or None.
+
+    In a flat-top tessellation the containing hex is the one with the nearest
+    center, so we check the ≤9 candidate cells around the approximate axial
+    coordinates instead of searching the whole grid.
+    """
+    r_m = grid.hex_radius_m
+    col_sp = 1.5 * r_m
+    row_sp = math.sqrt(3) * r_m
+
+    best_qr = None
+    best_d = float("inf")
+    q0 = int(math.floor(x / col_sp))
+    for q in (q0 - 1, q0, q0 + 1):
+        yy = y - (row_sp / 2.0 if q % 2 != 0 else 0.0)
+        r0 = int(math.floor(yy / row_sp))
+        for rr in (r0, r0 + 1):
+            cell = grid.cells.get((q, rr))
+            if cell is None:
+                continue
+            d = math.hypot(cell.center_x - x, cell.center_y - y)
+            if d < best_d:
+                best_d = d
+                best_qr = (q, rr)
+    # A point inside a hex is within hex_radius of its center.
+    return best_qr if best_d <= r_m else None
+
+
 def _place_to_settlement_type(place_type: str, population: int) -> str:
-    """Resolve settlement type from place_type + population."""
-    if place_type == "city":
-        if population > 300_000:
+    """Resolve settlement type from population bands (see SettlementType).
+
+    Known population decides the type outright — OSM place tags are noisy
+    (e.g. 79k-inhabitant 'town' nodes). Unknown population (0) falls back
+    to the OSM place tag.
+    """
+    if population > 0:
+        if population > _METROPOLIS_MIN_POP:
             return "metropolis"
-        return "city"
-    if place_type == "town":
-        return "town"
+        if population >= _CITY_MIN_POP:
+            return "city"
+        if population >= _TOWN_MIN_POP_BAND:
+            return "town"
+        return "village"
+    if place_type in ("city", "town"):
+        return place_type
     return "village"
 
 
