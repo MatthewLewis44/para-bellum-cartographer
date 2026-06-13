@@ -39,7 +39,7 @@ def closest_hex(lat: float, lon: float) -> dict:
 
 
 # --- Schema -----------------------------------------------------------------
-check('schema_version is 1.0.1', data['schema_version'] == '1.0.1',
+check('schema_version is 1.0.2', data['schema_version'] == '1.0.2',
       f"got {data['schema_version']}")
 
 # --- Hex count ---------------------------------------------------------------
@@ -190,6 +190,48 @@ check('>= 25 cities/metropolises at this scale', cities_n >= 25, f'{cities_n}')
 bridges = sum(1 for h in hexes if h['infrastructure']['bridge'])
 check('bridge hexes roughly track river hexes (>= 50%)',
       bridges >= 0.5 * len(river), f'{bridges} bridges vs {len(river)} river hexes')
+
+# --- Multi-hex urban sprawl (F-1, AD-014) -----------------------------------------
+# A city's footprint = hexes sharing its parent_city (centroid + suburb ring).
+by_city: dict[str, list] = {}
+for h in hexes:
+    pc = h['settlement'].get('parent_city', '')
+    if pc:
+        by_city.setdefault(pc, []).append(h)
+
+
+def footprint_size(*substrs):
+    return sum(1 for pc, v in by_city.items()
+               if any(s.lower() in pc.lower() for s in substrs) for _ in v)
+
+
+for label, need, subs in [
+    ('Brussels', 3, ('Brux',)),
+    ('Antwerp', 2, ('Antwerp',)),       # Antwerpen
+    ('Amsterdam', 3, ('Amsterdam',)),
+    ('Cologne', 3, ('Köln',)),
+]:
+    n = footprint_size(*subs)
+    check(f'{label} spans >= {need} hexes', n >= need, f'{n} hexes')
+
+ruhr = [h for h in hexes
+        if h['settlement'].get('parent_city')
+        and 6.5 <= h['geo']['center_lon'] <= 7.65
+        and 51.25 <= h['geo']['center_lat'] <= 51.62]
+check('Ruhr region >= 10 urban hexes', len(ruhr) >= 10, f'{len(ruhr)} hexes')
+
+fp_hexes = [h for v in by_city.values() for h in v]
+bad_anthrome = [h['id'] for h in fp_hexes
+                if h['settlement']['anthrome'] not in
+                ('metro', 'industrial', 'residential', 'outskirts')]
+check('all footprint hexes have an urban anthrome', not bad_anthrome,
+      f'{len(fp_hexes)} footprint hexes, {len(bad_anthrome)} bad')
+
+suburb_no_parent = [h['id'] for h in hexes
+                    if h['settlement']['type'] == 'suburb'
+                    and not h['settlement'].get('parent_city')]
+check('every suburb hex has a parent_city', not suburb_no_parent,
+      f'{len(suburb_no_parent)} orphan suburbs')
 
 # --- Summary ----------------------------------------------------------------------
 print(f'Full-bbox validation — {OUTPUT}')

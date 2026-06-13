@@ -121,10 +121,12 @@ pipeline and never stored in JSON.
 
 | Field | Type | Values / Notes |
 |---|---|---|
-| `type` | enum string | `none`, `village` (<2k pop), `town` (2k–50k), `city` (50k–300k), `metropolis` (>300k). Type resolves from OSM population when known, from OSM place tag otherwise. At the 10 km hex scale only `town`+ (pop ≥ 20k) is tagged; villages stay `none`. |
-| `name` | string | Settlement name (UTF-8, native spelling). Empty when `type` = `none`. |
-| `population_class` | int | 0–5: none 0, village 1, town 2, city 3, metropolis 5 (4 reserved). |
-| `anthrome` | enum string | `none`, `residential`, `industrial`, `metro`, `cropland`, `paddy`, `mining`, `mangrove`, `fortified`. Drives Unity tactical map pool selection. |
+| `type` | enum string | `none`, `village` (<2k pop), `town` (2k–50k), `city` (50k–300k), `metropolis` (>300k), `suburb` (v1.0.2 — ring hex of a multi-hex city, AD-014). Type resolves from OSM population when known, from OSM place tag otherwise. At the 10 km hex scale only `town`+ (pop ≥ 20k) is tagged; villages stay `none`. |
+| `name` | string | Settlement name (UTF-8, native spelling). Empty when `type` = `none`. For a `suburb` hex, its own name if it had one, else empty (the city is in `parent_city`). |
+| `population_class` | int | 0–5: none 0, village 1, town 2, city 3, metropolis 5 (4 reserved). Suburb ring hexes: 3 (inner, <6 km) or 2 (outer). |
+| `anthrome` | enum string | `none`, `residential`, `industrial`, `metro`, `outskirts` (v1.0.2), `cropland`, `paddy`, `mining`, `mangrove`, `fortified`. Drives Unity tactical map pool selection. Within a city footprint (AD-014): `metro` <3 km from centroid, else `industrial`/`residential` by dominant landuse, else `outskirts`. |
+| `parent_city` | string | **v1.0.2 (AD-014).** Name of the city this hex belongs to, for hexes inside a multi-hex urban footprint (centroid + suburb ring). Empty `""` otherwise. |
+| `distance_from_centroid_km` | float \| null | **v1.0.2 (AD-014).** Distance from this hex's center to the parent city's centroid hex (0.0 at the centroid). `null` for hexes not in any city footprint. |
 
 ### `infrastructure`
 
@@ -161,6 +163,20 @@ pipeline and never stored in JSON.
 | `is_coastal` | bool | Duplicate of `terrain.is_coastal` for fast Unity filtering. |
 
 ## Changelog
+
+### v1.0.2 (2026-06-13, Sprint 3) — additive only
+
+- **`settlement.parent_city`** (string) and **`settlement.distance_from_centroid_km`**
+  (float|null) added for multi-hex urban sprawl (AD-014).
+- **`settlement.type`** gains `suburb`; **`settlement.anthrome`** gains
+  `outskirts`. Existing values unchanged.
+- Multi-hex urban footprints: each city/metropolis grows a contiguous,
+  population-scaled, urban-landuse-gated footprint; ring hexes become
+  `suburb` carrying `parent_city`.
+- Non-schema (metadata) corrections shipped alongside: `grid.offset` →
+  `"odd_q"` (was `"odd_row_east"`), `scenario_date` confirmed `"1930-01-01"`,
+  and `hex_size_km` is documented as flat-to-flat (AD-013).
+- No renames or removals — v1.0.1 consumers keep working (new fields ignored).
 
 ### v1.0.1 (2026-06-11, Sprint 2)
 

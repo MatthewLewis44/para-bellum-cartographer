@@ -100,6 +100,23 @@ at 10 km hexes: city+ always tags, towns only at pop ≥ 20k, villages never tag
 (they remain visible via landuse/anthrome). Belgium test: 114 tagged / 775 hexes
 (post-AD-013).
 
+### Multi-hex urban sprawl (Sprint 3, AD-014)
+
+`_assign_urban_sprawl` (third sampler pass) grows a footprint around each
+city/metropolis **node** (no OSM boundary relations — empirically `place=city`
+relations are too sparse and `admin_level=8` fragments Brussels into 19
+communes). Footprint = contiguous BFS through hexes within a population-scaled
+radius (metropolis 14 km / large city 11 km / city 8 km) that are either
+built-up (urban biome or residential/industrial landuse) **or** open
+developable land (plains/steppe) within 11 km of the centroid — the latter
+captures a major city's peri-urban fringe whose 10 km hex centers fall on green
+belt, while forest/water/wetland are never absorbed. Nearest centroid wins on
+overlap (so the Ruhr cities tile their gap). Ring hexes become `settlement.type
+= suburb` with `parent_city`; anthrome per the AD-014 distance+landuse table
+(metro <3 km, else industrial/residential by landuse, else outskirts).
+Reuses settlements + landuse already sampled; O(seeds × footprint).
+Validation: `uv run python check_urban_sprawl.py`.
+
 ## Performance Discipline
 
 Target scale is **~100,000 hexes** (full Europe). Anything O(hexes × features)
@@ -121,6 +138,29 @@ calls; now one O(settlements) pass).
 
 Decision records live in `PARA_BELLUM_DECISIONS.md` (AD-NNN). Sprint-level
 changes tracked here:
+
+### Sprint 3 (June 2026)
+
+- **PT-1 boundary license fix** (AD-018): dropped CC BY-NC-SA
+  historical-basemaps data; now loads repo-committed public-domain Natural
+  Earth `data/boundaries/boundaries_1930.geojson`. Ship rule: all bundled
+  geo/historical data must be public-domain or commercially licensable.
+- **PT-2 hex size = 10 km flat-to-flat** (AD-013, supersedes AD-009): see
+  Hex Grid Convention. ~3× more hexes (Belgium 280→775, Benelux 840→2,479).
+  Includes a grid-coverage fix (sample all 4 bbox edges) that closed the SE
+  wedge and restored Frankfurt. Gates recalibrated; unit tests added.
+- **PT-3 metadata**: `grid.offset` `"odd_row_east"`→`"odd_q"`; scenario date
+  1939→1930 in configs (output `scenario_date` was already 1930-01-01).
+- **F-1 multi-hex urban sprawl** (AD-014): see Multi-hex urban sprawl above.
+  **Schema v1.0.2** (additive): `settlement.parent_city`,
+  `settlement.distance_from_centroid_km`; `type` gains `suburb`, `anthrome`
+  gains `outskirts`. v1.0.1 consumers keep working. **Unity must update
+  HexData.cs Settlement** for the two new optional fields.
+- **F-2 strategic resources** (`data/resources/resources_1930.geojson`,
+  hand-authored public-domain): coal/steel/iron points+polygons for Ruhr,
+  Saar, Sambre-Meuse, Campine/Limburg, Liège, Lorraine. Sampler ingest →
+  `resources.{coal,steel,iron,oil}` lands in the F-2 commit (`iron` new in
+  v1.0.2). Pending Matthew historical review of the data file.
 
 ### Sprint 2 (June 2026)
 

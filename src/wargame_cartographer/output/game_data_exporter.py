@@ -44,7 +44,7 @@ from wargame_cartographer.infrastructure.types import (
 # Schema version — bump when any field is added/removed/renamed.
 # Unity C# loader checks this on load and rejects incompatible versions.
 # ---------------------------------------------------------------------------
-SCHEMA_VERSION = "1.0.1"
+SCHEMA_VERSION = "1.0.2"
 
 
 def _safe_enum_value(val, default: str) -> str:
@@ -144,6 +144,11 @@ def export_game_data(
         )
         settlement_name = info.get("settlement_name", "")
         anthrome = _safe_enum_value(info.get("anthrome"), Anthrome.NONE.value)
+        # Multi-hex urban sprawl (v1.0.2, AD-014). Always present for a stable
+        # contract: parent_city "" and distance_from_centroid_km null unless the
+        # hex belongs to a city footprint.
+        parent_city = info.get("parent_city", "") or ""
+        distance_from_centroid_km = info.get("distance_from_centroid_km")
 
         # Population class: derive from settlement type if not explicitly set
         pop_class = info.get("population_class")
@@ -205,6 +210,8 @@ def export_game_data(
                 "name": settlement_name,
                 "population_class": pop_class,
                 "anthrome": anthrome,
+                "parent_city": parent_city,
+                "distance_from_centroid_km": distance_from_centroid_km,
             },
             "infrastructure": {
                 "road": road,

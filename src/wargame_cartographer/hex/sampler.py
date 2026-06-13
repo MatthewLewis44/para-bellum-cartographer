@@ -276,6 +276,11 @@ class HexSampler:
                 "settlement_name":  settlement_name,
                 "population_class": pop_class,
                 "anthrome":         anthrome,
+                "parent_city":      "",     # filled by urban-sprawl pass (AD-014)
+                "distance_from_centroid_km": None,
+                # Internal: dominant landuse at hex center (used by the coastal
+                # beach upgrade and the urban-sprawl gate; exporter ignores it).
+                "landuse_type":     landuse_type,
                 # Infrastructure
                 "road":      road_level,
                 "rail":      rail_level,
@@ -318,6 +323,13 @@ class HexSampler:
                             and data.get("landuse_type") == "beach"):
                         data["biome"] = Biome.BEACH
                     break
+
+        # ----------------------------------------------------------------
+        # 5. Third pass — multi-hex urban sprawl (AD-014)
+        # Grow a contiguous, population-scaled, urban-landuse-gated footprint
+        # around each city/metropolis settlement node.
+        # ----------------------------------------------------------------
+        _assign_urban_sprawl(result, grid, settlement_by_hex)
 
         return result
 
@@ -456,6 +468,123 @@ def _pop_class(settlement_type: str) -> int:
     return {"none": 0, "village": 1, "town": 2, "city": 3, "metropolis": 5}.get(
         settlement_type, 0
     )
+
+
+# ---------------------------------------------------------------------------
+# Multi-hex urban sprawl (AD-014)
+# ---------------------------------------------------------------------------
+# Population-scaled footprint radii (km from the city centroid hex). Chosen so
+# that, gated by contiguous urban landuse, metropolises and large cities span
+# several hexes while small cities stay compact. Tunable.
+_SPRAWL_RADIUS_KM = {
+    "metropolis": 14.0,   # >300k
+    "city_large": 11.0,   # city node, population >= 150k
+    "city":        8.0,   # city node, population < 150k or unknown
+}
+# Distance bands for anthrome / population_class within a footprint.
+_METRO_CORE_KM = 3.0      # <this from centroid -> metro anthrome
+_INNER_RING_KM = 6.0      # <this -> population_class 3, else 2
+# Within this distance of a city centroid, OPEN developable land (plains/
+# steppe) counts as peri-urban "outskirts" even without built-up landuse.
+# This captures a major city's immediate fringe — whose 10 km hex centers
+# often fall on green belt / farmland between built-up patches — without
+# absorbing real terrain obstacles (forest, water, wetland, hills).
+_OPEN_FRINGE_KM = 11.0
+_OPEN_FRINGE_BIOMES = (Biome.PLAINS, Biome.STEPPE)
+
+
+def _is_built_up(data: dict) -> bool:
+    """True if a hex is urban built-up land (urban biome or res/industrial landuse)."""
+    if data["biome"] == Biome.URBAN:
+        return True
+    return data.get("landuse_type") in ("residential", "industrial")
+
+
+def _sprawl_radius_km(settlement_type: str, population: int) -> float:
+    if settlement_type == "metropolis":
+        return _SPRAWL_RADIUS_KM["metropolis"]
+    if settlement_type == "city":
+        return _SPRAWL_RADIUS_KM["city_large"] if population >= 150_000 \
+            else _SPRAWL_RADIUS_KM["city"]
+    return 0.0  # towns/villages do not sprawl
+
+
+def _assign_urban_sprawl(result, grid, settlement_by_hex) -> None:
+    """Tag multi-hex urban footprints around city/metropolis nodes (AD-014).
+
+    For each city/metropolis seed hex, BFS outward through CONTIGUOUS urban
+    hexes within a population-scaled radius. Each footprint hex is claimed by
+    its nearest seed; ring hexes become `suburb` with the parent city name and
+    a distance-and-landuse-derived anthrome. The centroid hex keeps its own
+    city/metropolis type. Reuses the settlement + landuse data already sampled
+    — no new OSM fetch. O(seeds × footprint), scales to the 100k-hex target.
+    """
+    seeds = [(qr, settlement_by_hex.get(qr, {}).get("population", 0) or 0)
+             for qr, d in result.items()
+             if d["settlement_type"] in ("city", "metropolis")]
+    if not seeds:
+        return
+
+    # claim: (q,r) -> {seed, dist_km, name, seed_type}
+    claims: dict[tuple[int, int], dict] = {}
+
+    for seed_qr, pop in seeds:
+        seed_type = result[seed_qr]["settlement_type"]
+        radius_km = _sprawl_radius_km(seed_type, pop)
+        if radius_km <= 0.0:
+            continue
+        seed_name = result[seed_qr]["settlement_name"]
+
+        # Contiguous BFS gated by (distance <= radius) and (built-up land).
+        visited = {seed_qr}
+        frontier = [seed_qr]
+        while frontier:
+            cur = frontier.pop()
+            sq, sr = seed_qr
+            cq, cr = cur
+            dist_km = grid.distance(sq, sr, cq, cr) / 1000.0
+            in_footprint = (cur == seed_qr) or (
+                dist_km <= radius_km and (
+                    _is_built_up(result[cur])
+                    or (dist_km <= _OPEN_FRINGE_KM
+                        and result[cur]["biome"] in _OPEN_FRINGE_BIOMES)
+                )
+            )
+            if not in_footprint:
+                continue
+            prev = claims.get(cur)
+            if prev is None or dist_km < prev["dist_km"]:
+                claims[cur] = {"seed": seed_qr, "dist_km": dist_km,
+                               "name": seed_name, "seed_type": seed_type}
+            for nb in grid.neighbors(cq, cr):
+                if nb not in visited and nb in result:
+                    visited.add(nb)
+                    frontier.append(nb)
+
+    # Apply claims to the per-hex data.
+    for qr, claim in claims.items():
+        data = result[qr]
+        dist_km = claim["dist_km"]
+        is_centroid = (claim["seed"] == qr)
+        lu = data.get("landuse_type")
+
+        # Anthrome per the AD-014 distance + dominant-landuse table.
+        if dist_km < _METRO_CORE_KM:
+            data["anthrome"] = "metro"
+        elif lu == "industrial":
+            data["anthrome"] = "industrial"
+        elif lu == "residential":
+            data["anthrome"] = "residential"
+        else:
+            data["anthrome"] = "outskirts"
+
+        data["parent_city"] = claim["name"]
+        data["distance_from_centroid_km"] = round(dist_km, 1)
+
+        if not is_centroid and data["settlement_type"] not in ("city", "metropolis"):
+            # Ring hex of the conurbation: absorb as a suburb of the city.
+            data["settlement_type"] = "suburb"
+            data["population_class"] = 3 if dist_km < _INNER_RING_KM else 2
 
 
 def _best_road_in_hex(hex_poly, roads_gdf) -> str:

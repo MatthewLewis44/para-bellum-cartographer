@@ -80,6 +80,8 @@ class SettlementType(Enum):
     TOWN       = "town"       # 2,000 – 50,000
     CITY       = "city"       # 50,000 – 300,000
     METROPOLIS = "metropolis" # > 300,000 (Berlin, Paris, London, Moscow)
+    SUBURB     = "suburb"     # Ring hex of a multi-hex city (AD-014, v1.0.2);
+                              # carries parent_city, anthrome distinguishes it
 
 
 # ---------------------------------------------------------------------------
@@ -98,6 +100,7 @@ class Anthrome(Enum):
     RESIDENTIAL  = "residential"  # Housing, suburbs — medium cover, street fighting
     INDUSTRIAL   = "industrial"   # Factories, warehouses, rail yards — complex cover
     METRO        = "metro"        # Dense urban core — urban canyons, vertical fire
+    OUTSKIRTS    = "outskirts"    # City fringe ring — transition zone (AD-014, v1.0.2)
     CROPLAND     = "cropland"     # Fields, farms — open with ditch/hedge features
     PADDY        = "paddy"        # Rice paddies, irrigation ditches — [post-v1, SE Asia]
     MINING       = "mining"       # Quarry, mine complex — tiered terrain, depressions
