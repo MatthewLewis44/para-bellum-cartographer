@@ -143,7 +143,7 @@ pipeline and never stored in JSON.
 
 | Field | Type | Notes |
 |---|---|---|
-| `oil` / `coal` / `steel` | bool | Sprint 2 manual overlay — currently always `false`. |
+| `coal` / `steel` / `iron` / `oil` | bool | From the hand-authored `data/resources/resources_1930.geojson` layer (F-2): basins (polygons) tag hexes by center-in-polygon, works (points) tag the containing hex. `iron` **new in v1.0.2**. `oil` currently has no in-bbox 1930 source (always `false` here). |
 | `agriculture` | bool | True when hex landuse is farmland. |
 | `industry_level` | int | 0–N. Currently 1 when OSM industrial landuse present, else 0. |
 
@@ -170,6 +170,8 @@ pipeline and never stored in JSON.
   (float|null) added for multi-hex urban sprawl (AD-014).
 - **`settlement.type`** gains `suburb`; **`settlement.anthrome`** gains
   `outskirts`. Existing values unchanged.
+- **`resources.iron`** (bool) added; resources now populated from the
+  hand-authored 1930 layer (F-2). Existing resource booleans unchanged.
 - Multi-hex urban footprints: each city/metropolis grows a contiguous,
   population-scaled, urban-landuse-gated footprint; ring hexes become
   `suburb` carrying `parent_city`.

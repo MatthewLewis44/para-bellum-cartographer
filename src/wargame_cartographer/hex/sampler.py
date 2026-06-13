@@ -65,6 +65,7 @@ class HexSampler:
         vector_data=None,      # upstream VectorData (Natural Earth layers)
         osm_data=None,         # OSMLayerData (our new OSM layers)
         boundaries_gdf=None,   # 1930 political boundaries (geo/boundaries.py)
+        resources_gdf=None,    # 1930 strategic resources (geo/resources.py)
     ) -> dict[tuple[int, int], dict]:
         """Build complete per-hex data for every hex in the grid.
 
@@ -146,6 +147,11 @@ class HexSampler:
         if has_boundaries:
             boundaries_gdf.sindex  # build index up front
             assign_country(0.0, 0.0, boundaries_gdf)  # warm prepared-geometry cache
+
+        # 1930 strategic resources — assign each basin/works to its hexes once.
+        resource_by_hex: dict[tuple[int, int], set] = {}
+        if resources_gdf is not None and not resources_gdf.empty:
+            resource_by_hex = _assign_resources_to_hexes(grid, resources_gdf)
 
         # ----------------------------------------------------------------
         # 3. First pass — classify every hex
@@ -288,10 +294,12 @@ class HexSampler:
                 "port":      port,
                 "airfield":  False,       # Sprint 2 — manual layer
                 "fortification": "none",  # Sprint 2 — manual layer
-                # Resources (Sprint 2)
-                "oil":            False,
-                "coal":           False,
-                "steel":          False,
+                # Resources — booleans from the hand-authored 1930 layer (F-2);
+                # agriculture/industry derived from OSM landuse.
+                "oil":            "oil" in resource_by_hex.get((q, r), ()),
+                "coal":           "coal" in resource_by_hex.get((q, r), ()),
+                "steel":          "steel" in resource_by_hex.get((q, r), ()),
+                "iron":           "iron" in resource_by_hex.get((q, r), ()),
                 "agriculture":    landuse_type == "farmland",
                 "industry_level": 1 if landuse_type == "industrial" else 0,
                 # Political (1930 boundaries; province is Sprint 3)
@@ -585,6 +593,45 @@ def _assign_urban_sprawl(result, grid, settlement_by_hex) -> None:
             # Ring hex of the conurbation: absorb as a suburb of the city.
             data["settlement_type"] = "suburb"
             data["population_class"] = 3 if dist_km < _INNER_RING_KM else 2
+
+
+def _assign_resources_to_hexes(grid, resources_gdf) -> dict[tuple[int, int], set]:
+    """Assign each 1930 resource feature to the hex(es) it covers (F-2).
+
+    Polygons (coal/iron basins) tag every hex whose center falls inside;
+    points (steel/iron works) tag the single hex containing the point.
+    Returns (q, r) -> set of resource_type strings. Resources are sparse
+    (a handful of features) so the polygon test is O(hexes × polygons).
+    """
+    out: dict[tuple[int, int], set] = {}
+
+    polygons = []  # (prepared_geom, rtype)
+    points = []    # (lon, lat, rtype)
+    for _, row in resources_gdf.iterrows():
+        geom = row.geometry
+        rtype = str(row.get("resource_type", "")).lower()
+        if geom is None or rtype not in ("coal", "steel", "iron", "oil"):
+            continue
+        if geom.geom_type in ("Polygon", "MultiPolygon"):
+            polygons.append((prep(geom), rtype))
+        elif geom.geom_type == "Point":
+            points.append((geom.x, geom.y, rtype))
+
+    # Points (works) -> containing hex
+    for lon, lat, rtype in points:
+        x, y = grid._to_proj.transform(lon, lat)
+        qr = _point_to_hex(grid, x, y)
+        if qr is not None:
+            out.setdefault(qr, set()).add(rtype)
+
+    # Polygons (basins) -> hexes with center inside
+    if polygons:
+        for (q, r), cell in grid.cells.items():
+            pt = Point(cell.center_lon, cell.center_lat)
+            for prepared, rtype in polygons:
+                if prepared.covers(pt):
+                    out.setdefault((q, r), set()).add(rtype)
+    return out
 
 
 def _best_road_in_hex(hex_poly, roads_gdf) -> str:

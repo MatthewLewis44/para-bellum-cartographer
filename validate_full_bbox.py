@@ -233,6 +233,24 @@ suburb_no_parent = [h['id'] for h in hexes
 check('every suburb hex has a parent_city', not suburb_no_parent,
       f'{len(suburb_no_parent)} orphan suburbs')
 
+# --- Strategic resources (F-2) ----------------------------------------------------
+res_counts = {r: sum(1 for h in hexes if h['resources'].get(r))
+              for r in ('coal', 'steel', 'iron', 'oil')}
+check('coal hexes present (Ruhr/Saar/Sambre/Limburg)', res_counts['coal'] >= 10,
+      f"coal={res_counts['coal']}")
+check('steel hexes present (Ruhr/Liège works)', res_counts['steel'] >= 3,
+      f"steel={res_counts['steel']}")
+check('iron hexes present (Lorraine)', res_counts['iron'] >= 1,
+      f"iron={res_counts['iron']}")
+
+essen = closest_hex(51.45, 7.01)
+check('Essen hex has coal AND steel',
+      essen['resources'].get('coal') and essen['resources'].get('steel'),
+      f"hex {essen['id']} coal={essen['resources'].get('coal')} steel={essen['resources'].get('steel')}")
+liege = closest_hex(50.61, 5.54)
+check('Liège hex has steel', liege['resources'].get('steel'),
+      f"hex {liege['id']} steel={liege['resources'].get('steel')}")
+
 # --- Summary ----------------------------------------------------------------------
 print(f'Full-bbox validation — {OUTPUT}')
 print(f'{len(hexes)} hexes, schema {data["schema_version"]}')

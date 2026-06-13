@@ -115,6 +115,17 @@ def run_pipeline(
         status(f"1930 boundaries unavailable: {e}")
     stage_done("boundaries_1930", countries=len(boundaries_gdf) if boundaries_gdf is not None else 0)
 
+    # 4c. Load 1930 strategic resources (repo-committed, F-2)
+    status("Loading 1930 strategic resources...")
+    resources_gdf = None
+    try:
+        from wargame_cartographer.geo.resources import load_resources_1930
+        resources_gdf = load_resources_1930()
+        status(f"Resources ready: {len(resources_gdf)} features")
+    except Exception as e:
+        status(f"1930 resources unavailable: {e}")
+    stage_done("resources_1930", features=len(resources_gdf) if resources_gdf is not None else 0)
+
     # 5. Get elevation + hillshade
     status("Processing elevation data...")
     elev_proc = ElevationProcessor()
@@ -134,6 +145,7 @@ def run_pipeline(
         vector_data=vector_data,
         osm_data=osm_data,
         boundaries_gdf=boundaries_gdf,
+        resources_gdf=resources_gdf,
     )
 
     # Biome distribution summary

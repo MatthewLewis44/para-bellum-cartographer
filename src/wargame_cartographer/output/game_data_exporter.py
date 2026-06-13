@@ -165,10 +165,11 @@ def export_game_data(
             info.get("fortification"), FortificationLevel.NONE.value
         )
 
-        # --- Resources (Sprint 2 — manual overlay, default false for now) ---
+        # --- Resources (hand-authored 1930 layer, F-2; iron new in v1.0.2) ---
         oil = bool(info.get("oil", False))
         coal = bool(info.get("coal", False))
         steel = bool(info.get("steel", False))
+        iron = bool(info.get("iron", False))
         agriculture = bool(info.get("agriculture", False))
         industry_level = int(info.get("industry_level", 0))
 
@@ -225,6 +226,7 @@ def export_game_data(
                 "oil": oil,
                 "coal": coal,
                 "steel": steel,
+                "iron": iron,
                 "agriculture": agriculture,
                 "industry_level": industry_level,
             },
@@ -259,7 +261,7 @@ def export_game_data(
                 "terrain": "OpenStreetMap (ODbL)",
                 "elevation": "SRTM3 (NASA, public domain)",
                 "boundaries": "Natural Earth admin_0 (public domain), 1930 stopgap per AD-018",
-                "resources": "not_yet_implemented",
+                "resources": "hand-authored 1930 layer (public domain, F-2)",
             },
             "bounds": {
                 "min_lon": spec.bbox.min_lon,
