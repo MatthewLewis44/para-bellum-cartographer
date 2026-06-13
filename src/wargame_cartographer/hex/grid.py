@@ -42,7 +42,11 @@ class HexGrid:
         crs: pyproj.CRS | None = None,
     ):
         self.bbox = bbox
-        self.hex_radius_m = hex_size_km * 1000.0  # Center-to-vertex in meters
+        # AD-013: hex_size_km is the FLAT-TO-FLAT distance between the two
+        # parallel horizontal edges (= 2 × apothem), the canonical wargame
+        # hex scale. Circumradius (center-to-vertex) = flat_to_flat / √3.
+        self.hex_flat_to_flat_m = hex_size_km * 1000.0
+        self.hex_radius_m = self.hex_flat_to_flat_m / math.sqrt(3.0)
         self.crs = crs or select_crs(bbox)
         self._to_proj = make_transformer("EPSG:4326", self.crs)
         self._to_geo = make_transformer(self.crs, "EPSG:4326")
@@ -63,15 +67,27 @@ class HexGrid:
         col_spacing = 1.5 * r  # Horizontal distance between column centers
         row_spacing = math.sqrt(3) * r  # Vertical distance between row centers
 
-        # Project bbox corners to CRS
-        min_x, min_y = self._to_proj.transform(self.bbox.min_lon, self.bbox.min_lat)
-        max_x, max_y = self._to_proj.transform(self.bbox.max_lon, self.bbox.max_lat)
-
-        # Ensure min < max
-        if min_x > max_x:
-            min_x, max_x = max_x, min_x
-        if min_y > max_y:
-            min_y, max_y = max_y, min_y
+        # Project the full bbox boundary (not just two opposite corners) to
+        # the CRS. For a bbox wider than a UTM zone the projection curves,
+        # so the SW/NE corners under-cover the bulging SE/NW edges — leaving
+        # an uncovered wedge (Frankfurt fell in exactly this gap once AD-013
+        # shrank the padding). Sampling all four edges captures the true
+        # projected extent, guaranteeing every in-bbox point is tiled.
+        n = 32
+        ts = [i / n for i in range(n + 1)]
+        d_lon = self.bbox.max_lon - self.bbox.min_lon
+        d_lat = self.bbox.max_lat - self.bbox.min_lat
+        edge_lons: list[float] = []
+        edge_lats: list[float] = []
+        for t in ts:
+            lon_t = self.bbox.min_lon + d_lon * t
+            lat_t = self.bbox.min_lat + d_lat * t
+            # bottom & top edges (vary lon), then left & right edges (vary lat)
+            edge_lons += [lon_t, lon_t, self.bbox.min_lon, self.bbox.max_lon]
+            edge_lats += [self.bbox.min_lat, self.bbox.max_lat, lat_t, lat_t]
+        xs, ys = self._to_proj.transform(edge_lons, edge_lats)
+        min_x, max_x = min(xs), max(xs)
+        min_y, max_y = min(ys), max(ys)
 
         # Add half-hex padding
         min_x -= r
@@ -88,6 +104,18 @@ class HexGrid:
         self._col_offset = q_min
         self._row_offset = r_min
 
+        # Keep a hex if its center lies within the lon/lat bbox expanded by a
+        # ~one-circumradius margin (so points on the bbox edge are covered by
+        # a hex whose center may sit just outside). Testing lon/lat membership
+        # (not the projected rectangle) gives tight, gap-free coverage that
+        # follows the bbox instead of over-reaching the projected corners.
+        lat_margin = r / 111_000.0
+        lon_margin = r / (111_000.0 * max(0.2, math.cos(math.radians(self.bbox.max_lat))))
+        lon_lo = self.bbox.min_lon - lon_margin
+        lon_hi = self.bbox.max_lon + lon_margin
+        lat_lo = self.bbox.min_lat - lat_margin
+        lat_hi = self.bbox.max_lat + lat_margin
+
         for q in range(q_min, q_max + 1):
             for row in range(r_min, r_max + 1):
                 # Flat-top: odd columns are shifted down by half a row
@@ -96,9 +124,8 @@ class HexGrid:
                 if q % 2 != 0:
                     cy += row_spacing / 2.0
 
-                # Check if center is within the projected bbox (with margin)
-                if min_x <= cx <= max_x and min_y <= cy <= max_y:
-                    lon, lat = self._to_geo.transform(cx, cy)
+                lon, lat = self._to_geo.transform(cx, cy)
+                if lon_lo <= lon <= lon_hi and lat_lo <= lat <= lat_hi:
                     cell = HexCell(
                         q=q, r=row,
                         center_x=cx, center_y=cy,

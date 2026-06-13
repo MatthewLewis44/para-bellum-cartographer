@@ -25,13 +25,22 @@ coordinate with the Unity loader. Full schema doc: `docs/hex-schema.md`.
 
 ## Hex Grid Convention
 
-- **Flat-top** hexes (changed from pointy-top in Sprint 1.5)
+- **Flat-top** hexes (changed from pointy-top in Sprint 1.5); JSON
+  `grid.offset = "odd_q"` (AD-012)
 - Offset coords `(col, row)`, 1-based; axial `(q, r)` used internally only
-- `hex_size_km: 10` = center-to-vertex radius 10 km (`HexGrid.hex_radius_m`)
+- **`hex_size_km: 10` = FLAT-TO-FLAT distance** (edge-to-edge, AD-013).
+  `HexGrid.hex_flat_to_flat_m = size·1000`; `hex_radius_m` (circumradius) =
+  `flat_to_flat / √3 ≈ 5773.5 m`; area ≈ 86.6 km². (Pre-Sprint 3 this was
+  misread as circumradius → ~3× too few hexes. Corrected in AD-013.)
+  Belgium bbox → 775 hexes, Benelux+DE bbox → 2,479. Unit tests:
+  `uv run python tests/test_hex_geometry.py`. The grid generator samples all
+  four bbox edges for its projected extent (not just two corners) so wide
+  bboxes are fully tiled — a 2-corner extent left an uncovered SE wedge that
+  dropped Frankfurt once AD-013 shrank the padding.
 - Hex ID = `CCCRR` zero-padded (`"00501"` = col 5, row 1)
-- Grid layout: col spacing `1.5·r`, row spacing `√3·r`, odd columns shifted
-  down half a row — a proper tessellation, so *containing hex = nearest center*
-  (used by `sampler._point_to_hex` for O(1) point→hex lookup)
+- Grid layout: col spacing `1.5·r`, row spacing `√3·r` (r = circumradius),
+  odd columns shifted down half a row — a proper tessellation, so
+  *containing hex = nearest center* (`sampler._point_to_hex`, O(1) lookup)
 
 ## Architecture
 
@@ -88,7 +97,8 @@ to its containing hex, **most significant wins** per hex. Type resolved from
 population bands when population is known (OSM place tags are noisy), from the
 place tag otherwise: >300k metropolis, ≥50k city, ≥2k town. Significance floor
 at 10 km hexes: city+ always tags, towns only at pop ≥ 20k, villages never tag
-(they remain visible via landuse/anthrome). Belgium test: 86 tagged / 280 hexes.
+(they remain visible via landuse/anthrome). Belgium test: 114 tagged / 775 hexes
+(post-AD-013).
 
 ## Performance Discipline
 
@@ -99,12 +109,13 @@ calls; now one O(settlements) pass).
 
 ## Configs
 
-- `configs/para_bellum_belgium_test.yaml` — 280 hexes, fully cached, ~65 s.
-  Use for fast iteration.
+- `configs/para_bellum_belgium_test.yaml` — 775 hexes (post-AD-013),
+  fully cached, ~75 s warm. Use for fast iteration.
 - `configs/para_bellum_benelux_germany_test.yaml` — Sprint 2 target region
-  (Benelux + Western Germany, 2.5–8.8°E / 49.4–53.6°N), 840 hexes.
-  First run fetches OSM via 6 sub-bbox queries (AD-008) + 35 SRTM tiles.
-  Gate: `uv run python validate_full_bbox.py`.
+  (Benelux + Western Germany, 2.5–8.8°E / 49.4–53.6°N), 2,479 hexes.
+  First run fetches OSM via 6 sub-bbox queries (AD-008) + 35 SRTM tiles
+  (~30 min cold, ~3.3 min warm; peak RAM ~30 GB). Gate:
+  `uv run python validate_full_bbox.py`.
 
 ## Architecture Decisions & Change Log
 

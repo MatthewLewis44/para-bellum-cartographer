@@ -3,12 +3,14 @@
 Usage: uv run python validate_full_bbox.py [output_json]
 Exit code 0 = all checks pass, 1 = at least one failure.
 
-Country-count bands are derived from country land areas inside the bbox
-(hex ≈ 260 km² at the 10 km standard): BEL ~30.7k km² → ~118 hexes,
-NLD land ~33.7k km² → ~130, LUX 2.6k km² → ~10, western DEU portion
-~95k km² → ~310, FRA strip ~55k km² → ~190, North Sea / IJsselmeer water
-~100+. The task brief's "30/30/5/30/5%" split is geometry-blind (Belgium
-is 13% of this bbox's area, not 30%) — bands below follow the geometry.
+Country-count bands are derived from country land areas inside the bbox.
+Recalibrated for AD-013 (Sprint 3): hex size is 10 km flat-to-flat ⇒ area
+≈ 86.6 km²/hex, so this bbox now yields ~2,479 hexes (was 840 under the old
+circumradius misreading — the original sprint estimate of ~2,500 was right
+all along). Plus the grid-coverage fix (sampling all four bbox edges) closed
+the SE wedge so Frankfurt is now tiled. Bands below follow the measured
+geometry; the task brief's "30/30/5/30/5%" split is geometry-blind (Belgium
+is 13% of this bbox's area, not 30%).
 """
 
 import json
@@ -41,10 +43,8 @@ check('schema_version is 1.0.1', data['schema_version'] == '1.0.1',
       f"got {data['schema_version']}")
 
 # --- Hex count ---------------------------------------------------------------
-# 6.3 x 4.2 deg ≈ 230k km² / 260 km² per hex ≈ 880 (sprint1 reference: 864
-# hexes for a near-identical bbox). NOT ~2,500 — that figure assumed a
-# different hex size.
-check('hex count in [800, 1000]', 800 <= len(hexes) <= 1000, f'{len(hexes)} hexes')
+# 6.3 x 4.2 deg ≈ 230k km² / 86.6 km² per hex ≈ 2,470 (AD-013 flat-to-flat).
+check('hex count in [2350, 2650]', 2350 <= len(hexes) <= 2650, f'{len(hexes)} hexes')
 
 # --- Country distribution ----------------------------------------------------
 counts: dict[str, int] = {}
@@ -52,22 +52,21 @@ for h in hexes:
     c = h['political']['country_at_start']
     counts[c] = counts.get(c, 0) + 1
 
-# FRA band cross-validated: the Belgium-bbox run showed FRA=88 for the
-# lat>=49.5 portion (matching modern Natural Earth within border noise);
-# this bbox adds only slivers south and east.
+# Bands recalibrated to AD-013 measured counts (~2,479 hexes): DEU dominates
+# (Western Germany + the now-covered Frankfurt wedge), then NLD, BEL, FRA, LUX.
 bands = {
-    'BEL': (100, 145),
-    'NLD': (110, 175),
-    'LUX': (5, 14),
-    'DEU': (250, 360),
-    'FRA': (80, 130),
+    'BEL': (300, 410),
+    'NLD': (340, 460),
+    'LUX': (20, 42),
+    'DEU': (820, 990),
+    'FRA': (230, 330),
 }
 for code, (lo, hi) in bands.items():
     n = counts.get(code, 0)
     check(f'{code} hexes in [{lo},{hi}]', lo <= n <= hi, f'{code}={n}')
 
 water_n = sum(1 for h in hexes if h['flags']['is_water'])
-check('water hexes > 50 (North Sea corner)', water_n > 50, f'{water_n} water')
+check('water hexes > 300 (North Sea + IJsselmeer)', water_n > 300, f'{water_n} water')
 
 land_empty = sum(1 for h in hexes
                  if not h['flags']['is_water'] and not h['political']['country_at_start'])
@@ -132,8 +131,26 @@ def components(parity_flip: bool):
 # evaluate both interpretations and use the one with fewer isolated hexes.
 results = [components(False), components(True)]
 comp_of, comps = min(results, key=lambda t: sum(1 for c in t[1] if len(c) == 1))
-isolated = [next(iter(c)) for c in comps if len(c) == 1]
-check('no isolated single-hex river edges', not isolated, f'isolated: {isolated[:8]}')
+
+
+def all_neighbors(hid, parity_flip):
+    """The 6 neighbor IDs (in-grid or not) — for interior/boundary test."""
+    col, row = int(hid[:3]), int(hid[3:])
+    odd = (col % 2 == 1) != parity_flip
+    deltas = ([(1, 1), (1, 0), (0, -1), (-1, 0), (-1, 1), (0, 1)] if odd
+              else [(1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (0, 1)])
+    return [f'{col + dc:03d}{row + dr:02d}' for dc, dr in deltas]
+
+
+# An isolated river hex on the GRID BOUNDARY is legitimate: its river simply
+# continues off-map. Only flag INTERIOR isolated hexes (all 6 neighbors exist
+# in the grid) — those indicate spurious scattered river tagging.
+parity = 0 if results[0][1] is comps else 1  # which parity won above
+all_isolated = [next(iter(c)) for c in comps if len(c) == 1]
+interior_isolated = [h for h in all_isolated
+                     if all(n in by_id for n in all_neighbors(h, bool(parity)))]
+check('no INTERIOR isolated single-hex river edges', not interior_isolated,
+      f'interior isolated: {interior_isolated[:8]} (all isolated: {all_isolated[:8]})')
 
 RIVER_POINTS = [
     ('Meuse at Liège',      50.64, 5.57),
@@ -151,12 +168,16 @@ for label, lat, lon in RIVER_POINTS:
           on_river and chain >= 3, f"hex {h['id']} chain_size={chain}")
 
 # --- Proportions ----------------------------------------------------------------
+# Post-AD-013 river % runs ~20% here (16.6% Belgium): river-touching hexes
+# scale ~linearly with hex size while total hexes scale quadratically, so the
+# finer grid gives a lower fraction for the same strategic rivers.
 river_pct = 100 * len(river) / len(hexes)
-check('river hexes 15-35% (Belgium ratio was 25%)',
-      15 <= river_pct <= 35, f'{len(river)} hexes, {river_pct:.1f}%')
+check('river hexes 12-28% (AD-013 scale)',
+      12 <= river_pct <= 28, f'{len(river)} hexes, {river_pct:.1f}%')
 
-# 40% cap (not Belgium's 30%): NL Randstad + Ruhr genuinely carpet the
-# map with >=20k towns — observed 35.6% with verified-correct tagging.
+# 40% cap: NL Randstad + Ruhr genuinely carpet the map with >=20k towns.
+# Pre-F-1 this runs ~17%; F-1 multi-hex urban will raise it (suburb hexes) —
+# the cap keeps headroom for that while still catching a tagging regression.
 # A regression in the significance floors would blow well past 40%.
 settled = sum(1 for h in hexes if h['settlement']['type'] != 'none')
 check('settlement hexes <= 40% (dense Randstad/Ruhr region)',

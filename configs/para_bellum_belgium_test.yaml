@@ -1,7 +1,7 @@
 name: "para_bellum_belgium_test"
 title: "PARA BELLUM"
 subtitle: "Belgium OSM Test"
-scenario: "1 September 1939"
+scenario: "1 January 1930"
 
 bbox:
   min_lon: 2.5

@@ -29,13 +29,13 @@ add/remove/rename** and record the change in the changelog below and in
 | `name` | string | Spec name from YAML. |
 | `title` | string | Display title. |
 | `scenario_date` | string | ISO date of game start (`"1930-01-01"`). |
-| `hex_size_km` | number | Center-to-vertex radius in km (10 = Para Bellum standard). |
-| `hex_size_miles` | number | Derived, 2 decimals. |
+| `hex_size_km` | number | **Flat-to-flat** distance in km (edge-to-edge, = 2 × apothem). `10` = Para Bellum standard ⇒ circumradius ≈ 5.7735 km, area ≈ 86.6 km². Corrected in AD-013 (was misread as circumradius pre-Sprint 3). |
+| `hex_size_miles` | number | Derived from `hex_size_km`, 2 decimals. |
 | `generated_at` | string | ISO 8601 UTC timestamp. |
 | `pipeline_version` | string | Pipeline build version. |
 | `data_sources` | object | Provenance strings per layer (`terrain`, `elevation`, `boundaries`, `resources`). |
 | `bounds` | object | `min_lon`, `min_lat`, `max_lon`, `max_lat` (WGS84). |
-| `grid` | object | `orientation: "flat_top"`, `offset: "odd_row_east"`, `col_min/max`, `row_min/max`, `num_cols`, `num_rows`. |
+| `grid` | object | `orientation: "flat_top"`, `offset: "odd_q"` (flat-top odd-q offset, AD-012; corrected from `"odd_row_east"`), `col_min/max`, `row_min/max`, `num_cols`, `num_rows`. |
 | `hex_count` | int | Length of `hexes`. |
 | `biome_distribution` | object | biome string → hex count. |
 

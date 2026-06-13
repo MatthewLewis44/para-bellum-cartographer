@@ -2,7 +2,7 @@
 
 PIPELINE SCOPE (this file):
     Data that the cartography pipeline derives from OSM and stores in hex JSON.
-    These are static geographic facts as of the scenario date (1939-09-01).
+    These are static geographic facts as of the scenario date (1930-01-01).
 
 OUT OF SCOPE FOR PIPELINE (implemented in Unity / game engine):
     - Player-placed buildings (factories, supply depots, HQ buildings)
