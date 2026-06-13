@@ -577,10 +577,14 @@ def _assign_urban_sprawl(result, grid, settlement_by_hex) -> None:
         lu = data.get("landuse_type")
 
         # Anthrome per the AD-014 distance + dominant-landuse table.
-        if dist_km < _METRO_CORE_KM:
-            data["anthrome"] = "metro"
-        elif lu == "industrial":
+        # Industrial landuse wins at ANY distance: a port/factory district at
+        # the city core (Antwerp, Duisburg, Rotterdam) is tactically an
+        # industrial map (AD-015), not a city-centre map — so the industrial
+        # test precedes the <3 km metro test. Non-industrial cores read metro.
+        if lu == "industrial":
             data["anthrome"] = "industrial"
+        elif dist_km < _METRO_CORE_KM:
+            data["anthrome"] = "metro"
         elif lu == "residential":
             data["anthrome"] = "residential"
         else:

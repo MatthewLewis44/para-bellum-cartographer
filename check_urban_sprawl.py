@@ -81,6 +81,23 @@ bad_anthrome = [h['id'] for h in all_fp
 print(f'\nfootprint hexes: {len(all_fp)}, metro cores: {metro_n}, '
       f'bad anthrome: {len(bad_anthrome)}')
 
+# Regression guard (adversarial review): industrial landuse outranks the
+# <3 km metro rule, so dominant-industrial hexes read 'industrial' rather than
+# being masked to 'metro' near a core. Asserted bbox-wide (grid alignment +
+# center-sampling decide which specific city carries one), and in the Ruhr —
+# the canonical heavy-industry region — when that region is in the bbox.
+ind_total = sum(1 for h in all_fp if h['settlement']['anthrome'] == 'industrial')
+ruhr_ind = sum(1 for h in ruhr if h['settlement']['anthrome'] == 'industrial')
+print(f'industrial footprint hexes (bbox-wide): {ind_total}; in Ruhr: {ruhr_ind}')
+# Only enforce when the map is large enough to contain the industrial regions
+# (the Belgium fast-iteration bbox is too small for a meaningful floor).
+if len(hexes) > 1500:
+    if ind_total < 8:
+        fails.append(f'too few industrial footprint hexes ({ind_total}); '
+                     'industrial-before-metro ordering may have regressed')
+    if ruhr and ruhr_ind == 0:
+        fails.append('Ruhr has no industrial hex (heavy-industry region expected)')
+
 print('\n' + '=' * 50)
 if fails or bad_anthrome:
     print(f'OVERALL: FAIL ({fails})')

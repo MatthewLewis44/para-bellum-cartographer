@@ -112,9 +112,11 @@ developable land (plains/steppe) within 11 km of the centroid — the latter
 captures a major city's peri-urban fringe whose 10 km hex centers fall on green
 belt, while forest/water/wetland are never absorbed. Nearest centroid wins on
 overlap (so the Ruhr cities tile their gap). Ring hexes become `settlement.type
-= suburb` with `parent_city`; anthrome per the AD-014 distance+landuse table
-(metro <3 km, else industrial/residential by landuse, else outskirts).
-Reuses settlements + landuse already sampled; O(seeds × footprint).
+= suburb` with `parent_city`; anthrome per the AD-014 distance+landuse table,
+resolved in order: **industrial landuse → `industrial` at any distance** (a
+port/factory core like Antwerp/Duisburg is an industrial map per AD-015, not a
+city-centre map), else <3 km → `metro`, else residential → `residential`, else
+`outskirts`. Reuses settlements + landuse already sampled; O(seeds × footprint).
 Validation: `uv run python check_urban_sprawl.py`.
 
 ## Performance Discipline
