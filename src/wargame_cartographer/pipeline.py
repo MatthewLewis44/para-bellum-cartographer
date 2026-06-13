@@ -104,12 +104,12 @@ def run_pipeline(
         waterways=len(osm_data.waterways) if osm_data else 0,
     )
 
-    # 4b. Load 1930 political boundaries (Para Bellum addition)
+    # 4b. Load 1930 political boundaries (repo-committed, AD-018)
     status("Loading 1930 political boundaries...")
     boundaries_gdf = None
     try:
-        from wargame_cartographer.geo.boundaries import download_boundaries_1930
-        boundaries_gdf = download_boundaries_1930()
+        from wargame_cartographer.geo.boundaries import load_boundaries_1930
+        boundaries_gdf = load_boundaries_1930()
         status(f"Boundaries ready: {len(boundaries_gdf)} countries")
     except Exception as e:
         status(f"1930 boundaries unavailable: {e}")

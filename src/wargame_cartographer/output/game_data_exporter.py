@@ -251,7 +251,7 @@ def export_game_data(
             "data_sources": {
                 "terrain": "OpenStreetMap (ODbL)",
                 "elevation": "SRTM3 (NASA, public domain)",
-                "boundaries": "historical-basemaps world_1930 (aourednik, CC BY-NC-SA)",
+                "boundaries": "Natural Earth admin_0 (public domain), 1930 stopgap per AD-018",
                 "resources": "not_yet_implemented",
             },
             "bounds": {
@@ -262,7 +262,9 @@ def export_game_data(
             },
             "grid": {
                 "orientation": "flat_top",
-                "offset": "odd_row_east",
+                # AD-012: flat-top odd-q offset layout (odd columns shifted).
+                # The previous "odd_row_east" label was incorrect.
+                "offset": "odd_q",
                 "col_min": col_min,
                 "col_max": col_max,
                 "row_min": row_min,

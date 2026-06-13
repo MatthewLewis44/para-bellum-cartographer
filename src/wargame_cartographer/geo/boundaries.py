@@ -1,14 +1,14 @@
 """1930 political boundaries for Para Bellum.
 
-Downloads ``world_1930.geojson`` from the aourednik/historical-basemaps
-project — real 1930 country borders, not a modern approximation — and
-provides point-in-polygon country assignment for hex centers.
+Loads ``data/boundaries/boundaries_1930.geojson`` — repo-committed,
+hand-authored from Natural Earth ne_10m_admin_0_countries (public domain,
+AD-018) — and provides point-in-polygon country assignment for hex centers.
 
-The file is external data: it is cached under the user cache directory
-(like SRTM / OSM layers) and must never be committed to the repo.
-
-Historical data is static, so the cache has no TTL — delete the cached
-file manually to force a re-download.
+These are MODERN borders used as a 1930 stopgap, valid for the current
+western-front bbox (1930 western German borders ≈ modern; the significant
+1930 differences are on eastern borders outside the bbox). The previous
+source (historical-basemaps world_1930) was CC BY-NC-SA — non-commercial,
+cannot ship — and was removed per AD-018.
 """
 
 from __future__ import annotations
@@ -16,56 +16,38 @@ from __future__ import annotations
 from pathlib import Path
 
 import geopandas as gpd
-import requests
 from rich.console import Console
 from shapely.geometry import Point
 from shapely.prepared import prep
 
 console = Console()
 
-BOUNDARIES_1930_URL = (
-    "https://raw.githubusercontent.com/aourednik/historical-basemaps"
-    "/master/geojson/world_1930.geojson"
-)
-DEFAULT_CACHE_DIR = Path.home() / "wargame-cartographer" / "cache" / "boundaries"
-
-# Country names exactly as they appear in the world_1930.geojson NAME field
-# (verified against the file), mapped to ISO3 codes. Extend this map as the
-# game bbox grows; unmapped countries resolve to "" (treated as no-country).
-_NAME_TO_ISO3: dict[str, str] = {
-    "Belgium":     "BEL",
-    "Netherlands": "NLD",
-    "Luxembourg":  "LUX",
-    "Germany":     "DEU",
-    "France":      "FRA",
-}
+# Repo-committed boundary file (public domain — see AD-018). Resolved
+# relative to the repo root (…/src/wargame_cartographer/geo/boundaries.py
+# → three parents up), falling back to the working directory.
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+BOUNDARIES_FILE = _REPO_ROOT / "data" / "boundaries" / "boundaries_1930.geojson"
 
 
-def download_boundaries_1930(cache_dir: Path | None = None) -> gpd.GeoDataFrame:
-    """Download (or load cached) 1930 world boundaries.
+def load_boundaries_1930(path: Path | None = None) -> gpd.GeoDataFrame:
+    """Load the repo-committed 1930 boundaries.
 
     Returns a GeoDataFrame (EPSG:4326) with columns:
         geometry      — country polygon/multipolygon
-        country_code  — ISO3 code from _NAME_TO_ISO3, "" if unmapped
-        country_name  — NAME field as in the source file
+        country_code  — ISO3 code
+        country_name  — display name
     """
-    cache_dir = Path(cache_dir) if cache_dir is not None else DEFAULT_CACHE_DIR
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    path = cache_dir / "world_1930.geojson"
-
+    path = Path(path) if path is not None else BOUNDARIES_FILE
     if not path.exists():
-        console.print("  Downloading 1930 world boundaries...", style="dim")
-        resp = requests.get(
-            BOUNDARIES_1930_URL,
-            timeout=120,
-            headers={"User-Agent": "para-bellum-cartographer/0.1 (game dev pipeline)"},
-        )
-        resp.raise_for_status()
-        path.write_bytes(resp.content)
+        fallback = Path.cwd() / "data" / "boundaries" / "boundaries_1930.geojson"
+        if fallback.exists():
+            path = fallback
+        else:
+            raise FileNotFoundError(
+                f"Boundary file not found: {path} (see data/boundaries/, AD-018)"
+            )
 
     gdf = gpd.read_file(path)
-    gdf = gdf.rename(columns={"NAME": "country_name"})
-    gdf["country_code"] = gdf["country_name"].map(_NAME_TO_ISO3).fillna("")
     return gdf[["geometry", "country_code", "country_name"]]
 
 

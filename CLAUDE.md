@@ -126,16 +126,15 @@ changes tracked here:
   → `province_at_start` everywhere (sampler, exporter, debug geojson);
   `SCHEMA_VERSION` bumped. Breaking for Unity loader (coordinated). Schema
   documented in `docs/hex-schema.md`; decisions in `PARA_BELLUM_DECISIONS.md`.
-- **1930 political boundaries** (`geo/boundaries.py`): downloads
-  aourednik/historical-basemaps `world_1930.geojson` (cached at
-  `~/wargame-cartographer/cache/boundaries/`, no TTL — static data, never
-  commit it). `assign_country()` does sindex + prepared-geometry
-  point-in-polygon; sampler stores ISO3 in `country_at_start` for land hexes.
-  Belgium test: BEL 122 / FRA 88 / NLD 25 / DEU 16 / LUX 9 / water 20 —
-  cross-validated against modern Natural Earth (11 border-hex diffs only).
-  Validation: `uv run python check_boundaries.py`. Coastal hexes not
-  covered by the coarse 1930 coastline snap to the nearest country within
-  0.2° (AD-010).
+- **1930 political boundaries** (`geo/boundaries.py`): loads the
+  repo-committed `data/boundaries/boundaries_1930.geojson` — hand-authored
+  from Natural Earth admin_0 (public domain, AD-018), modern borders as a
+  1930 stopgap valid for this western bbox. (The Sprint 2 source,
+  historical-basemaps world_1930, was CC BY-NC-SA — non-commercial — and
+  was removed; never use NC-licensed data.) `assign_country()` does sindex
+  + prepared-geometry point-in-polygon; coastal hexes outside all polygons
+  snap to the nearest country within 0.2° (AD-010). Validation:
+  `uv run python check_boundaries.py`.
 - **Sprint 2 done gate**: `uv run python validate_sprint2.py` — 21 checks over
   schema, settlements, rivers, boundaries, biomes; exits non-zero on failure.
 - **Stage logging**: `run_pipeline` returns `stage_log` (stage name, elapsed
