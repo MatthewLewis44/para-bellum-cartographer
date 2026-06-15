@@ -346,3 +346,183 @@ NL/Luxembourg/Western Germany; 1930 vs modern diverges significantly
 only for Eastern Europe (to be hand-curated when bbox extends east)."`
 
 ---
+
+## AD-019 —  Grid projection extent sampling
+
+**Date:** 2026-06-12 (Sprint 3)
+**Status:** Accepted
+
+Compute the projected bbox extent by sampling all four bbox edges (with sufficient sample density), not just SW/NE corners. Filter generated hexes by actual lon/lat membership within the bbox + one-hex margin. This guarantees no in-bbox region is uncovered, regardless of bbox width or local projection curvature. Caught when AD-013's finer hex padding exposed the SE-wedge gap at Frankfurt.
+
+
+---
+
+## AD-020 —   Multi-hex urban footprint algorithm
+
+**Date:** 2026-06-12 (Sprint 3)
+**Status:** Accepted
+
+Footprints are seeded from existing city/metropolis settlement nodes (NOT from OSM place=city relations or admin_level=8 polygons — both were probed and found unusable across the bbox). Footprint = hexes within a population-scaled radius (metropolis 14km / city 8-11km) that either contain urban OSM landuse OR are open developable terrain (plains/steppe) within radius of a major centroid — but never forest, water, or wetland. BFS-bounded growth, O(footprint). Amends AD-014's footprint sourcing spec.
+
+
+---
+
+## AD-021 —    Anthrome assignment order
+
+**Date:** 2026-06-12 (Sprint 3)
+**Status:** Accepted
+
+ Industrial OSM landuse wins regardless of distance from centroid (port and factory cores are industrial, not metro, even when geographically central). The metro anthrome applies only to dense residential/commercial cores within ~3km of centroid that lack dominant industrial landuse. This is load-bearing for AD-015 tactical map pool selection.
+
+
+---
+
+## AD-022 —    Hex picking is math-based
+
+**Date:** 2026-06-12 (Sprint 3)
+**Status:** Accepted
+
+ Selection uses HexCoord.FromWorldPosition via cube-rounded inverse coordinate math. No MeshColliders, no physics raycasts. O(1) per pick, scales to 100k+ hexes, survives the Sprint 4 chunked-mesh refactor without code changes.
+
+
+---
+
+## AD-023 — Multi-tier administrative model: provinces with capital and sub-capital nodes
+
+**Date:** 2026-06-14 (Sprint 4)
+**Status:** Accepted
+
+Hex-level data remains tactical (terrain, biome, movement, individual combat,
+resources). Province-level data is aggregated. The aggregation is NOT a sum
+over all hexes; it is the explicit sum over designated administrative nodes
+(capital + sub-capitals per province).
+
+**Three orthogonal axes for settled hexes:**
+
+- `settlement.type` — physical size (village/town/city/metropolis/suburb). Existing.
+- `settlement.anthrome` — urban character subtype (metro/industrial/residential/
+  outskirts/cropland/etc.). Existing per AD-014.
+- `settlement.admin_tier` — political/economic significance. New in v1.0.3.
+
+**admin_tier enum values:**
+
+- `capital` — province capital, exactly one per province
+- `sub_capital` — designated regional city, 0-N per province (typically 1-5)
+- `urban` — settled hex without administrative designation (most settled hexes)
+- `rural` — unsettled hex within a province (default for non-water non-settled)
+- `none` — water hex or no province assignment
+
+**Population and economy semantics:**
+
+- Only `capital` and `sub_capital` hexes carry meaningful population numbers
+  that contribute to province totals
+- `urban` hexes may carry `population_class` for tactical purposes (denser =
+  harder fight) but their numbers do NOT aggregate to province-level totals
+- `rural` and `none` hexes contribute zero to province economy/population
+
+**Province capture semantics:**
+
+- A province is "politically captured" when (a) its `capital` hex is held AND
+  (b) a controlling-majority threshold of its hexes are held
+- Holding capital without majority = raid/occupation, not political control
+- Holding majority without capital = siege, awaiting capital fall
+- Capturing a `sub_capital` cuts the province's effective economic output
+  proportionally — each sub-capital's loss removes that center's economic
+  contribution to the province pool
+- `urban` hex capture is tactically meaningful (denies enemy, opens supply
+  routes) but does not affect province economic state directly
+
+**Sub-capital selection criteria (hand-curated per province from 1930 historical
+sources):**
+
+- Major industrial centers (Krupp/Essen, Škoda/Plzeň, Fiat/Torino)
+- Major rail junctions (Leipzig, Lyon, Vienna)
+- Strategic positions (ports, river crossings, fortified positions)
+- Historical population centers above thresholds appropriate to the era
+
+**Authoring:** Provinces stored as GeoJSON polygons (`data/boundaries/
+provinces_1930.geojson`) for hex assignment via point-in-polygon (same code
+path as country assignment per AD-018). Capital and sub-capital metadata in a
+paired JSON file (`data/boundaries/provinces_1930_metadata.json`). All
+hand-curated from public-domain 1930 historical sources per AD-018.
+
+**Prussia handling for Sprint 5+:** 1930 Prussia is too large for single-province
+treatment. Use historical Prussian provinces (Rhineland, Westphalia, Hesse-Nassau,
+Hannover, Brandenburg, Pomerania, Silesia, East Prussia, West Prussia,
+Schleswig-Holstein, Saxony Province) as our provinces. Each gets its own capital
+and sub-capitals. Documented in DECISIONS.md when Sprint 5 implementation hits
+this scope.
+
+**Visualization (Sprint 5 work):** Each province rendered with a distinct hashed
+color in Unity's Province view mode, HOI4-style. Capital hexes show a banner/icon.
+Sub-capital hexes show a smaller marker. Province borders rendered as thin lines.
+
+**Sprint 4 scope:** Schema bump to v1.0.3 with `admin_tier` field (this AD).
+Implementation of province boundaries, sub-capital tagging, and Unity visualization
+are P1 stretch work for this sprint; default home is Sprint 5.
+---
+## AD-024 — Tiled / streaming pipeline architecture
+
+**Date:** 2026-06-14 (Sprint 4)
+**Status:** Accepted
+
+The pipeline processes any bbox at **< 4 GB peak RAM per tile and < 6 GB
+global** by tiling the per-hex sampling and discarding intermediate state
+between tiles, instead of holding all layers in memory at once (the monolithic
+Benelux+DE run peaked at **30.4 GB**, extrapolating to ~360 GB for full Europe —
+above the 16 GB min-spec). Entry point: `streaming.run_streaming_pipeline`.
+
+Lock-ins:
+- **~1° integer-degree tiles**, hex assigned to the tile containing its center;
+  hex coordinates come from the single GLOBAL grid (no per-tile renumbering),
+  so coastal/sprawl reconcile against consistent offsets.
+- **0.2° query margin** per tile (≫ one hex circumradius + a few SRTM pixels),
+  so every feature reaching an in-tile hex is present → tile sampling is
+  byte-identical to monolithic.
+- **Read parts, never merge**: tile-local layers (landuse/roads/rails/bridges)
+  are read per tile from the cached 2.2° sub-bbox **part** gpkgs (AD-008) with a
+  pyogrio `bbox` filter; the full layer is never materialized. `merge=False` on
+  the OSM getters caches parts without the merge spike, killing the *fetch-time*
+  wall too.
+- **Serial tiles** (no cross-tile parallelism — keeps RAM predictable; Sprint 5+
+  may parallelize). Per-tile pickle cache, `STREAMING_VERSION`-stamped for
+  resume + invalidation. RAM enforced via `memory.working_set_mb` (fail loud).
+- **Output is hex-for-hex identical** to monolithic, verified by
+  `compare_hex_outputs.py` on Belgium (775) and Benelux+DE (2,479). The
+  monolithic path is retained unchanged for fast iteration; both share the
+  per-hex pass code, which is what guarantees identity.
+
+## AD-025 — Global-vs-tile split and the identical-output invariants
+
+**Date:** 2026-06-14 (Sprint 4)
+**Status:** Accepted (informed by the T1b adversarial design panel)
+
+Which sampling stages are tile-local vs global, and the subtleties that make
+streaming byte-identical to monolithic:
+
+- **GLOBAL** (computed once, reused by all tiles): the hex grid; boundaries
+  (`country_at_start`, incl. the 0.2° coastal snap — AD-010); resources;
+  settlement→hex assignment (most-significant-wins is only correct over the
+  whole set); the AD-011 waterway significance filter (per-name geodesic length
+  spans the whole bbox — streamed two-pass over parts, `geo/waterways_global`).
+- **TILE-LOCAL** (per hex, given the 0.2° margin): water/lake (NE land clipped
+  per tile), elevation+slope, landuse→biome, road/rail, river_edges (against the
+  global filtered set passed WHOLE), bridge, port, resource lookup.
+- **GLOBAL RECONCILE** (deferred to the merge): coastal flag (a hex is coastal
+  iff a *neighbor* — possibly in another tile — is water) and multi-hex urban
+  sprawl (AD-020 footprints cross tiles, e.g. the Ruhr). Run over the merged
+  grid assembled in `grid.cells` order so exact-distance tie-breaks are
+  deterministic.
+
+Identical-output invariants the panel surfaced and we enforce:
+1. **Elevation is NOT cleanly tile-local.** A per-tile `merge(bounds=…)` yields
+   a different pixel grid than the full-bbox raster, so `sample_at_point`'s
+   `round()` picks different pixels (121 Belgium hexes differed on the first
+   run). Fix: per-tile elevation is a **windowed read of the cached full DEM**
+   (`get_elevation_window`) for bboxes small enough to build one; Europe-scale
+   bboxes use a per-tile merge (no monolithic baseline to match there).
+2. **Deterministic landuse tie-break**: smallest-area containing polygon wins
+   (then landuse_type), so a bbox-sliced read matches the full read regardless
+   of feature order.
+3. **Synthetic elevation is fail-loud** in streaming (`allow_synthetic=False`):
+   a silent sin/cos substitution for one tile would be cached and shipped.

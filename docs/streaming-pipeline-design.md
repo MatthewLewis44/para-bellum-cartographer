@@ -117,10 +117,60 @@ No cross-tile parallelism (serial = predictable RAM). No schema change. No
 eastward bbox in this sprint (architecture supports it). Monolithic path kept
 for fast Belgium iteration; both share pass code.
 
-## Open decisions (for the adversarial design panel — T1b)
+## As-built (Sprint 4) — deviations + panel resolutions
 
-- Tile size (1° default) vs adaptivity to feature density (Ruhr/Randstad denser).
-- Intermediate tile format: parquet (compact, typed) vs JSON (debuggable).
-- Whether to keep landuse as a bbox-read of the full cached gpkg vs re-fetch per
-  tile at a finer cache granularity.
-- Margin sizing (0.2°) vs the largest single feature's reach.
+The adversarial design panel (T1b, 3 reviewers + synthesis) returned
+**GO-WITH-FIXES** and confirmed the core global-vs-tile split. Applied changes:
+
+- **Elevation is NOT cleanly tile-local** (panel's highest risk — confirmed by
+  the first streaming run: 121 Belgium hexes differed on elevation/slope). A
+  per-tile `merge(bounds=…)` produces a subtly different pixel grid than the
+  monolithic full-bbox raster, so `sample_at_point`'s `round()` picks different
+  pixels. **Fix:** for bboxes small enough to build a full DEM (≤100 SRTM
+  tiles), per-tile elevation is a **windowed read of the cached full DEM**
+  (`ElevationProcessor.get_elevation_window`) — exact same pixels → byte-
+  identical elevation+slope. For Europe-scale bboxes (no full DEM, no monolithic
+  baseline to match) a per-tile merge fallback is used. Result: streaming
+  Belgium is now hex-for-hex identical.
+- **Synthetic-elevation fail-loud** (`get_elevation(allow_synthetic=False)` in
+  streaming): a silent sin/cos substitution for one tile would be cached and
+  shipped, invisibly breaking output. Fixed the misleading "max 20" message.
+- **Deterministic landuse tie-break**: `_sample_landuse` now returns the
+  smallest-area containing polygon (most-specific), with landuse_type as the
+  final tie-break — order-independent so a bbox-sliced read matches the full
+  read (changed 0 hexes on Belgium; pure insurance).
+- **Land/lake detection is tile-local** (read NE land clipped to tile+margin,
+  prepped per tile) — avoids holding a continent-scale prepared land union
+  globally at Europe scale (panel must-fix #4). Output-identical (center
+  containment).
+- **OSM parts, never merged**: `OSMDownloader.ensure_parts` /
+  `part_descriptors` + `_fetch_layer(merge=False)` cache each 2.2° sub-bbox part
+  without materializing the full layer; the tile loop reads parts with a
+  bbox(+margin) pyogrio filter. This kills the *fetch-time* merge spike too, not
+  just the sampling spike.
+- **Waterway filter streamed** (`geo/waterways_global.py`): two passes over the
+  cached parts — pass 1 accumulates per-name geodesic length (floats only),
+  pass 2 keeps geometries only for names ≥110 km. Never materializes all
+  unfiltered waterways. The filtered set (bounded) is passed WHOLE to every
+  tile's `_river_edges_for_hex`.
+- **Merge assembles in grid order**: records are reassembled in `grid.cells`
+  iteration order (NOT tile order) before coastal/sprawl, so their exact-
+  distance tie-breaks (Ruhr seams) are deterministic.
+- **Intermediate tile format: pickle** — the per-hex record holds a `Biome`
+  enum and lists; pickle round-trips them exactly (the final output is still
+  JSON via the unchanged exporter). Tile cache key includes a
+  `STREAMING_VERSION` stamp so a sampler change invalidates stale tiles.
+- **Tile size: 1° integer-degree** with **0.2° margin** (≫ one hex circumradius
+  ~0.06° + a few SRTM pixels). Margin bounds land on 0.1° multiples, matching
+  the bbox grid.
+
+## T10 — province readiness (P1 forward-compat)
+
+Province assignment slots in with **zero further refactor**, exactly mirroring
+`country_at_start`: load `provinces_1930.geojson` once as a small GLOBAL
+GeoDataFrame, pass it to `build_hex_terrain` (like `boundaries_gdf`), and do a
+per-hex point-in-polygon lookup in pass-1 (tile-local, using a prepared-geometry
++ sindex helper like `assign_country`). It is a global-input + tile-local-lookup
+stage — the category the architecture already supports (boundaries, resources).
+No coastal/sprawl-style global reconcile is needed. `provinces_1930_metadata.json`
+loads alongside as plain JSON.

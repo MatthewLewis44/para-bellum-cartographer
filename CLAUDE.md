@@ -126,6 +126,34 @@ is a bug — precompute feature→hex assignments or use spatial indexes. The
 settlement scan was rewritten for exactly this reason (was 280×5,243 distance
 calls; now one O(settlements) pass).
 
+## Streaming / tiled pipeline (Sprint 4, AD-024/025)
+
+`streaming.run_streaming_pipeline(spec)` processes any bbox at **< 4 GB/tile,
+< 6 GB global** (monolithic Benelux peaked 30.4 GB). Run it via
+`uv run python run_streaming.py configs/<spec>.yaml`. Output is **hex-for-hex
+identical** to the monolithic pipeline (verified by `compare_hex_outputs.py`) —
+the per-hex pass-1 body and the global coastal/sprawl passes are the SAME code
+(`hex/sampler.py`); only the *data feeding* pass-1 is tiled.
+
+- **GLOBAL once**: grid, boundaries, resources, settlement→hex, AD-011 waterway
+  filter (`geo/waterways_global.py`, streamed two-pass over parts).
+- **PER ~1° TILE**: landuse/roads/rails/bridges read from the cached sub-bbox
+  **part** gpkgs with a `bbox(+0.2° margin)` pyogrio filter (never merging the
+  full layer — `OSMDownloader.ensure_parts`/`part_descriptors`/`merge=False`);
+  NE land/lakes clipped to tile+margin; elevation a **windowed read of the full
+  DEM** (`ElevationProcessor.get_elevation_window`) for identical pixels (or a
+  per-tile merge for Europe-scale bboxes). Sample only the tile's hexes
+  (`build_hex_terrain(hex_keys=…, precomputed=…, run_global_passes=False)`),
+  pickle the tile, discard.
+- **MERGE**: assemble tiles in `grid.cells` order, run coastal + sprawl
+  globally (`geo/urban_global.apply_global_passes`), export.
+- Tiles cached/resumable (`STREAMING_VERSION`-stamped pickles); per-tile and
+  global RAM enforced (`memory.working_set_mb`, fail-loud over budget).
+- Design + as-built: `docs/streaming-pipeline-design.md`. Why elevation isn't
+  cleanly tile-local (and the windowed-DEM fix) is the key subtlety.
+- **Monolithic path is unchanged** and kept for fast Belgium iteration; both
+  share the pass code, which is what makes the streaming output identical.
+
 ## Configs
 
 - `configs/para_bellum_belgium_test.yaml` — 775 hexes (post-AD-013),
