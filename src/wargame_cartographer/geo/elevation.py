@@ -27,13 +27,20 @@ class ElevationProcessor:
         self.cache_dir = cache_dir or (Path.home() / "wargame-cartographer" / "cache" / "elevation")
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
-    def get_elevation(self, bbox: BoundingBox) -> tuple[np.ndarray, dict]:
+    def get_elevation(
+        self, bbox: BoundingBox, allow_synthetic: bool = True
+    ) -> tuple[np.ndarray, dict]:
         """Get elevation data for a bounding box.
 
         Returns (elevation_array, metadata_dict).
         metadata_dict contains 'transform', 'crs', 'bounds', 'resolution'.
 
-        Uses SRTM via rasterio if available, falls back to synthetic data.
+        Uses SRTM via rasterio. With ``allow_synthetic`` (default) a failed SRTM
+        fetch falls back to a deterministic synthetic field. **The streaming
+        pipeline passes ``allow_synthetic=False``** (Sprint 4): a silent
+        synthetic substitution for one tile would be cached and shipped,
+        invisibly breaking the hex-for-hex guarantee — better to fail loudly and
+        retry the tile.
         """
         cache_key = f"dem_{_bbox_hash(bbox)}.tif"
         cache_path = self.cache_dir / cache_key
@@ -46,6 +53,11 @@ class ElevationProcessor:
         try:
             return self._download_srtm(bbox, cache_path)
         except Exception as e:
+            if not allow_synthetic:
+                raise RuntimeError(
+                    f"SRTM elevation unavailable for {bbox} and synthetic is "
+                    f"disabled (streaming mode): {e}"
+                ) from e
             console.print(f"  [yellow]SRTM download failed ({e}), using synthetic elevation[/yellow]")
             return self._synthetic_elevation(bbox)
 
@@ -66,8 +78,11 @@ class ElevationProcessor:
         # Limit: if too many tiles, use synthetic instead
         n_tiles = (lat_max - lat_min + 1) * (lon_max - lon_min + 1)
         if n_tiles > 100:
-            console.print(f"  [yellow]Area requires {n_tiles} SRTM tiles (max 20), using synthetic elevation[/yellow]")
-            raise RuntimeError(f"Too many SRTM tiles needed: {n_tiles}")
+            console.print(f"  [yellow]Area requires {n_tiles} SRTM tiles (max 100); too large for one merge[/yellow]")
+            raise RuntimeError(
+                f"Too many SRTM tiles needed: {n_tiles} (max 100). Use the "
+                f"streaming pipeline so elevation is read per ~1° tile."
+            )
 
         tile_paths = []
         for lat in range(lat_min, lat_max + 1):
@@ -149,6 +164,46 @@ class ElevationProcessor:
                 "bounds": src.bounds,
                 "resolution": src.res[0],
             }
+        return elevation, metadata
+
+    def dem_cache_path(self, bbox: BoundingBox) -> Path:
+        """Path of the cached full-bbox DEM GeoTIFF for ``bbox``."""
+        return self.cache_dir / f"dem_{_bbox_hash(bbox)}.tif"
+
+    def get_elevation_window(
+        self, full_bbox: BoundingBox, window_bbox: BoundingBox
+    ) -> tuple[np.ndarray, dict]:
+        """Read a window of the cached full-bbox DEM (streaming, Sprint 4 T2).
+
+        Returns the EXACT pixels of the monolithic full-bbox raster over
+        ``window_bbox``, so per-tile elevation/slope sampling is byte-identical
+        to the monolithic run (the per-tile ``merge(bounds=...)`` path produces
+        a subtly different pixel grid and was the source of seam diffs). Loads
+        only the window into RAM; the full DEM stays on disk. Raises if the full
+        DEM is not cached (caller falls back to a per-tile merge for bboxes too
+        large to build a full DEM, e.g. Europe).
+        """
+        import rasterio
+        from rasterio.windows import from_bounds, Window
+
+        path = self.dem_cache_path(full_bbox)
+        if not path.exists():
+            raise FileNotFoundError(f"full DEM not cached: {path}")
+        with rasterio.open(path) as src:
+            win = from_bounds(
+                window_bbox.min_lon, window_bbox.min_lat,
+                window_bbox.max_lon, window_bbox.max_lat, src.transform,
+            ).round_offsets().round_lengths()
+            win = win.intersection(Window(0, 0, src.width, src.height))
+            elevation = src.read(1, window=win)
+            win_transform = src.window_transform(win)
+            res = src.res[0]
+        metadata = {
+            "transform": win_transform,
+            "crs": "EPSG:4326",
+            "bounds": window_bbox.as_tuple(),
+            "resolution": res,
+        }
         return elevation, metadata
 
     def _synthetic_elevation(self, bbox: BoundingBox) -> tuple[np.ndarray, dict]:

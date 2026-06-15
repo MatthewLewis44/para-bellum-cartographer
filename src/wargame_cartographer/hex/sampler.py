@@ -66,18 +66,39 @@ class HexSampler:
         osm_data=None,         # OSMLayerData (our new OSM layers)
         boundaries_gdf=None,   # 1930 political boundaries (geo/boundaries.py)
         resources_gdf=None,    # 1930 strategic resources (geo/resources.py)
+        *,
+        hex_keys=None,           # iterable of (q,r) to sample; None = all cells
+        precomputed=None,        # dict of reusable global tables (streaming mode)
+        run_global_passes=True,  # run pass-2 coastal + pass-3 sprawl in-place
+        allow_synthetic_elevation=True,  # streaming passes False (fail loud)
     ) -> dict[tuple[int, int], dict]:
-        """Build complete per-hex data for every hex in the grid.
+        """Build per-hex data for the grid (or a hex subset, for tiling).
 
-        Returns dict keyed by (q, r) → hex data dict matching the
-        Para Bellum JSON schema fields (excluding political/resources,
-        which are added by Sprint 2 pipeline stages).
+        Returns dict keyed by (q, r) → hex data dict matching the Para Bellum
+        JSON schema fields.
+
+        Streaming/tiled mode (T2): pass ``hex_keys`` = the tile's hexes,
+        ``precomputed`` = global tables computed once (settlement_by_hex,
+        resource_by_hex, land_prep, lake_prep) so a settlement/boundary just
+        outside the tile cannot change a hex inside it, and
+        ``run_global_passes=False`` to defer coastal + sprawl to the global
+        merge. The per-hex pass-1 body is identical to the monolithic path, so
+        output matches hex-for-hex (the streaming orchestrator feeds it
+        tile-sliced ``osm_data`` and per-tile elevation via ``bbox``).
         """
+        precomputed = precomputed or {}
 
         # ----------------------------------------------------------------
         # 1. Load elevation + slope
         # ----------------------------------------------------------------
-        elevation, elev_metadata = self.elevation_proc.get_elevation(bbox)
+        if "elevation" in precomputed:
+            # Streaming passes a windowed read of the full-bbox DEM so per-tile
+            # elevation/slope is byte-identical to the monolithic raster.
+            elevation, elev_metadata = precomputed["elevation"]
+        else:
+            elevation, elev_metadata = self.elevation_proc.get_elevation(
+                bbox, allow_synthetic=allow_synthetic_elevation
+            )
         slope_grid = self.elevation_proc.compute_slope(elevation)
 
         # ----------------------------------------------------------------
@@ -133,13 +154,26 @@ class HexSampler:
             if not vector_data.ports.empty:
                 ports_gdf = vector_data.ports
 
+        # Streaming mode reuses globally-prepped geometry so a feature just
+        # outside a tile cannot change a hex inside it (and avoids re-prepping
+        # the continent-scale Natural Earth land union per tile).
+        if "land_prep" in precomputed:
+            land_prep = precomputed["land_prep"]
+        if "lake_prep" in precomputed:
+            lake_prep = precomputed["lake_prep"]
+
         # Assign each settlement node to its containing hex once (O(settlements)),
         # keeping only the most significant settlement per hex. Replaces the old
         # per-hex nearest-node scan, which was O(hexes × settlements) and let
-        # village nodes outcompete city nodes for the same hex.
-        settlement_by_hex: dict[tuple[int, int], dict] = {}
-        if settlements_gdf is not None:
-            settlement_by_hex = _assign_settlements_to_hexes(grid, settlements_gdf)
+        # village nodes outcompete city nodes for the same hex. Settlement and
+        # resource assignment are GLOBAL (cheap) — reuse the precomputed tables
+        # in streaming mode rather than recomputing per tile.
+        if "settlement_by_hex" in precomputed:
+            settlement_by_hex = precomputed["settlement_by_hex"]
+        else:
+            settlement_by_hex = {}
+            if settlements_gdf is not None:
+                settlement_by_hex = _assign_settlements_to_hexes(grid, settlements_gdf)
 
         # 1930 political boundaries — prep geometry + spatial index once,
         # not per-hex (assign_country caches prepared polygons internally).
@@ -149,16 +183,21 @@ class HexSampler:
             assign_country(0.0, 0.0, boundaries_gdf)  # warm prepared-geometry cache
 
         # 1930 strategic resources — assign each basin/works to its hexes once.
-        resource_by_hex: dict[tuple[int, int], set] = {}
-        if resources_gdf is not None and not resources_gdf.empty:
-            resource_by_hex = _assign_resources_to_hexes(grid, resources_gdf)
+        if "resource_by_hex" in precomputed:
+            resource_by_hex = precomputed["resource_by_hex"]
+        else:
+            resource_by_hex = {}
+            if resources_gdf is not None and not resources_gdf.empty:
+                resource_by_hex = _assign_resources_to_hexes(grid, resources_gdf)
 
         # ----------------------------------------------------------------
-        # 3. First pass — classify every hex
+        # 3. First pass — classify each hex (all cells, or the tile subset)
         # ----------------------------------------------------------------
         result: dict[tuple[int, int], dict] = {}
 
-        for (q, r), cell in grid.cells.items():
+        keys = grid.cells.keys() if hex_keys is None else hex_keys
+        for (q, r) in keys:
+            cell = grid.cells[(q, r)]
             pt = Point(cell.center_lon, cell.center_lat)
 
             # -- Water detection --
@@ -227,17 +266,21 @@ class HexSampler:
                 biome, landuse_type, elev_m, cell.center_lat, cell.center_lon
             )
 
-            # -- Road level --
-            # Use WGS84 hex polygon to match roads_gdf CRS (EPSG:4326)
+            # -- Road / rail level --
+            # WGS84 hex polygon (matches roads/rails CRS, EPSG:4326), computed
+            # once per hex. (Was guarded by `'hex_poly_wgs84' not in dir()`,
+            # which leaked the previous hex's polygon across iterations when a
+            # hex had rails but no roads — harmless while both layers are
+            # always present together, but a landmine the tiling would expose.)
+            hex_poly_wgs84 = None
             road_level = "none"
             if not is_water and not is_lake and roads_gdf is not None:
                 hex_poly_wgs84 = _hex_polygon_wgs84(q, r, grid)
                 road_level = _best_road_in_hex(hex_poly_wgs84, roads_gdf)
 
-            # -- Rail level --
             rail_level = "none"
             if not is_water and not is_lake and railways_gdf is not None:
-                if 'hex_poly_wgs84' not in dir():
+                if hex_poly_wgs84 is None:
                     hex_poly_wgs84 = _hex_polygon_wgs84(q, r, grid)
                 rail_level = _best_rail_in_hex(hex_poly_wgs84, railways_gdf)
 
@@ -308,38 +351,48 @@ class HexSampler:
             }
 
         # ----------------------------------------------------------------
-        # 4. Second pass — coastal flag
-        # A land hex is coastal if any of its 6 neighbors is a water hex.
+        # Global passes — coastal flag (pass 2) and urban sprawl (pass 3) both
+        # need cross-hex (and in streaming, cross-tile) knowledge. The streaming
+        # orchestrator skips them here and runs them once over the merged grid.
         # ----------------------------------------------------------------
-        water_qr = {
-            (q, r) for (q, r), d in result.items()
-            if d["biome"] in WATER_BIOMES
-        }
-
-        for (q, r), data in result.items():
-            if data["biome"] in WATER_BIOMES:
-                continue
-            col = q - grid._col_offset + 1
-            row = r - grid._row_offset + 1
-            for nbr in offset_neighbors(col, row):
-                nq = nbr.col + grid._col_offset - 1
-                nr = nbr.row + grid._row_offset - 1
-                if (nq, nr) in water_qr:
-                    data["is_coastal"] = True
-                    # Upgrade beach classification
-                    if (data["biome"] == Biome.PLAINS
-                            and data.get("landuse_type") == "beach"):
-                        data["biome"] = Biome.BEACH
-                    break
-
-        # ----------------------------------------------------------------
-        # 5. Third pass — multi-hex urban sprawl (AD-014)
-        # Grow a contiguous, population-scaled, urban-landuse-gated footprint
-        # around each city/metropolis settlement node.
-        # ----------------------------------------------------------------
-        _assign_urban_sprawl(result, grid, settlement_by_hex)
+        if run_global_passes:
+            _assign_coastal(result, grid)
+            _assign_urban_sprawl(result, grid, settlement_by_hex)
 
         return result
+
+
+# ---------------------------------------------------------------------------
+# Global reconcile passes (cross-hex; in streaming, run once over merged grid)
+# ---------------------------------------------------------------------------
+
+def _assign_coastal(result, grid) -> None:
+    """Pass 2: flag land hexes adjacent to a water hex, and upgrade coastal
+    sandy plains to BEACH. Cross-tile in streaming — run over the merged grid.
+
+    Mutates ``result`` in place: sets ``is_coastal`` and may change ``biome``.
+    Identical logic to the original inline pass-2.
+    """
+    water_qr = {
+        (q, r) for (q, r), d in result.items()
+        if d["biome"] in WATER_BIOMES
+    }
+
+    for (q, r), data in result.items():
+        if data["biome"] in WATER_BIOMES:
+            continue
+        col = q - grid._col_offset + 1
+        row = r - grid._row_offset + 1
+        for nbr in offset_neighbors(col, row):
+            nq = nbr.col + grid._col_offset - 1
+            nr = nbr.row + grid._row_offset - 1
+            if (nq, nr) in water_qr:
+                data["is_coastal"] = True
+                # Upgrade beach classification
+                if (data["biome"] == Biome.PLAINS
+                        and data.get("landuse_type") == "beach"):
+                    data["biome"] = Biome.BEACH
+                break
 
 
 # ---------------------------------------------------------------------------
@@ -351,15 +404,29 @@ def _sample_landuse(
     landuse_gdf,
     sindex,
 ) -> str | None:
-    """Return the dominant landuse_type string for a point, or None."""
+    """Return the dominant landuse_type at a point, or None.
+
+    When the point falls inside several overlapping landuse polygons, the
+    **smallest-area** polygon wins (most-specific land use, e.g. an industrial
+    parcel inside a residential district), with the landuse_type string as a
+    deterministic final tie-break. This makes the result independent of feature
+    order in the GeoDataFrame — required so a tiled (bbox-sliced) read yields
+    the same answer as the monolithic full read (Sprint 4 streaming, AD-024).
+    """
     candidates = list(sindex.intersection(pt.bounds))
     if not candidates:
         return None
+    best_type = None
+    best_key = None
     for idx in candidates:
-        geom = landuse_gdf.iloc[idx].geometry
-        if geom.contains(pt):
-            return landuse_gdf.iloc[idx]["landuse_type"]
-    return None
+        row = landuse_gdf.iloc[idx]
+        geom = row.geometry
+        if geom is not None and geom.contains(pt):
+            key = (geom.area, str(row["landuse_type"]))
+            if best_key is None or key < best_key:
+                best_key = key
+                best_type = row["landuse_type"]
+    return best_type
 
 
 # Settlement significance floors at the 10 km hex scale. A hex only gets a

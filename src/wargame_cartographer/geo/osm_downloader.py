@@ -183,6 +183,28 @@ class OSMDownloader:
     # Generic split-fetch-merge driver
     # ------------------------------------------------------------------
 
+    def part_descriptors(self, bbox: BoundingBox, layer: str) -> list[tuple[BoundingBox, Path]]:
+        """Return [(sub_bbox, part_path)] for a layer's sub-bbox part gpkgs.
+
+        Mirrors the naming used by ``_fetch_layer``: ``{layer}_part_<hash>.gpkg``
+        when the bbox splits, else the single ``{layer}_<hash>.gpkg``. Only
+        existing part files are returned. Used by the streaming pipeline (T2) to
+        read each layer per tile from the parts without ever merging the whole
+        layer into RAM.
+        """
+        subs = _split_bbox(bbox)
+        out: list[tuple[BoundingBox, Path]] = []
+        if len(subs) == 1:
+            p = self.cache_dir / f"{layer}_{_bbox_hash(bbox)}.gpkg"
+            if p.exists():
+                out.append((bbox, p))
+            return out
+        for sub in subs:
+            p = self.cache_dir / f"{layer}_part_{_bbox_hash(sub)}.gpkg"
+            if p.exists():
+                out.append((sub, p))
+        return out
+
     def _fetch_layer(
         self,
         bbox: BoundingBox,
@@ -191,6 +213,7 @@ class OSMDownloader:
         parse_element: Callable[[dict], dict | None],
         columns: list[str],
         timeout: int = 120,
+        merge: bool = True,
     ) -> gpd.GeoDataFrame:
         """Fetch one OSM layer, splitting the bbox into sub-queries if large.
 
@@ -201,12 +224,17 @@ class OSMDownloader:
         Each sub-bbox result is cached individually (layer_part_<hash>.gpkg,
         or a .empty marker), so retries resume instead of refetching. The
         merged, osm_id-deduplicated result is cached under the full-bbox key.
+
+        ``merge=False`` (streaming, T2): only ensure each sub-bbox part is
+        fetched+cached; do NOT accumulate parts in memory or build the merged
+        layer (that materialization is the 30 GB wall this sprint kills). The
+        caller then reads parts per tile via ``part_descriptors`` + a bbox read.
         """
         all_cols = ["geometry", "osm_id"] + columns
         empty = gpd.GeoDataFrame(columns=all_cols, crs="EPSG:4326")
 
         cache_path = self.cache_dir / f"{layer}_{_bbox_hash(bbox)}.gpkg"
-        if _is_fresh(cache_path):
+        if merge and _is_fresh(cache_path):
             return gpd.read_file(cache_path)
 
         subs = _split_bbox(bbox)
@@ -227,7 +255,8 @@ class OSMDownloader:
                 marker = self.cache_dir / f"{layer}_part_{_bbox_hash(sub)}.empty"
 
             if _is_fresh(part_path):
-                frames.append(gpd.read_file(part_path))
+                if merge:
+                    frames.append(gpd.read_file(part_path))
                 continue
             if _is_fresh(marker):
                 continue
@@ -267,7 +296,14 @@ class OSMDownloader:
 
             part_gdf = gpd.GeoDataFrame(records, crs="EPSG:4326")
             part_gdf.to_file(part_path, driver="GPKG")
-            frames.append(part_gdf)
+            if merge:
+                frames.append(part_gdf)
+            else:
+                del part_gdf  # streaming: don't hold parts in RAM
+
+        # Streaming (merge=False): parts are cached; caller reads them per tile.
+        if not merge:
+            return empty
 
         if not frames:
             return empty
@@ -291,7 +327,7 @@ class OSMDownloader:
     # Landuse / natural cover
     # ------------------------------------------------------------------
 
-    def get_landuse(self, bbox: BoundingBox) -> gpd.GeoDataFrame:
+    def get_landuse(self, bbox: BoundingBox, merge: bool = True) -> gpd.GeoDataFrame:
         """Fetch OSM landuse and natural area polygons."""
 
         def build_query(b: str) -> str:
@@ -318,7 +354,7 @@ out geom qt;
 
         gdf = self._fetch_layer(
             bbox, "landuse", build_query, parse_element,
-            columns=["landuse_type"], timeout=180,
+            columns=["landuse_type"], timeout=180, merge=merge,
         )
         if not gdf.empty:
             console.print(
@@ -387,7 +423,7 @@ out body;
     # Roads
     # ------------------------------------------------------------------
 
-    def get_roads(self, bbox: BoundingBox) -> gpd.GeoDataFrame:
+    def get_roads(self, bbox: BoundingBox, merge: bool = True) -> gpd.GeoDataFrame:
         """Fetch OSM highway linestrings.
 
         Returns GeoDataFrame with columns: geometry, road_level
@@ -412,14 +448,14 @@ out geom;
 
         return self._fetch_layer(
             bbox, "roads", build_query, parse_element,
-            columns=["road_level"], timeout=120,
+            columns=["road_level"], timeout=120, merge=merge,
         )
 
     # ------------------------------------------------------------------
     # Railways
     # ------------------------------------------------------------------
 
-    def get_railways(self, bbox: BoundingBox) -> gpd.GeoDataFrame:
+    def get_railways(self, bbox: BoundingBox, merge: bool = True) -> gpd.GeoDataFrame:
         """Fetch OSM railway linestrings.
 
         Returns GeoDataFrame with columns: geometry, rail_level
@@ -458,14 +494,14 @@ out geom;
 
         return self._fetch_layer(
             bbox, "railways", build_query, parse_element,
-            columns=["rail_level"], timeout=90,
+            columns=["rail_level"], timeout=90, merge=merge,
         )
 
     # ------------------------------------------------------------------
     # Waterways (for river_edges)
     # ------------------------------------------------------------------
 
-    def get_waterways(self, bbox: BoundingBox) -> gpd.GeoDataFrame:
+    def get_waterways(self, bbox: BoundingBox, merge: bool = True) -> gpd.GeoDataFrame:
         """Fetch OSM waterway linestrings (rivers, canals) of strategic size.
 
         Returns GeoDataFrame with columns: geometry, waterway_type, name
@@ -477,6 +513,10 @@ out geom;
         stream the region drains through. The filter runs at load time on
         the merged (full-bbox) data so per-name totals span sub-bbox seams;
         re-filtering already-filtered cached data is a no-op.
+
+        ``merge=False`` (streaming): only ensure the raw (unfiltered) parts are
+        cached and return empty; the global AD-011 filter is then applied by
+        ``geo.waterways_global`` streaming over those parts.
         """
 
         def build_query(b: str) -> str:
@@ -503,8 +543,10 @@ out geom;
         console.print("  Fetching OSM waterways...", style="dim")
         gdf = self._fetch_layer(
             bbox, "waterways", build_query, parse_element,
-            columns=["waterway_type", "name"], timeout=120,
+            columns=["waterway_type", "name"], timeout=120, merge=merge,
         )
+        if not merge:
+            return gdf  # raw parts cached; global filter applied elsewhere
         if gdf.empty:
             return gdf
 
@@ -529,7 +571,7 @@ out geom;
     # Bridges
     # ------------------------------------------------------------------
 
-    def get_bridges(self, bbox: BoundingBox) -> gpd.GeoDataFrame:
+    def get_bridges(self, bbox: BoundingBox, merge: bool = True) -> gpd.GeoDataFrame:
         """Fetch OSM bridge ways crossing waterways (as center points).
 
         Returns GeoDataFrame with columns: geometry (Point), name
@@ -557,8 +599,23 @@ out center;
 
         return self._fetch_layer(
             bbox, "bridges", build_query, parse_element,
-            columns=["name"], timeout=90,
+            columns=["name"], timeout=90, merge=merge,
         )
+
+    # ------------------------------------------------------------------
+    # Streaming support (T2): ensure parts cached without merging
+    # ------------------------------------------------------------------
+
+    def ensure_parts(self, bbox: BoundingBox) -> None:
+        """Fetch + cache each tile-local layer's sub-bbox parts WITHOUT merging.
+
+        The streaming pipeline then reads parts per tile via ``part_descriptors``
+        + a bbox-filtered read, so the full layer is never materialized in RAM.
+        Settlements and waterways stay global (handled by the caller).
+        """
+        for getter in (self.get_landuse, self.get_roads,
+                       self.get_railways, self.get_bridges):
+            getter(bbox, merge=False)
 
 
 # ---------------------------------------------------------------------------
