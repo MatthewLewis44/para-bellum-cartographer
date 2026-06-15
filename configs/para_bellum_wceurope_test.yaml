@@ -1,0 +1,31 @@
+name: "para_bellum_wceurope_test"
+title: "PARA BELLUM"
+subtitle: "Western+Central Europe — Sprint 4 streaming scale test"
+scenario: "1 January 1930"
+
+# Western+Central Europe scale test (Sprint 4 T7): eastern France, Switzerland,
+# W+Central Germany, Luxembourg, eastern Benelux, Alpine fringe.
+# ~10° × 9° ≈ 709,000 km² → ~8,200 hexes at the AD-013 10 km flat-to-flat scale
+# (the brief's "~30–50k hexes" assumes a far larger area; same geometry-vs-
+# estimate gap as AD-009). Streamed only — the monolithic path would need the
+# full landuse + a 110-tile SRTM merge in RAM at once.
+bbox:
+  min_lon: 5.0
+  min_lat: 45.0
+  max_lon: 15.0
+  max_lat: 54.0
+
+hex_size_km: 10.0
+
+designer_style: simonitch
+font_scale: 1.0
+dpi: 150
+
+show_elevation_shading: true
+show_rivers: true
+show_cities: true
+show_ports: true
+
+# Streaming runner emits JSON only; PNG/HTML are not produced at this scale.
+output_formats: [json]
+output_dir: ./output
