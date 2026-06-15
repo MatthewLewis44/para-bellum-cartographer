@@ -127,6 +127,7 @@ pipeline and never stored in JSON.
 | `anthrome` | enum string | `none`, `residential`, `industrial`, `metro`, `outskirts` (v1.0.2), `cropland`, `paddy`, `mining`, `mangrove`, `fortified`. Drives Unity tactical map pool selection. Within a city footprint (AD-014): `metro` <3 km from centroid, else `industrial`/`residential` by dominant landuse, else `outskirts`. |
 | `parent_city` | string | **v1.0.2 (AD-014).** Name of the city this hex belongs to, for hexes inside a multi-hex urban footprint (centroid + suburb ring). Empty `""` otherwise. |
 | `distance_from_centroid_km` | float \| null | **v1.0.2 (AD-014).** Distance from this hex's center to the parent city's centroid hex (0.0 at the centroid). `null` for hexes not in any city footprint. |
+| `admin_tier` | enum string | **v1.0.3.** `capital`, `sub_capital`, `urban`, `rural`, `none`. Administrative tier. `capital`/`sub_capital` are reserved for a future political/capital layer (not yet assigned). Current pipeline defaults: water or no-country hex → `none`; settled land hex → `urban`; unsettled non-water land hex → `rural`. |
 
 ### `infrastructure`
 
@@ -163,6 +164,16 @@ pipeline and never stored in JSON.
 | `is_coastal` | bool | Duplicate of `terrain.is_coastal` for fast Unity filtering. |
 
 ## Changelog
+
+### v1.0.3 (2026-06-14, Sprint 4) — additive only
+
+- **`settlement.admin_tier`** (enum string) added: `capital` / `sub_capital` /
+  `urban` / `rural` / `none`. `capital`/`sub_capital` reserved for a future
+  political layer; pipeline currently defaults water/no-country → `none`,
+  settled → `urban`, unsettled land → `rural`. Derived at export time from
+  existing fields, so it is purely additive — v1.0.2 consumers ignore it.
+- No other field changes. (Sprint 4 is otherwise a non-schema streaming
+  refactor; output is hex-equivalent to v1.0.2 modulo this field.)
 
 ### v1.0.2 (2026-06-13, Sprint 3) — additive only
 

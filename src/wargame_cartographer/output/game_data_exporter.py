@@ -44,7 +44,7 @@ from wargame_cartographer.infrastructure.types import (
 # Schema version — bump when any field is added/removed/renamed.
 # Unity C# loader checks this on load and rejects incompatible versions.
 # ---------------------------------------------------------------------------
-SCHEMA_VERSION = "1.0.2"
+SCHEMA_VERSION = "1.0.3"
 
 
 def _safe_enum_value(val, default: str) -> str:
@@ -177,6 +177,11 @@ def export_game_data(
         is_water = biome in WATER_BIOMES
         is_impassable = biome in IMPASSABLE_BIOMES
 
+        # --- Administrative tier (v1.0.3) ---
+        # Default population-derived tier; capital/sub_capital are reserved for
+        # a future political layer (Sprint 5+ province/capital data).
+        admin_tier = _admin_tier(is_water, country, settlement_type)
+
         # Base movement cost from biome (Unity applies modifier stack at runtime)
         base_movement = BIOME_BASE_MOVEMENT.get(biome, 1)
         base_defense = BIOME_BASE_DEFENSE.get(biome, 0)
@@ -213,6 +218,7 @@ def export_game_data(
                 "anthrome": anthrome,
                 "parent_city": parent_city,
                 "distance_from_centroid_km": distance_from_centroid_km,
+                "admin_tier": admin_tier,
             },
             "infrastructure": {
                 "road": road,
@@ -328,6 +334,22 @@ def _resolve_biome(raw) -> Biome:
         "water":    Biome.WATER,
     }
     return _LEGACY_MAP.get(val, Biome.PLAINS)
+
+
+def _admin_tier(is_water: bool, country: str, settlement_type: str) -> str:
+    """Administrative tier default (schema v1.0.3).
+
+    capital / sub_capital are reserved for a future political layer and are
+    never assigned by the pipeline yet. Defaults:
+      water or no-country hex      -> "none"
+      currently-settled land hex   -> "urban"
+      unsettled non-water land hex -> "rural"
+    """
+    if is_water or not country:
+        return "none"
+    if settlement_type and settlement_type != "none":
+        return "urban"
+    return "rural"
 
 
 def _default_pop_class(settlement_type_str: str) -> int:

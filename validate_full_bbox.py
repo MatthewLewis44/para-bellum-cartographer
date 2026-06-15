@@ -39,7 +39,7 @@ def closest_hex(lat: float, lon: float) -> dict:
 
 
 # --- Schema -----------------------------------------------------------------
-check('schema_version is 1.0.2', data['schema_version'] == '1.0.2',
+check('schema_version is 1.0.3', data['schema_version'] == '1.0.3',
       f"got {data['schema_version']}")
 
 # --- Hex count ---------------------------------------------------------------

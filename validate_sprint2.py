@@ -33,8 +33,8 @@ def check(name: str, ok: bool, detail: str):
 
 
 # --- Schema ---------------------------------------------------------------
-check('schema_version is 1.0.2',
-      data['schema_version'] == '1.0.2',
+check('schema_version is 1.0.3',
+      data['schema_version'] == '1.0.3',
       f"got {data['schema_version']}")
 
 legacy = any('country_1939' in h['political'] for h in hexes)
