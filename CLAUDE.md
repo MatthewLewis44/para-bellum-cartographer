@@ -161,8 +161,13 @@ the per-hex pass-1 body and the global coastal/sprawl passes are the SAME code
 - `configs/para_bellum_benelux_germany_test.yaml` — Sprint 2 target region
   (Benelux + Western Germany, 2.5–8.8°E / 49.4–53.6°N), 2,479 hexes.
   First run fetches OSM via 6 sub-bbox queries (AD-008) + 35 SRTM tiles
-  (~30 min cold, ~3.3 min warm; peak RAM ~30 GB). Gate:
-  `uv run python validate_full_bbox.py`.
+  (~30 min cold, ~3.3 min warm; monolithic peak RAM ~30 GB, streaming
+  657 MB/tile). Gate: `uv run python validate_full_bbox.py`.
+- `configs/para_bellum_wceurope_test.yaml` — Sprint 4 streaming scale test
+  (W+C Europe, 5–15°E / 45–54°N), 8,607 hexes / 130 tiles. **Streaming only**
+  (`uv run python run_streaming.py …`) — monolithic can't run it. Validated
+  742 MB/tile, 492 MB global; ~4 h cold (Overpass-fetch-bound). NB: only the
+  5 western countries have 1930 boundaries (CH/AT/IT → no country, AD-018).
 
 ## Architecture Decisions & Change Log
 
