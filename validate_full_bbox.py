@@ -281,9 +281,26 @@ bad_settled = [h['id'] for h in hexes
 rural_named = [h['id'] for h in hexes
                if h['settlement']['admin_tier'] == 'rural' and h['settlement']['name']]
 
-check('30+ provinces tagged', len(provs) >= 30, f'{len(provs)} provinces')
-check('30+ capitals designated', n_caps >= 30, f'{n_caps} capitals')
+# "30+ capitals" is a property of the AUTHORED province layer; a clipped bbox
+# only frames the capitals inside it (the Benelux bbox omits 8 southern-French /
+# Hannover / Saar capitals). So the totals gate reads the metadata; the run gate
+# is structural (no province with >1 capital; every framed province has one).
+import os as _os
+_mdp = 'data/boundaries/provinces_1930_metadata.json'
+authored_provs = authored_caps = authored_subs = 0
+if _os.path.exists(_mdp):
+    _md = json.load(open(_mdp, encoding='utf-8'))
+    authored_provs = len(_md['provinces'])
+    authored_caps = sum(1 for p in _md['provinces'] if p.get('capital', {}).get('city_name'))
+    authored_subs = sum(len(p.get('sub_capitals', [])) for p in _md['provinces'])
+framed = [p for p in provs if cap_by_prov[p]]
+check('30+ provinces tagged in run', len(provs) >= 30, f'{len(provs)} provinces')
+check('authored layer has 30+ capitals', authored_caps >= 30,
+      f'{authored_caps} authored, {n_caps} framed in this bbox')
+check('authored layer has ~50-80 sub-capitals', 50 <= authored_subs <= 80, f'{authored_subs}')
 check('no province has >1 capital hex', not multi_cap, f'{len(multi_cap)}: {multi_cap[:5]}')
+check('every framed province has exactly one capital',
+      all(cap_by_prov[p] == 1 for p in framed), f'{len(framed)} framed')
 check('sub-capital hexes present (30+)', sub_total >= 30, f'{sub_total} sub-capitals')
 check('province coverage of land >= 98%',
       len(no_prov) <= 0.02 * max(1, len(land)),

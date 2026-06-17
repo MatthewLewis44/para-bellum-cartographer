@@ -106,10 +106,19 @@ def assign_province(lon: float, lat: float, pset: ProvinceSet) -> str | None:
 # ---------------------------------------------------------------------------
 
 def _norm(s: str) -> str:
-    """lowercase, accent-strip, keep alnum+space — cross-language name matching."""
-    s = unicodedata.normalize("NFKD", s or "")
+    """lowercase, accent-strip, punctuation→space — cross-language name matching.
+
+    Punctuation is replaced by a SPACE, not deleted, so hyphen/apostrophe names
+    keep their word boundaries ("Charleville-Mézières" → "charleville mezieres";
+    "'s-Gravenhage" → "s gravenhage"). Otherwise they collapse into one opaque
+    token and the whole-token rules in _match_score can never fire. ``ß`` is
+    folded to ``ss`` (NFKD leaves it intact) so "Gießen" == "Giessen".
+    """
+    s = (s or "").replace("ß", "ss").replace("ẞ", "ss")
+    s = unicodedata.normalize("NFKD", s)
     s = "".join(c for c in s if not unicodedata.combining(c))
-    return " ".join("".join(c for c in s.lower() if c.isalnum() or c == " ").split())
+    s = "".join(c if (c.isalnum() or c == " ") else " " for c in s.lower())
+    return " ".join(s.split())
 
 
 def _match_score(meta_name: str, node_norm: str) -> int:

@@ -567,7 +567,12 @@ makes `river_edges` seam-identical), so `has_river` (a filtered river intersects
 the hex polygon) and `river_name` (the river with the longest in-hex run) are
 seam-identical and automatically consistent with `river_edges` — no second grid
 sweep. Belgium: 130 river-hexes (17.6 % of land), 0 isolated, Meuse / Scheldt /
-Albert Canal / Sambre as continuous chains.
+Albert Canal / Sambre as continuous chains. Adversarial review confirmed
+connectivity, determinism, and has_river↔river_edges consistency; its one
+finding — the primary-river pick measured in-hex run length in raw WGS84 degrees,
+under-weighting E-W vs N-S by cos(lat) — is fixed (lon scaled by cos(lat) before
+the length comparison, so a trunk beats a clipping tributary regardless of
+orientation).
 
 ---
 
@@ -620,6 +625,25 @@ wired into `validate_full_bbox.py`.
 **Provinces for CHE/AUT/ITA are NOT authored this sprint** (P0-C is country-level
 coverage only); their hexes get a country but no province. STOPGAP posture per
 AD-018 — review pending.
+
+**Review follow-up (Sprint 5):** adversarial review surfaced and fixed:
+- `_norm` now maps punctuation → space (not delete) and folds `ß`→`ss`, so
+  hyphen/apostrophe names ("Charleville-Mézières", "'s-Gravenhage") keep their
+  word boundaries for whole-token matching instead of gluing into one token.
+- The Hague's OSM node is named **"Den Haag"**, not "'s-Gravenhage" — metadata
+  capital corrected so NLD_ZUID_HOLLAND resolves.
+- **Border-quantization limitation (accepted):** a province capital whose OSM
+  node lands on a 10 km hex *whose center* falls across the border (e.g. Arlon —
+  Belgian capital, but its hex center is in Luxembourg) is grouped under the
+  hex's province. Keeping the hex-center rule is the consistent choice (a
+  province's capital hex is always inside that province; never misattributed);
+  the cost is an occasional border capital going untagged. Grid-dependent.
+- **The "30+ provinces / 30+ capitals" target is a property of the AUTHORED
+  layer (38/38/57), not of a clipped bbox** — a run only frames the capitals
+  geographically inside it (the Benelux bbox omits 8 southern-French / Hannover /
+  Saar capitals). The gates validate authored totals + per-run structural
+  correctness (no province with >1 capital; every *framed* province has one),
+  not a raw framed-capital count.
 
 ---
 

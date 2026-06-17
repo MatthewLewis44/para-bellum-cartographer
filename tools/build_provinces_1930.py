@@ -129,7 +129,7 @@ META: dict[str, dict] = {
     "NLD_GELDERLAND": {"capital": "Arnhem", "subs": [("Nijmegen", "Waal crossing"), ("Apeldoorn", "Veluwe")]},
     "NLD_UTRECHT": {"capital": "Utrecht", "subs": [("Amersfoort", "rail junction")]},
     "NLD_NOORD_HOLLAND": {"capital": "Haarlem", "subs": [("Amsterdam", "largest city, port"), ("Zaandam", "Zaan industry"), ("Hilversum", "Gooi")]},
-    "NLD_ZUID_HOLLAND": {"capital": "'s-Gravenhage", "subs": [("Rotterdam", "world port"), ("Leiden", "university"), ("Dordrecht", "river junction")]},
+    "NLD_ZUID_HOLLAND": {"capital": "Den Haag", "subs": [("Rotterdam", "world port"), ("Leiden", "university"), ("Dordrecht", "river junction")]},  # OSM names The Hague "Den Haag"
     "NLD_ZEELAND": {"capital": "Middelburg", "subs": [("Vlissingen", "Scheldt port")]},
     "NLD_NOORD_BRABANT": {"capital": "'s-Hertogenbosch", "subs": [("Eindhoven", "Philips industry"), ("Tilburg", "textiles"), ("Breda", "garrison")]},
     "NLD_LIMBURG": {"capital": "Maastricht", "subs": [("Heerlen", "coal"), ("Venlo", "Maas/rail border")]},

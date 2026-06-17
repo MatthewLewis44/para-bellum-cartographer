@@ -47,7 +47,7 @@ from wargame_cartographer.hex.sampler import (
 from wargame_cartographer.memory import working_set_mb
 
 # Bump when the per-tile sampling logic changes, to invalidate stale tile caches.
-STREAMING_VERSION = "s5.0"  # Sprint 5: rivers + province + admin_tier fields invalidate s4.x tiles
+STREAMING_VERSION = "s5.1"  # Sprint 5: rivers + province + admin_tier fields (s5.1: cos-lat river_name fix)
 TILE_DEG = 1.0
 MARGIN_DEG = 0.2
 TILE_RAM_BUDGET_MB = 4096

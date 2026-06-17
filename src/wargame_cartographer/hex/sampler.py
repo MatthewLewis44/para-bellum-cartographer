@@ -781,11 +781,13 @@ def _river_for_hex(
     (no separate global pass needed: the filter that makes river_edges global is
     the same set that makes has_river global).
     """
+    from shapely.affinity import scale
     from shapely.geometry import LineString, Polygon
 
     to_geo = grid._to_geo
     verts_wgs84 = [to_geo.transform(x, y) for x, y in grid.hex_vertices(q, r)]
     hex_poly = Polygon(verts_wgs84)
+    coslat = math.cos(math.radians(hex_poly.centroid.y))
     edges = [LineString([verts_wgs84[i], verts_wgs84[(i + 1) % 6]])
              for i in range(6)]
 
@@ -801,11 +803,13 @@ def _river_for_hex(
         if wway is None or not hex_poly.intersects(wway):
             continue
         has_river = True
-        # Primary-river pick: longest run inside the hex (length in degrees is a
-        # valid relative measure within one small hex). Ties break alphabetically
-        # for determinism.
+        # Primary-river pick: longest run inside the hex. Raw degree-length
+        # under-weights E-W vs N-S by cos(lat) (~1.6x at 51 N), which could
+        # mislabel a trunk vs tributary at a confluence — scale lon by cos(lat)
+        # so the comparison is metric-proportional. Ties break alphabetically.
         inter = hex_poly.intersection(wway)
-        run = inter.length if not inter.is_empty else 0.0
+        run = scale(inter, xfact=coslat, yfact=1.0, origin=(0, 0)).length \
+            if not inter.is_empty else 0.0
         nm = str(names[idx]) if names is not None and names[idx] is not None else ""
         if run > best_run or (run == best_run and nm and (not best_name or nm < best_name)):
             best_run, best_name = run, nm
