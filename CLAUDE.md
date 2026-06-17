@@ -284,5 +284,11 @@ changes tracked here:
   `port: false` everywhere. Pre-existing; not Sprint 2 scope.
 - Stray top-level `wargame_cartographer/hex/coords.py` duplicate outside
   `src/` (untracked). Probably accidental; not imported.
-- `game_data_exporter.py` metadata says `boundaries: "GADM 4.1"` — actual
-  source is the 1930 historical-basemaps GeoJSON as of Sprint 2 Task C.
+- **AD-011 generic-name over-aggregation** (Europe scale): generic waterway
+  names like `Mühlgraben`/`Mühlbach` (mill races) recur on dozens of tiny,
+  disconnected streams whose *combined* per-name length clears the 110 km
+  significance floor, so they tag a few isolated river-hexes (14 / 0.5 % of
+  river-hexes on the W+C Europe run — within the connectivity tolerance, but a
+  real artifact). The complement of the known cross-language fragmentation
+  caveat. A future AD-011 refinement could require a single connected component
+  over the floor, not just an aggregate. Out of Sprint 5 (P0-A node-model) scope.

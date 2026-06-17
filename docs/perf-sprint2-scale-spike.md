@@ -62,3 +62,26 @@ windowed DEM reads, pickle round-trip) — acceptable per the sprint goal: RAM i
 bounded, runtime is not the constraint. Tiles are cached/resumable, so a re-run
 (or a resumed failure) only re-does incomplete tiles + the merge (Belgium re-ran
 in **1.5 s** from cache).
+
+## Sprint 5 (rivers + provinces + admin_tier) — RAM unchanged
+
+The v1.0.4 river node fields (`has_river`/`river_name`) and the province layer
+(`province_at_start` + `admin_tier` capital/sub_capital reconcile) added
+**negligible** per-tile RAM — the rivers ride along in the existing per-hex
+river pass, and province PIP is a tile-local lookup against a tiny global table
+(38 polygons). Re-sampled at `STREAMING_VERSION s5.1`:
+
+| bbox | hexes | tiles | peak RAM / tile | peak RAM global | runtime |
+|---|---|---|---|---|---|
+| Benelux + W. Germany | 2,479 | 35 | **673 MB** (was 657) | **276 MB** | 8.8 min |
+| W+C Europe (5–15 E, 45–54 N) | 8,607 | 130 | **729 MB** (was 742) | **371 MB** | **13.8 min** |
+
+Both still far under the 4 GB/tile + 6 GB global budgets (the +16 MB/tile on
+Benelux is the province GeoDataFrame + per-hex river_name strings). The Europe
+runtime dropped from the Sprint-4 cold **249 min** to **13.8 min** — that run was
+Overpass-fetch-bound; with the OSM part cache warm it is CPU-bound sampling. (One
+operational gotcha: the Natural Earth land/lakes cache hit its 30-day TTL, and
+`extractall` into the existing dir doesn't bump the dir mtime, so `_is_fresh`
+re-downloaded per tile until the cache dirs were `touch`ed — a pre-existing TTL
+quirk, correctness-neutral.) Streaming Belgium remains **hex-for-hex identical**
+to monolithic with all the new fields.
