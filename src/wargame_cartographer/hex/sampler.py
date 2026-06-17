@@ -284,10 +284,12 @@ class HexSampler:
                     hex_poly_wgs84 = _hex_polygon_wgs84(q, r, grid)
                 rail_level = _best_rail_in_hex(hex_poly_wgs84, railways_gdf)
 
-            # -- River edges --
+            # -- Rivers (AD-026): hex-center node model + render-hint edges --
             river_edges: list[int] = []
+            has_river = False
+            river_name = ""
             if waterways_gdf is not None:
-                river_edges = _river_edges_for_hex(
+                river_edges, has_river, river_name = _river_for_hex(
                     q, r, grid, waterways_gdf
                 )
 
@@ -320,6 +322,8 @@ class HexSampler:
                 "moisture":       moisture.value,
                 "is_coastal":     False,  # pass 2
                 "river_edges":    river_edges,
+                "has_river":      has_river,
+                "river_name":     river_name,
                 # Settlement
                 "settlement_type":  settlement_type_str,
                 "settlement_name":  settlement_name,
@@ -739,78 +743,61 @@ def _best_rail_in_hex(hex_poly, railways_gdf) -> str:
     return best
 
 
-def _river_edges_for_hex(q: int, r: int, grid: HexGrid, waterways_gdf) -> list[int]:
-    """Return list of edge indices (0-5) where a waterway crosses the hex boundary.
+def _river_for_hex(
+    q: int, r: int, grid: HexGrid, waterways_gdf
+) -> tuple[list[int], bool, str]:
+    """River data for a hex against the AD-011 significant-waterway set.
 
-    Edge 0 = NE, clockwise: NE=0, E=1, SE=2, SW=3, W=4, NW=5.
-    Only edges shared with a non-water neighbor are candidates
-    (rivers don't cross water-hex edges).
+    Returns ``(river_edges, has_river, river_name)``:
+      river_edges — edge indices 0-5 the river crosses (NE=0, clockwise). A
+                    RENDERING DIRECTION HINT ONLY (AD-026): which neighbours to
+                    draw the river spline toward.
+      has_river   — True if any significant river/canal geometry intersects the
+                    hex polygon — the hex-center node model (AD-026).
+      river_name  — name of the primary river: the one with the longest run
+                    INSIDE this hex, so a trunk beats a tributary clipping a
+                    corner at a confluence. "" when has_river is False.
+
+    ``waterways_gdf`` is the WHOLE AD-011-filtered set (named rivers/canals over
+    110 km total — majors only, bounded). It is passed identically to the
+    monolithic pass and to every streaming tile (AD-025), so has_river /
+    river_name are seam-identical and automatically consistent with river_edges
+    (no separate global pass needed: the filter that makes river_edges global is
+    the same set that makes has_river global).
     """
-    hex_poly = grid.hex_polygon(q, r)
-    verts = grid.hex_vertices(q, r)
-
-    # The 6 edges as LineStrings (projected CRS)
-    edges = []
-    for i in range(6):
-        v1 = verts[i]
-        v2 = verts[(i + 1) % 6]
-        edges.append(LineString([v1, v2]))
-
-def _river_edges_for_hex(q: int, r: int, grid: HexGrid, waterways_gdf) -> list[int]:
-    """Return list of edge indices (0-5) where a waterway crosses the hex boundary."""
-    from pyproj import Transformer
     from shapely.geometry import LineString, Polygon
 
-    # Build hex edges in WGS84 to match waterways_gdf CRS
     to_geo = grid._to_geo
-    verts_proj = grid.hex_vertices(q, r)
-    verts_wgs84 = [to_geo.transform(x, y) for x, y in verts_proj]
+    verts_wgs84 = [to_geo.transform(x, y) for x, y in grid.hex_vertices(q, r)]
+    hex_poly = Polygon(verts_wgs84)
+    edges = [LineString([verts_wgs84[i], verts_wgs84[(i + 1) % 6]])
+             for i in range(6)]
 
-    hex_poly_wgs84 = Polygon(verts_wgs84)
-    edges = []
-    for i in range(6):
-        v1 = verts_wgs84[i]
-        v2 = verts_wgs84[(i + 1) % 6]
-        edges.append(LineString([v1, v2]))
+    geoms = waterways_gdf.geometry.values
+    names = waterways_gdf["name"].values if "name" in waterways_gdf.columns else None
 
     crossed: list[int] = []
-    candidates = list(waterways_gdf.sindex.intersection(hex_poly_wgs84.bounds))
-
-    for idx in candidates:
-        wway = waterways_gdf.iloc[idx].geometry
-        if wway is None or not hex_poly_wgs84.intersects(wway):
+    has_river = False
+    best_name = ""
+    best_run = -1.0
+    for idx in waterways_gdf.sindex.intersection(hex_poly.bounds):
+        wway = geoms[idx]
+        if wway is None or not hex_poly.intersects(wway):
             continue
+        has_river = True
+        # Primary-river pick: longest run inside the hex (length in degrees is a
+        # valid relative measure within one small hex). Ties break alphabetically
+        # for determinism.
+        inter = hex_poly.intersection(wway)
+        run = inter.length if not inter.is_empty else 0.0
+        nm = str(names[idx]) if names is not None and names[idx] is not None else ""
+        if run > best_run or (run == best_run and nm and (not best_name or nm < best_name)):
+            best_run, best_name = run, nm
         for edge_idx, edge in enumerate(edges):
-            if edge.intersects(wway) and edge_idx not in crossed:
+            if edge_idx not in crossed and edge.intersects(wway):
                 crossed.append(edge_idx)
 
-    return sorted(crossed)
-    crossed: list[int] = []
-    candidates = list(waterways_gdf.sindex.intersection(hex_poly.bounds))
-
-    for idx in candidates:
-        wway = waterways_gdf.iloc[idx].geometry
-        if wway is None:
-            continue
-        # Project waterway geometry to grid CRS
-        try:
-            if wway.geom_type == "LineString":
-                proj_coords = [to_proj.transform(x, y) for x, y in wway.coords]
-                proj_wway = LineString(proj_coords)
-            else:
-                continue
-        except Exception:
-            continue
-
-        if not hex_poly.intersects(proj_wway):
-            continue
-
-        # Check which edges it crosses
-        for edge_idx, edge in enumerate(edges):
-            if edge.intersects(proj_wway) and edge_idx not in crossed:
-                crossed.append(edge_idx)
-
-    return sorted(crossed)
+    return sorted(crossed), has_river, (best_name if has_river else "")
 
 
 def _hex_has_bridge(center: Point, bridges_gdf, radius_m: float) -> bool:
