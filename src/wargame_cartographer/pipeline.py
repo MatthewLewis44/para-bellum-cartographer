@@ -126,6 +126,17 @@ def run_pipeline(
         status(f"1930 resources unavailable: {e}")
     stage_done("resources_1930", features=len(resources_gdf) if resources_gdf is not None else 0)
 
+    # 4d. Load 1930 provinces (repo-committed, AD-023/027)
+    status("Loading 1930 provinces...")
+    provinces = None
+    try:
+        from wargame_cartographer.geo.provinces import load_provinces
+        provinces = load_provinces()
+        status(f"Provinces ready: {len(provinces.gdf)} provinces")
+    except Exception as e:
+        status(f"1930 provinces unavailable: {e}")
+    stage_done("provinces_1930", provinces=len(provinces.gdf) if provinces is not None else 0)
+
     # 5. Get elevation + hillshade
     status("Processing elevation data...")
     elev_proc = ElevationProcessor()
@@ -146,6 +157,7 @@ def run_pipeline(
         osm_data=osm_data,
         boundaries_gdf=boundaries_gdf,
         resources_gdf=resources_gdf,
+        provinces=provinces,
     )
 
     # Biome distribution summary

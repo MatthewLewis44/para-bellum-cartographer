@@ -39,7 +39,7 @@ def closest_hex(lat: float, lon: float) -> dict:
 
 
 # --- Schema -----------------------------------------------------------------
-check('schema_version is 1.0.3', data['schema_version'] == '1.0.3',
+check('schema_version is 1.0.4', data['schema_version'] == '1.0.4',
       f"got {data['schema_version']}")
 
 # --- Hex count ---------------------------------------------------------------
@@ -250,6 +250,58 @@ check('Essen hex has coal AND steel',
 liege = closest_hex(50.61, 5.54)
 check('Liège hex has steel', liege['resources'].get('steel'),
       f"hex {liege['id']} steel={liege['resources'].get('steel')}")
+
+# --- Rivers: hex-center node model (P0-A, AD-026) ---------------------------------
+has_river = [h for h in hexes if h.get('rivers', {}).get('has_river')]
+check('has_river hexes present', len(has_river) > 0, f'{len(has_river)} hexes')
+name_mismatch = [h['id'] for h in hexes
+                 if bool(h.get('rivers', {}).get('has_river'))
+                 != bool(h.get('rivers', {}).get('river_name'))]
+check('river_name set iff has_river', not name_mismatch, f'{len(name_mismatch)} mismatches')
+
+# --- Provinces + admin tiers (P0-B, AD-023/AD-027) --------------------------------
+from collections import defaultdict
+provs = sorted({h['political']['province_at_start'] for h in hexes
+                if h['political']['province_at_start']})
+cap_by_prov = defaultdict(int)
+sub_total = 0
+for h in hexes:
+    t = h['settlement']['admin_tier']
+    if t == 'capital':
+        cap_by_prov[h['political']['province_at_start']] += 1
+    elif t == 'sub_capital':
+        sub_total += 1
+n_caps = sum(1 for p in provs if cap_by_prov[p] >= 1)
+multi_cap = [p for p in provs if cap_by_prov[p] > 1]
+land = [h for h in hexes if not h['flags']['is_water'] and h['political']['country_at_start']]
+no_prov = [h for h in land if not h['political']['province_at_start']]
+bad_settled = [h['id'] for h in hexes
+               if h['political']['province_at_start'] and h['settlement']['type'] != 'none'
+               and h['settlement']['admin_tier'] not in ('capital', 'sub_capital', 'urban')]
+rural_named = [h['id'] for h in hexes
+               if h['settlement']['admin_tier'] == 'rural' and h['settlement']['name']]
+
+check('30+ provinces tagged', len(provs) >= 30, f'{len(provs)} provinces')
+check('30+ capitals designated', n_caps >= 30, f'{n_caps} capitals')
+check('no province has >1 capital hex', not multi_cap, f'{len(multi_cap)}: {multi_cap[:5]}')
+check('sub-capital hexes present (30+)', sub_total >= 30, f'{sub_total} sub-capitals')
+check('province coverage of land >= 98%',
+      len(no_prov) <= 0.02 * max(1, len(land)),
+      f'{len(no_prov)} of {len(land)} land hexes uncovered')
+check('settled in-province hexes are capital/sub/urban', not bad_settled,
+      f'{len(bad_settled)} violations')
+check('no rural hex carries a settlement name', not rural_named, f'{len(rural_named)}')
+
+# province spot-checks
+for label, lat, lon, want in [
+    ('Köln -> DEU_RHEINLAND', 50.94, 6.96, 'DEU_RHEINLAND'),
+    ('Münster -> DEU_WESTFALEN', 51.96, 7.63, 'DEU_WESTFALEN'),
+    ('Maastricht -> NLD_LIMBURG', 50.85, 5.69, 'NLD_LIMBURG'),
+    ('Liège -> BEL_LIEGE', 50.63, 5.57, 'BEL_LIEGE'),
+]:
+    h = closest_hex(lat, lon)
+    check(f'{label}', h['political']['province_at_start'] == want,
+          f"hex {h['id']} -> {h['political']['province_at_start'] or '(none)'}")
 
 # --- Summary ----------------------------------------------------------------------
 print(f'Full-bbox validation — {OUTPUT}')

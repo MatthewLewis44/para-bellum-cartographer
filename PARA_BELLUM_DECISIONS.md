@@ -560,4 +560,83 @@ retained so a class split can be added later without rework.
 toward neighboring river-hexes (using river_edges direction hints). Continuous
 by construction (center-to-center always connects).
 
+**As-built (Sprint 5):** computed in the per-hex pass (`sampler._river_for_hex`),
+NOT a separate global stage. AD-025 already feeds the WHOLE AD-011-filtered
+waterway set to the monolithic pass and to every streaming tile (that is what
+makes `river_edges` seam-identical), so `has_river` (a filtered river intersects
+the hex polygon) and `river_name` (the river with the longest in-hex run) are
+seam-identical and automatically consistent with `river_edges` — no second grid
+sweep. Belgium: 130 river-hexes (17.6 % of land), 0 isolated, Meuse / Scheldt /
+Albert Canal / Sambre as continuous chains.
+
+---
+
+## AD-027 — 1930 province authoring + tagging (implementation)
+
+**Date:** 2026-06-17 (Sprint 5)
+**Status:** Accepted (stopgap, pending historical review)
+
+Implements the province layer specified by AD-023. Provinces are authored as
+GeoJSON polygons + a paired capital/sub-capital metadata JSON, both generated
+reproducibly by `tools/build_provinces_1930.py` from **Natural Earth admin-1**
+(public domain, the AD-018 lineage). 38 provinces over the 5-country western
+bbox (BEL 9, NLD 11, LUX 1, DEU 6, FRA 11).
+
+**1930-vs-modern adjustments (NE admin-1 is a stopgap):**
+- **Belgium** — modern NE splits Brabant into Flemish + Walloon Brabant +
+  Brussels (post-1995). 1930 had ONE Brabant (incl. Brussels) → the three merge.
+- **Netherlands** — NE includes Flevoland (reclaimed 1986; Zuiderzee *water* in
+  1930). Folded into Overijssel so reclaimed-land hexes still resolve to a 1930
+  province. 11 provinces.
+- **Germany** — modern Bundesländer do NOT match 1930. Reconstructed the
+  relevant 1930 states/Prussian provinces (AD-023): Rheinland, Westfalen,
+  Hannover, Hesse-Nassau, Hesse-Darmstadt, and **Saar** (a League of Nations
+  mandate in 1930 — a separate territory, not part of Germany proper). NRW is
+  split into Rheinland (W) / Westfalen (E) by a meridian cut (7.3 °E); Hessen
+  into Hesse-Nassau (N) / Hesse-Darmstadt (S) by a parallel cut (50.0 °N). The
+  cuts are **approximate** — the historical borders zigzag, so the Ruhr edge
+  (Bochum/Dortmund) is fuzzy — but every province capital resolves correctly.
+- **France** — départements (préfecture = capital), 1930-stable.
+
+**Capital / sub-capital tagging (`assign_admin_tiers`, a GLOBAL reconcile pass
+like coastal/sprawl):** capital + sub-capital names are matched to OSM
+settlement **nodes** (the raw set, not just floor-tagged hexes — so a provincial
+capital below the 10 km tagging floor still resolves). Matching is on
+**normalised, WHOLE-TOKEN** names (lowercase + accent-strip), scored
+exact > token > shared-token, then by population. Raw substring containment was
+explicitly dropped after it matched "**As**" (a Limburg town) to "H-**as**-selt"
+and stole BEL_LIMBURG's capital. A matched capital hex is upgraded to read as a
+settled place; `admin_tier` ∈ {capital, sub_capital, urban, rural, none}.
+
+**Bbox edge effect:** provinces whose 1930 capital lies outside the run bbox
+(Hannover, Kassel, Strasbourg, …) get no in-grid capital hex — reported as a
+WARNING, not a failure. The region-wide gate is "30+ provinces, 30+ capitals"
+(Benelux satisfies it); a single-country test bbox is treated as a subset.
+
+**Validation:** `check_provinces.py` (one-capital-per-province, settled hexes are
+capital/sub/urban, no rural hex carries a name, full land coverage, totals),
+wired into `validate_full_bbox.py`.
+
+**Provinces for CHE/AUT/ITA are NOT authored this sprint** (P0-C is country-level
+coverage only); their hexes get a country but no province. STOPGAP posture per
+AD-018 — review pending.
+
+---
+
+## AD-028 — Country boundary coverage extended to CHE / AUT / ITA
+
+**Date:** 2026-06-17 (Sprint 5)
+**Status:** Accepted (stopgap)
+
+The W+C Europe run produced empty-`country_at_start` land hexes over
+Switzerland, Austria and northern Italy (the AD-018 stopgap had only the 5
+western countries). `tools/extend_boundaries_1930.py` **appends** CHE/AUT/ITA
+from Natural Earth admin_0 (public domain), preserving the existing 5 countries'
+geometry byte-for-byte (so the Benelux hex-identical gates are unaffected — only
+previously-empty Alpine/N-Italian hexes change). 1930 validity: Swiss borders
+stable; Austria independent (pre-Anschluss); Italy's modern polygon == 1930 for
+the bbox's northern reach (South Tyrol Italian since 1919; the eastern
+Trieste/Istria gains lost in 1947 are outside the bbox). Provinces for these
+three are deferred to a later eastward-expansion sprint.
+
 ---

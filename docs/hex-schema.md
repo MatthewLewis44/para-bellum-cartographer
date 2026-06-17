@@ -135,7 +135,7 @@ AD-011 length data is retained so a class split can be added later without rewor
 | Field | Type | Notes |
 |---|---|---|
 | `country_at_start` | string | ISO3 country code (`"BEL"`, `"DEU"`, ...) as of game start (1930). Empty string = water / no country. |
-| `province_at_start` | string | Province/region id as of game start. **Sprint 3 — currently always empty.** |
+| `province_at_start` | string | Province id as of game start (e.g. `"BEL_LIEGE"`, `"DEU_RHEINLAND"`). **Populated in Sprint 5** from the 1930 province layer (AD-023/AD-027). Empty for water, no-country, or land outside the authored 5-country coverage (CH/AT/IT have country but no province yet). |
 
 ### `settlement`
 
@@ -147,7 +147,7 @@ AD-011 length data is retained so a class split can be added later without rewor
 | `anthrome` | enum string | `none`, `residential`, `industrial`, `metro`, `outskirts` (v1.0.2), `cropland`, `paddy`, `mining`, `mangrove`, `fortified`. Drives Unity tactical map pool selection. Within a city footprint (AD-014): `metro` <3 km from centroid, else `industrial`/`residential` by dominant landuse, else `outskirts`. |
 | `parent_city` | string | **v1.0.2 (AD-014).** Name of the city this hex belongs to, for hexes inside a multi-hex urban footprint (centroid + suburb ring). Empty `""` otherwise. |
 | `distance_from_centroid_km` | float \| null | **v1.0.2 (AD-014).** Distance from this hex's center to the parent city's centroid hex (0.0 at the centroid). `null` for hexes not in any city footprint. |
-| `admin_tier` | enum string | **v1.0.3.** `capital`, `sub_capital`, `urban`, `rural`, `none`. Administrative tier. `capital`/`sub_capital` are reserved for a future political/capital layer (not yet assigned). Current pipeline defaults: water or no-country hex → `none`; settled land hex → `urban`; unsettled non-water land hex → `rural`. |
+| `admin_tier` | enum string | **v1.0.3 field; `capital`/`sub_capital` assigned in Sprint 5 (AD-023/AD-027).** `capital` (province capital, ≤1 per province), `sub_capital` (designated regional centre), `urban` (other settled in-province hex), `rural` (unsettled in-province land), `none` (water / no-country / outside province coverage). Capital + sub-capital hexes are matched from the province metadata to OSM settlement nodes; where no province layer is loaded, falls back to the population-derived default (settled→`urban`, land→`rural`). |
 
 ### `infrastructure`
 

@@ -11,7 +11,8 @@ sprint kills). So this streams the cached sub-bbox parts twice:
 
 The result is the SAME filtered set the monolithic ``get_waterways`` produces
 (same osm_id dedup, same per-name totals); it is passed WHOLE to every tile's
-``_river_edges_for_hex`` (bounded — majors only), so river_edges is seam-identical.
+``_river_for_hex`` (bounded — majors only), so river_edges AND the AD-026 node
+fields (has_river / river_name) are seam-identical.
 """
 
 from __future__ import annotations

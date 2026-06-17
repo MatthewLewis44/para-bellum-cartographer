@@ -34,6 +34,7 @@ from shapely.prepared import prep
 
 from wargame_cartographer.config.map_spec import BoundingBox
 from wargame_cartographer.geo.boundaries import assign_country
+from wargame_cartographer.geo.provinces import assign_province, assign_admin_tiers
 from wargame_cartographer.geo.elevation import ElevationProcessor
 from wargame_cartographer.hex.grid import HexGrid
 from wargame_cartographer.hex.coords import (
@@ -66,6 +67,7 @@ class HexSampler:
         osm_data=None,         # OSMLayerData (our new OSM layers)
         boundaries_gdf=None,   # 1930 political boundaries (geo/boundaries.py)
         resources_gdf=None,    # 1930 strategic resources (geo/resources.py)
+        provinces=None,        # 1930 ProvinceSet (geo/provinces.py, AD-023/027)
         *,
         hex_keys=None,           # iterable of (q,r) to sample; None = all cells
         precomputed=None,        # dict of reusable global tables (streaming mode)
@@ -313,6 +315,16 @@ class HexSampler:
                     cell.center_lon, cell.center_lat, boundaries_gdf
                 )
 
+            # -- Province at start (1930 provinces, AD-023/027) --
+            # Tile-local PIP against the GLOBAL province polygons (same pattern
+            # as country_at_start). admin_tier (capital/sub_capital) is deferred
+            # to the global reconcile pass (needs all settlement nodes).
+            province_id = ""
+            if provinces is not None and not is_water and not is_lake:
+                province_id = assign_province(
+                    cell.center_lon, cell.center_lat, provinces
+                ) or ""
+
             result[(q, r)] = {
                 # Core terrain
                 "biome":          biome,
@@ -349,9 +361,9 @@ class HexSampler:
                 "iron":           "iron" in resource_by_hex.get((q, r), ()),
                 "agriculture":    landuse_type == "farmland",
                 "industry_level": 1 if landuse_type == "industrial" else 0,
-                # Political (1930 boundaries; province is Sprint 3)
+                # Political (1930 boundaries + provinces, AD-023/027)
                 "country_at_start":  country_code,
-                "province_at_start": "",
+                "province_at_start": province_id,
             }
 
         # ----------------------------------------------------------------
@@ -362,6 +374,10 @@ class HexSampler:
         if run_global_passes:
             _assign_coastal(result, grid)
             _assign_urban_sprawl(result, grid, settlement_by_hex)
+            # admin_tier (capital/sub_capital) needs the whole grid + all
+            # settlement nodes — a global reconcile, like coastal/sprawl.
+            if provinces is not None:
+                assign_admin_tiers(result, grid, provinces, settlements_gdf)
 
         return result
 

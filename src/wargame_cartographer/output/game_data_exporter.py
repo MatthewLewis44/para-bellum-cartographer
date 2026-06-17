@@ -185,10 +185,13 @@ def export_game_data(
         is_water = biome in WATER_BIOMES
         is_impassable = biome in IMPASSABLE_BIOMES
 
-        # --- Administrative tier (v1.0.3) ---
-        # Default population-derived tier; capital/sub_capital are reserved for
-        # a future political layer (Sprint 5+ province/capital data).
-        admin_tier = _admin_tier(is_water, country, settlement_type)
+        # --- Administrative tier (v1.0.3; capital/sub_capital from AD-023 in
+        # Sprint 5) --- The province reconcile pass sets admin_tier directly on
+        # the hex when provinces are loaded; otherwise fall back to the
+        # population-derived default.
+        admin_tier = info.get("admin_tier")
+        if admin_tier is None:
+            admin_tier = _admin_tier(is_water, country, settlement_type)
 
         # Base movement cost from biome (Unity applies modifier stack at runtime)
         base_movement = BIOME_BASE_MOVEMENT.get(biome, 1)
@@ -279,6 +282,7 @@ def export_game_data(
                 "terrain": "OpenStreetMap (ODbL)",
                 "elevation": "SRTM3 (NASA, public domain)",
                 "boundaries": "Natural Earth admin_0 (public domain), 1930 stopgap per AD-018",
+                "provinces": "Natural Earth admin_1 derived (public domain), 1930 stopgap per AD-027",
                 "resources": "hand-authored 1930 layer (public domain, F-2)",
             },
             "bounds": {

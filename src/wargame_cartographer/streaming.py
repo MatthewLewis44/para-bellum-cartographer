@@ -47,7 +47,7 @@ from wargame_cartographer.hex.sampler import (
 from wargame_cartographer.memory import working_set_mb
 
 # Bump when the per-tile sampling logic changes, to invalidate stale tile caches.
-STREAMING_VERSION = "s4.2"
+STREAMING_VERSION = "s5.0"  # Sprint 5: rivers + province + admin_tier fields invalidate s4.x tiles
 TILE_DEG = 1.0
 MARGIN_DEG = 0.2
 TILE_RAM_BUDGET_MB = 4096
@@ -139,6 +139,12 @@ def run_streaming_pipeline(
         resources_gdf = load_resources_1930()
     except Exception as e:
         status(f"resources unavailable: {e}")
+    provinces = None
+    try:
+        from wargame_cartographer.geo.provinces import load_provinces
+        provinces = load_provinces()
+    except Exception as e:
+        status(f"provinces unavailable: {e}")
 
     dl = OSMDownloader()
     status("[global] settlements...")
@@ -231,6 +237,7 @@ def run_streaming_pipeline(
         tile_result = sampler.build_hex_terrain(
             grid, margin, vector_data=vector_tile, osm_data=osm_tile,
             boundaries_gdf=boundaries_gdf, resources_gdf=resources_gdf,
+            provinces=provinces,
             hex_keys=hex_keys, precomputed=tile_precomputed,
             run_global_passes=False, allow_synthetic_elevation=False,
         )
@@ -267,7 +274,8 @@ def run_streaming_pipeline(
     del tile_lookup
     gc.collect()
 
-    apply_global_passes(result, grid, settlement_by_hex)
+    apply_global_passes(result, grid, settlement_by_hex,
+                        provinces=provinces, settlements_gdf=settlements_gdf)
     global_peak_mb = working_set_mb()
     if global_peak_mb > GLOBAL_RAM_BUDGET_MB:
         raise MemoryError(
