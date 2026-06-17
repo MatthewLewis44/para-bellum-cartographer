@@ -2,7 +2,7 @@
 
 Produces the canonical hex JSON consumed by Unity 6.6 LTS.
 This is the contract between the cartography pipeline and the game engine.
-Schema version: 1.0.1
+Schema version: see SCHEMA_VERSION below (currently 1.0.4).
 
 OUT OF SCOPE (not written here, implemented in Unity or later pipeline stages):
     - Tactical battle map selection logic
@@ -44,7 +44,7 @@ from wargame_cartographer.infrastructure.types import (
 # Schema version — bump when any field is added/removed/renamed.
 # Unity C# loader checks this on load and rejects incompatible versions.
 # ---------------------------------------------------------------------------
-SCHEMA_VERSION = "1.0.3"
+SCHEMA_VERSION = "1.0.4"
 
 
 def _safe_enum_value(val, default: str) -> str:
@@ -133,7 +133,15 @@ def export_game_data(
         moisture = _safe_enum_value(info.get("moisture"), MoistureLevel.TEMPERATE.value)
 
         is_coastal = bool(info.get("is_coastal", False))
-        river_edges = info.get("river_edges", [])  # list of ints 0-5
+        river_edges = info.get("river_edges", [])  # list of ints 0-5 (render hint)
+
+        # --- Rivers (v1.0.4, AD-026: hex-center node model) ---
+        # has_river: does a significant (AD-011) river pass through this hex.
+        # river_name: primary river by longest in-hex run. river_edges stays in
+        # `terrain` as a rendering direction hint only; its gameplay role is
+        # superseded by has_river (AD-026).
+        has_river = bool(info.get("has_river", False))
+        river_name = info.get("river_name", "") or ""
 
         # --- Political ---
         country = info.get("country_at_start", "")
@@ -206,6 +214,10 @@ def export_game_data(
                 "moisture": moisture,
                 "is_coastal": is_coastal,
                 "river_edges": river_edges,
+            },
+            "rivers": {
+                "has_river": has_river,
+                "river_name": river_name,
             },
             "political": {
                 "country_at_start": country,

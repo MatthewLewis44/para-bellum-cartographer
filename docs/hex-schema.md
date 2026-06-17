@@ -1,4 +1,4 @@
-# Para Bellum Hex JSON Schema — v1.0.1
+# Para Bellum Hex JSON Schema — v1.0.4
 
 The contract between the cartography pipeline (`output/game_data_exporter.py`)
 and the Unity 6 C# loader. The loader checks `schema_version` on load and
@@ -18,7 +18,7 @@ add/remove/rename** and record the change in the changelog below and in
 
 | Field | Type | Notes |
 |---|---|---|
-| `schema_version` | string | Semver. Currently `"1.0.1"`. |
+| `schema_version` | string | Semver. Currently `"1.0.4"`. |
 | `map_metadata` | object | See below. |
 | `hexes` | array | One object per hex, sorted by `id` ascending (enables binary search in Unity). |
 
@@ -56,6 +56,10 @@ add/remove/rename** and record the change in the changelog below and in
     "moisture": "temperate",
     "is_coastal": false,
     "river_edges": []
+  },
+  "rivers": {
+    "has_river": false,
+    "river_name": ""
   },
   "political": {
     "country_at_start": "BEL",
@@ -108,7 +112,23 @@ pipeline and never stored in JSON.
 | `vegetation` | enum string | `bare`, `sparse`, `light`, `dense`. |
 | `moisture` | enum string | `arid`, `dry`, `temperate`, `wet`, `flooded`. |
 | `is_coastal` | bool | Land hex with ≥1 water-hex neighbor. |
-| `river_edges` | int array | Edge indices 0–5 crossed by a river/canal. Edge 0 = NE, clockwise. Empty = no river. |
+| `river_edges` | int array | Edge indices 0–5 crossed by a river/canal. Edge 0 = NE, clockwise. Empty = no river. **v1.0.4 (AD-026): rendering direction hint only** — which neighbours to draw the river spline toward. Its gameplay role is superseded by `rivers.has_river`. |
+
+### `rivers`
+
+**v1.0.4 (AD-026).** Rivers are modelled as hex-*center* features (the hex a
+river polyline passes through), not hex-edge boundaries. Crossing a river means
+attacking *into* a river hex; the opposed crossing is folded into that hex's
+battle. Computed from the AD-011 significant-waterway set (named river/canal
+with ≥110 km total geodesic length).
+
+| Field | Type | Notes |
+|---|---|---|
+| `has_river` | bool | `true` if a significant river/canal passes through this hex (its geometry intersects the hex polygon). Default `false`. River-hexes form continuous chains by construction (a polyline through consecutive hexes shares their edges). |
+| `river_name` | string | Display name of the primary river in the hex — the significant waterway with the longest run *inside* this hex (so a trunk river beats a clipping tributary at a confluence). Empty `""` when `has_river` is `false`. |
+
+No major/minor/navigable class distinction in v1 (single boolean per AD-026); the
+AD-011 length data is retained so a class split can be added later without rework.
 
 ### `political`
 
@@ -164,6 +184,21 @@ pipeline and never stored in JSON.
 | `is_coastal` | bool | Duplicate of `terrain.is_coastal` for fast Unity filtering. |
 
 ## Changelog
+
+### v1.0.4 (2026-06-17, Sprint 5) — additive only
+
+- **`rivers`** block added with **`rivers.has_river`** (bool, default `false`)
+  and **`rivers.river_name`** (string, default `""`) — the hex-center river node
+  model (AD-026). Populated from the AD-011 significant-waterway set in the
+  sampler's per-hex pass (the same whole-bbox filtered set already feeds
+  `river_edges`, so the new fields are seam-identical under the streaming
+  pipeline and automatically consistent with `river_edges`).
+- **`terrain.river_edges`** is **retained** but redocumented as a *rendering
+  direction hint only* — its gameplay role is superseded by `rivers.has_river`
+  (AD-026). No value or position change; v1.0.3 consumers keep working.
+- Purely additive — a v1.0.3 consumer that ignores the `rivers` block still
+  loads. **Unity should add a `Rivers` block (has_river, river_name) to
+  HexData.cs** and migrate river gameplay from edge-based to hex-based.
 
 ### v1.0.3 (2026-06-14, Sprint 4) — additive only
 

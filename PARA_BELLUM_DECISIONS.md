@@ -526,3 +526,38 @@ Identical-output invariants the panel surfaced and we enforce:
    of feature order.
 3. **Synthetic elevation is fail-loud** in streaming (`allow_synthetic=False`):
    a silent sin/cos substitution for one tile would be cached and shipped.
+
+---
+
+## AD-026 — Rivers are hex-center features, not hex-edge boundaries
+
+**Date:** 2026-06-17 (Sprint 5)
+**Status:** Accepted (supersedes river_edges gameplay role)
+
+A river occupies the hexes its polyline passes through (node model), NOT the
+edges between hexes (the prior edge model). Rationale: edge-based rivers
+staircase illogically — a north-south river had to zigzag across top edge,
+upper-right edge, bottom edge of successive hexes, which neither rendered
+continuously nor represented the river sensibly.
+
+**Gameplay:** crossing a river = attacking INTO a river hex. The opposed
+crossing is folded into that single hex's battle (river-crossing tactical map
+per AD-015). The attacker chooses where to force the crossing by which river-hex
+they assault. Rivers are features armies assault into, not boundaries armies
+form along.
+
+**v1 scope:** single boolean — a hex either has a river or it does not. No
+major/minor/navigable class distinction yet. The AD-011 geodesic-length data is
+retained so a class split can be added later without rework.
+
+**Schema (v1.0.4, additive):**
+- rivers.has_river (bool) — does this hex contain a river
+- rivers.river_name (string) — which river (display + future Newsreel naming)
+- river_edges retained ONLY as a directional hint for rendering (which neighbors
+  to draw the spline toward); its gameplay role is superseded
+
+**Rendering:** continuous spline through consecutive river-hex centers, drawn
+toward neighboring river-hexes (using river_edges direction hints). Continuous
+by construction (center-to-center always connects).
+
+---
