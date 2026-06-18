@@ -75,13 +75,19 @@ def _select_ne_rivers(
         return _empty()
     g = g[g["scalerank"] <= scalerank_max]
     g = g[g.geometry.notna() & g.geometry.geom_type.isin(_LINES)]
+    # Keep only NAMED rivers — an unnamed river-hex would violate the
+    # name-iff-has_river contract and is undisplayable in Unity. At scalerank<=8
+    # every genuinely-significant NE river is named (verified 0 unnamed in the
+    # Belgium/Benelux/Europe bboxes); this only guards a future sparsely-named
+    # region. (review finding L1)
+    if "name" not in g.columns:
+        return _empty()
+    g = g[g["name"].notna() & (g["name"].astype(str).str.strip() != "")]
     if g.empty:
         return _empty()
-    names = g["name"].fillna("").astype(str).values if "name" in g.columns \
-        else [""] * len(g)
     return gpd.GeoDataFrame({
         "geometry": g.geometry.values,
-        "name": list(names),
+        "name": g["name"].astype(str).values,
         "waterway_type": "river",
         "scalerank": g["scalerank"].astype(int).values,
     }, crs="EPSG:4326")
@@ -110,6 +116,8 @@ def _select_osm_canals(
         gdf = gpd.read_file(path)
         if "waterway_type" in gdf.columns:
             gdf = gdf[gdf["waterway_type"] == "canal"]
+        if "name" in gdf.columns:
+            gdf = gdf[gdf["name"].notna()]  # robust NaN/None name guard (review L2)
         if gdf.empty:
             continue
         has_id = "osm_id" in gdf.columns
@@ -137,6 +145,8 @@ def _select_osm_canals(
         gdf = gpd.read_file(path)
         if "waterway_type" in gdf.columns:
             gdf = gdf[gdf["waterway_type"] == "canal"]
+        if "name" in gdf.columns:
+            gdf = gdf[gdf["name"].notna()]  # robust NaN/None name guard (review L2)
         if gdf.empty:
             continue
         has_id = "osm_id" in gdf.columns

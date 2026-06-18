@@ -723,9 +723,17 @@ and latitude-independent.
 
 `river_scalerank_max` is a config parameter (in the bbox config YAML). Default
 value to be set by PM art-direction after visual review of candidate thresholds
-(expected range 6-7 for a 10 km strategic hex map — major rivers plus significant
-tributaries, excluding minor streams at rank 8-9). The parameter is exposed so
-the threshold can be tuned per visual judgment without code changes.
+(a-priori expected range 6-7 for a 10 km strategic hex map). The parameter is
+exposed so the threshold can be tuned per visual judgment without code changes.
+
+**As-built default = 8 (empirically corrected).** The T1 probe found Natural
+Earth ranks the **Meuse (Maas) and Scheldt (Schelde) at scalerank 8**, not 6-7 —
+so ≤7 produces a Benelux map with the Rhine but *neither* the Meuse nor the
+Scheldt (194 river-hexes, the two key rivers missing), while ≤8 includes them
+(305 river-hexes). The continental giants (Danube, Rhône, Rhine, Elbe, Po, Oder)
+sit at ≤6, so ≤8 is a strict superset that adds the regionally-major rank-8
+rivers without re-admitting noise (no generic names exist in NE). Default is
+therefore **8**; the ≤7 vs ≤8 comparison outputs are retained for the PM.
 
 ### River naming
 

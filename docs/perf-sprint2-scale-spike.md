@@ -85,3 +85,22 @@ operational gotcha: the Natural Earth land/lakes cache hit its 30-day TTL, and
 re-downloaded per tile until the cache dirs were `touch`ed — a pre-existing TTL
 quirk, correctness-neutral.) Streaming Belgium remains **hex-for-hex identical**
 to monolithic with all the new fields.
+
+## AD-029 (river source swap to NE scalerank) — RAM-neutral, fewer river-hexes
+
+Re-sampled at `STREAMING_VERSION s6.0` (tile dir also keyed by `_sr<N>`). The
+river source change is RAM-neutral (the selected set — NE scalerank rivers + a
+handful of OSM canals — is tiny, ~10–30 polylines). River-hexes drop sharply
+(curated selection, no generic-name noise):
+
+| bbox | hexes | tiles | peak RAM / tile | peak RAM global | runtime | river-hexes (was) |
+|---|---|---|---|---|---|---|
+| Benelux + W. Germany | 2,479 | 35 | **656 MB** | **272 MB** | 3.7 min | **305** (was 493) |
+| W+C Europe | 8,607 | 130 | **716 MB** | **352 MB** | 11.5 min | **1,141** (was 2,688) |
+
+Belgium drops 130 → **87** river-hexes; streaming Belgium is again **hex-for-hex
+identical** to monolithic under AD-029. The Mühlgraben/Mühlbach generic-name
+isolated hexes are **gone** (0 at every scale); the few remaining isolated hexes
+are real rivers clipping a bbox corner (Weser NE of Benelux, Rhône SW of Europe),
+not noise. Threshold ≤7 vs ≤8 on Benelux: 194 vs 305 river-hexes — ≤7 omits the
+Meuse and Scheldt (NE ranks them 8), so 8 is the default.
