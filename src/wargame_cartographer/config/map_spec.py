@@ -137,6 +137,13 @@ class MapSpec(BaseModel):
     designer_style: Literal["simonitch", "simonsen", "kibler"] = "simonitch"
 
     hex_size_km: float = 10.0
+
+    # River selection (AD-029): Natural Earth rivers with scalerank <= this are
+    # selected as natural rivers (plus OSM major canals). Default 8 captures the
+    # Meuse + Scheldt (NE ranks them 8) alongside the continental majors; PM
+    # tunes per visual review. 6-7 = continental giants only (drops Meuse/Scheldt).
+    river_scalerank_max: int = 8
+
     output_width_mm: float = 500.0
     output_height_mm: float = 700.0
     dpi: int = 150

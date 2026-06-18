@@ -91,6 +91,10 @@ def load_osm_layers(bbox: BoundingBox) -> OSMLayerData:
         settlements = dl.get_settlements(bbox),
         roads       = dl.get_roads(bbox),
         railways    = dl.get_railways(bbox),
-        waterways   = dl.get_waterways(bbox),
+        # AD-029: river SELECTION is now Natural Earth scalerank + OSM canals
+        # (geo.rivers_global), applied in pipeline.run_pipeline. Here we only
+        # ensure the OSM waterway PARTS are cached (merge=False, no merge spike);
+        # the canal pass reuses them. The old AD-011 merged river filter is gone.
+        waterways   = dl.get_waterways(bbox, merge=False),
         bridges     = dl.get_bridges(bbox),
     )

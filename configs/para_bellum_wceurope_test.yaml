@@ -16,6 +16,7 @@ bbox:
   max_lat: 54.0
 
 hex_size_km: 10.0
+river_scalerank_max: 8  # AD-029: NE rivers scalerank<=8 + OSM canals (Danube/Rhone at <=6)
 
 designer_style: simonitch
 font_scale: 1.0

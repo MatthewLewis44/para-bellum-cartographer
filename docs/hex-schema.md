@@ -119,16 +119,19 @@ pipeline and never stored in JSON.
 **v1.0.4 (AD-026).** Rivers are modelled as hex-*center* features (the hex a
 river polyline passes through), not hex-edge boundaries. Crossing a river means
 attacking *into* a river hex; the opposed crossing is folded into that hex's
-battle. Computed from the AD-011 significant-waterway set (named river/canal
-with ≥110 km total geodesic length).
+battle. River SELECTION is **Natural Earth `scalerank`** (AD-029): natural rivers
+with `scalerank <= river_scalerank_max` (config, default 8) plus OSM major canals
+(the Albert Canal etc. — Natural Earth carries no canals). Source change only;
+the node model is unchanged.
 
 | Field | Type | Notes |
 |---|---|---|
-| `has_river` | bool | `true` if a significant river/canal passes through this hex (its geometry intersects the hex polygon). Default `false`. River-hexes form continuous chains by construction (a polyline through consecutive hexes shares their edges). |
-| `river_name` | string | Display name of the primary river in the hex — the significant waterway with the longest run *inside* this hex (so a trunk river beats a clipping tributary at a confluence). Empty `""` when `has_river` is `false`. |
+| `has_river` | bool | `true` if a selected river/canal passes through this hex (its geometry intersects the hex polygon). Default `false`. River-hexes form continuous chains by construction (a polyline through consecutive hexes shares their edges). |
+| `river_name` | string | Display name of the primary river in the hex — for natural rivers the Natural Earth `name` field; for canals the OSM name. When several cross a hex, the one with the longest run *inside* the hex wins (a trunk beats a clipping tributary). Empty `""` when `has_river` is `false`. |
 
-No major/minor/navigable class distinction in v1 (single boolean per AD-026); the
-AD-011 length data is retained so a class split can be added later without rework.
+No major/minor/navigable class distinction in v1 (single boolean per AD-026);
+Natural Earth `scalerank` is retained per-feature so a river-class split can be
+added later without rework (AD-029).
 
 ### `political`
 
@@ -189,10 +192,11 @@ AD-011 length data is retained so a class split can be added later without rewor
 
 - **`rivers`** block added with **`rivers.has_river`** (bool, default `false`)
   and **`rivers.river_name`** (string, default `""`) — the hex-center river node
-  model (AD-026). Populated from the AD-011 significant-waterway set in the
-  sampler's per-hex pass (the same whole-bbox filtered set already feeds
-  `river_edges`, so the new fields are seam-identical under the streaming
-  pipeline and automatically consistent with `river_edges`).
+  model (AD-026). Populated from the selected-river set in the sampler's per-hex
+  pass — the same whole-bbox set already feeds `river_edges`, so the new fields
+  are seam-identical under the streaming pipeline and automatically consistent
+  with `river_edges`. (The selection source later moved from the OSM AD-011
+  filter to Natural Earth `scalerank` per AD-029; the schema is unchanged.)
 - **`terrain.river_edges`** is **retained** but redocumented as a *rendering
   direction hint only* — its gameplay role is superseded by `rivers.has_river`
   (AD-026). No value or position change; v1.0.3 consumers keep working.

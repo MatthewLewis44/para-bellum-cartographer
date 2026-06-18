@@ -664,3 +664,110 @@ Trieste/Istria gains lost in 1947 are outside the bbox). Provinces for these
 three are deferred to a later eastward-expansion sprint.
 
 ---
+
+## AD-029 — River selection from Natural Earth scalerank (supersedes AD-011 for river selection)
+
+**Date:** 2026-06-17 (Sprint 5 cleanup)
+**Status:** Accepted
+
+### Decision
+
+River SELECTION — which rivers exist on the map — is sourced from Natural Earth's
+`rivers_lake_centerlines` dataset, filtered by the dataset's `scalerank` field. A
+configurable threshold `river_scalerank_max` selects rivers: only features with
+`scalerank <= river_scalerank_max` become candidate rivers. This supersedes the
+OSM-derived AD-011 geodesic-length-per-name significance heuristic as the river
+SELECTION mechanism.
+
+The river NODE MODEL (AD-026) is unchanged: a river still occupies the hexes its
+polyline passes through; `rivers.has_river` and `rivers.river_name` are still
+per-hex fields; rendering is still a continuous spline through river-hex centers.
+Only the SOURCE of "which rivers count" changes — from OSM+AD-011 to Natural
+Earth scalerank.
+
+### Rationale
+
+The AD-011 approach (sum geodesic length per river name across the bbox, keep
+names totaling >110 km) was clever but had three failure modes that surfaced at
+scale:
+
+1. **Generic-name over-aggregation.** Common waterway names ("Mühlgraben",
+   "Mühlbach", "Mühlenbach") appear hundreds of times across Germany. AD-011 sums
+   all segments sharing a name, so dozens of unrelated 2 km mill-streams aggregate
+   past the 110 km threshold and falsely qualify as significant — producing
+   isolated, disconnected river-hexes (~0.5% of hexes at continental scale, all
+   generic-named).
+
+2. **Random middle-continent rivers.** OSM waterway tagging density varies wildly
+   by region; AD-011's length heuristic admits minor rivers in well-mapped regions
+   while the same significance class is dropped in sparsely-mapped regions.
+   Inconsistent significance across the map.
+
+3. **Cross-language fragmentation.** A river renamed at a language border
+   (Escaut/Schelde, Maas/Meuse) splits into name-fragments that may each fall
+   below threshold, dropping a genuinely major river.
+
+Natural Earth `scalerank` is a CURATED significance ranking (cartographer
+judgment, 1 = major like the Nile/Rhine/Amazon, 9 = minor tributary), not a
+DERIVED one. It eliminates all three failure modes:
+
+- No name-aggregation, so no generic-name false positives.
+- Globally consistent significance (a rank-3 river is rank-3 everywhere).
+- Major rivers carry their significance as data regardless of name fragmentation.
+
+It is also already a project dependency (Natural Earth is used for coastlines and
+boundaries), public-domain (AD-018 compliant), tunable (one threshold parameter),
+and latitude-independent.
+
+### Threshold
+
+`river_scalerank_max` is a config parameter (in the bbox config YAML). Default
+value to be set by PM art-direction after visual review of candidate thresholds
+(expected range 6-7 for a 10 km strategic hex map — major rivers plus significant
+tributaries, excluding minor streams at rank 8-9). The parameter is exposed so
+the threshold can be tuned per visual judgment without code changes.
+
+### River naming
+
+`rivers.river_name` (v1.0.4 schema) populates from Natural Earth's `name` field,
+which is cleaner and less language-fragmented than OSM's per-segment naming.
+
+### AD-011 disposition
+
+AD-011's geodesic-length-per-name logic is RETAINED in the codebase ONLY if OSM
+is still needed for sub-hex river GEOMETRY refinement (e.g. precise edge-crossing
+direction hints for `river_edges`). If Natural Earth centerline geometry is
+sufficient for the AD-026 node computation (which hexes a river passes through),
+the AD-011 path is dead code and may be removed. The engineer determines this
+empirically: if Natural Earth centerlines alone produce correct connected
+river-hex chains, AD-011 river logic is retired (documented as superseded). The
+geodesic-length utility itself may be retained for other uses.
+
+### river_edges disposition
+
+`terrain.river_edges` (the per-hex edge-crossing array) remains a rendering
+direction hint per AD-026. It can be computed from Natural Earth centerline
+geometry the same way it was from OSM (which edges of the hex polygon the
+selected river polyline crosses). If Natural Earth geometry is too coarse for
+reliable edge-crossing computation at 10 km hex resolution, `river_edges` may be
+derived from hex-to-hex adjacency among river-hexes instead (connect toward
+neighboring river-hexes) — the Sprint 5 Unity river renderer already drives
+connections by neighbor status rather than raw river_edges, so this is safe.
+
+### Validation
+
+`check_rivers.py` updated to validate the Natural Earth source: connected chains,
+zero (or near-zero, documented-tolerance) isolated hexes, major rivers present
+(Meuse, Rhine, Scheldt, Danube, Rhône, Albert Canal verified at named points),
+sensible river-hex count. The Mühlgraben/Mühlbach isolated-hex problem from
+AD-011 must be GONE.
+
+### Future: river class
+
+Scalerank also enables the deferred major/minor visual distinction: a future
+schema addition could expose `rivers.scalerank` (or a derived class) per hex so
+Unity renders rank-1 rivers (Rhine) visually heavier than rank-6 rivers. Out of
+scope for this cleanup; noted as the natural next step when river-class gameplay
+(crossing difficulty scaled by river size) is implemented.
+
+---

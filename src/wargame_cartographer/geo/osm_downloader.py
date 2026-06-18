@@ -514,9 +514,13 @@ out geom;
         the merged (full-bbox) data so per-name totals span sub-bbox seams;
         re-filtering already-filtered cached data is a no-op.
 
-        ``merge=False`` (streaming): only ensure the raw (unfiltered) parts are
-        cached and return empty; the global AD-011 filter is then applied by
-        ``geo.waterways_global`` streaming over those parts.
+        ``merge=False``: only ensure the raw (unfiltered) parts are cached and
+        return empty. Since AD-029, river SELECTION is Natural Earth scalerank
+        (``geo.rivers_global.compute_selected_rivers``); this getter's role is to
+        cache the OSM waterway parts, from which the AD-029 canal pass selects
+        ``waterway=canal`` ways by per-name geodesic length (the AD-011 length
+        utility, retained for canals only). The merged AD-011 *river* filter
+        below is superseded and no longer feeds selection.
         """
 
         def build_query(b: str) -> str:

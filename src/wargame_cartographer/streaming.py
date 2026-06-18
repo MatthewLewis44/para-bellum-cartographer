@@ -37,7 +37,7 @@ from wargame_cartographer.geo.osm_downloader import OSMDownloader, DEFAULT_CACHE
 from wargame_cartographer.geo.projection import select_crs
 from wargame_cartographer.geo.resources import load_resources_1930
 from wargame_cartographer.geo.urban_global import apply_global_passes
-from wargame_cartographer.geo.waterways_global import compute_filtered_waterways
+from wargame_cartographer.geo.rivers_global import compute_selected_rivers
 from wargame_cartographer.hex.grid import HexGrid
 from wargame_cartographer.hex.sampler import (
     HexSampler,
@@ -47,7 +47,7 @@ from wargame_cartographer.hex.sampler import (
 from wargame_cartographer.memory import working_set_mb
 
 # Bump when the per-tile sampling logic changes, to invalidate stale tile caches.
-STREAMING_VERSION = "s5.1"  # Sprint 5: rivers + province + admin_tier fields (s5.1: cos-lat river_name fix)
+STREAMING_VERSION = "s6.0"  # AD-029: river selection from NE scalerank + OSM canals (invalidates s5.x tiles)
 TILE_DEG = 1.0
 MARGIN_DEG = 0.2
 TILE_RAM_BUDGET_MB = 4096
@@ -115,15 +115,22 @@ def run_streaming_pipeline(
     status_callback: Callable[[str], None] | None = None,
     *,
     json_only: bool = True,
+    scalerank_override: int | None = None,
 ) -> dict:
     """Run the tiled pipeline. Returns dict with hex_count, output JSON path,
-    per-tile and global peak RAM (MB), and a tile count."""
+    per-tile and global peak RAM (MB), and a tile count.
+
+    ``scalerank_override`` overrides the spec's ``river_scalerank_max`` (AD-029)
+    and suffixes the output filename + tile cache dir with ``_sr<N>`` — used to
+    produce side-by-side threshold comparisons for art direction."""
 
     def status(msg: str):
         if status_callback:
             status_callback(msg)
 
     spec = MapSpec.from_yaml(spec_path)
+    if scalerank_override is not None:
+        spec.river_scalerank_max = scalerank_override
     crs = select_crs(spec.bbox) if spec.crs is None else None
     grid = HexGrid(bbox=spec.bbox, hex_size_km=spec.hex_size_km, crs=crs)
     status(f"Grid ready: {grid.hex_count} hexes")
@@ -154,8 +161,8 @@ def run_streaming_pipeline(
     resource_by_hex = _assign_resources_to_hexes(grid, resources_gdf) \
         if resources_gdf is not None and not resources_gdf.empty else {}
 
-    # ---- GLOBAL waterway filter (AD-011, streamed from parts) ----
-    filtered_waterways = compute_filtered_waterways(spec.bbox)
+    # ---- GLOBAL river selection (AD-029: NE scalerank rivers + OSM canals) ----
+    filtered_waterways = compute_selected_rivers(spec.bbox, spec.river_scalerank_max)
 
     # ---- ensure tile-local OSM parts cached (no merge) ----
     status("[global] ensuring OSM parts cached (no merge)...")
@@ -168,7 +175,9 @@ def run_streaming_pipeline(
 
     # ---- TILE LOOP ----
     tiles = _tile_keys_for_grid(grid)
-    tile_dir = DEFAULT_CACHE_DIR / f"tiles_{_bbox_hash(spec.bbox)}"
+    # river_scalerank_max changes per-hex has_river (cached in the tile), so it
+    # keys the tile dir alongside the bbox (AD-029).
+    tile_dir = DEFAULT_CACHE_DIR / f"tiles_{_bbox_hash(spec.bbox)}_sr{spec.river_scalerank_max}"
     tile_dir.mkdir(parents=True, exist_ok=True)
     ne = DataDownloader()
     sampler = HexSampler()
@@ -288,6 +297,8 @@ def run_streaming_pipeline(
     output_dir = Path(spec.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     safe_name = "".join(c if c.isalnum() or c in "_-" else "_" for c in spec.name)[:40].lower()
+    if scalerank_override is not None:
+        safe_name = f"{safe_name}_sr{spec.river_scalerank_max}"  # threshold comparison
     json_path = export_game_data(
         grid, result, spec, output_dir / f"{safe_name}_hex_terrain.json"
     )

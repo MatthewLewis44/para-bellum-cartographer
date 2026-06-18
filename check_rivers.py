@@ -130,8 +130,8 @@ MAJORS = {
     "rhine": ["rhein", "rijn", "rhine"],
     "albert canal": ["albertkanaal", "albert canal", "canal albert"],
     "moselle": ["moselle", "mosel"],
-    "rur/roer": ["rur", "roer"],
-    "sambre": ["sambre"],
+    "danube": ["danube", "donau"],          # Europe scale
+    "rhone": ["rhone", "rhône"],            # Europe scale
 }
 present_names = {norm(h["rivers"]["river_name"]) for h in river_hexes}
 present_majors = []
@@ -140,6 +140,18 @@ for label, variants in MAJORS.items():
            for v in variants):
         present_majors.append(label)
 print(f"\nMajor rivers present: {sorted(present_majors)}")
+
+# --- AD-029: the generic-name over-aggregation problem must be GONE ---
+# AD-011 produced isolated river-hexes named Mühlgraben/Mühlbach (generic
+# mill-streams whose name-aggregate cleared the length floor). Natural Earth
+# carries no such features, so NO isolated hex should bear a generic name.
+_GENERIC = ("muhlgraben", "muhlbach", "muhlenbach", "muhlenkanal", "altwasser")
+generic_isolated = [river_hexes[i]["id"] for i in isolated
+                    if any(g in norm(river_hexes[i]["rivers"]["river_name"])
+                           for g in _GENERIC)]
+isolated_names = sorted({river_hexes[i]["rivers"]["river_name"] or "(unnamed)"
+                         for i in isolated})
+print(f"isolated-hex river names: {isolated_names[:12]}")
 
 # --- consistency: name iff has_river ---
 bad_name = [h["id"] for h in hexes
@@ -165,8 +177,11 @@ check(0.01 <= n_river / max(1, len(land)) <= 0.40,
 check(iso_frac <= 0.03,
       f"no significant isolated river-hexes "
       f"({len(isolated)} isolated = {iso_frac * 100:.1f}% of river-hexes)")
+check(not generic_isolated,
+      f"NO generic-named (Mühlgraben/Mühlbach) isolated hexes [AD-029] "
+      f"({len(generic_isolated)})")
 check(len(present_majors) >= 2,
-      f"≥2 major rivers present as chains ({len(present_majors)})")
+      f"≥2 major rivers present as chains ({len(present_majors)}: {sorted(present_majors)})")
 check(not bad_name,
       f"river_name set iff has_river ({len(bad_name)} mismatches)")
 

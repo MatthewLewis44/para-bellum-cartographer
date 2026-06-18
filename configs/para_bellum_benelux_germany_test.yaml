@@ -14,6 +14,7 @@ bbox:
 
 # 10km per hex — Para Bellum standard
 hex_size_km: 10.0
+river_scalerank_max: 8  # AD-029: NE rivers scalerank<=8 (Meuse/Scheldt) + OSM canals
 
 designer_style: simonitch
 font_scale: 1.0

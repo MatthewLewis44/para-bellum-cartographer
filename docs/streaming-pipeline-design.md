@@ -148,11 +148,12 @@ The adversarial design panel (T1b, 3 reviewers + synthesis) returned
   without materializing the full layer; the tile loop reads parts with a
   bbox(+margin) pyogrio filter. This kills the *fetch-time* merge spike too, not
   just the sampling spike.
-- **Waterway filter streamed** (`geo/waterways_global.py`): two passes over the
-  cached parts — pass 1 accumulates per-name geodesic length (floats only),
-  pass 2 keeps geometries only for names ≥110 km. Never materializes all
-  unfiltered waterways. The filtered set (bounded) is passed WHOLE to every
-  tile's `_river_edges_for_hex`.
+- **River selection global** (`geo/rivers_global.py`, AD-029): Natural Earth
+  `scalerank` rivers (`river_scalerank_max`) + OSM major canals. The canal pass
+  streams the cached OSM waterway parts (two passes — per-name geodesic length,
+  then geometries for kept names), never materializing all unfiltered waterways.
+  The selected set (bounded) is passed WHOLE to every tile's `_river_for_hex`.
+  (Superseded the AD-011 `geo/waterways_global.py` streamed river filter.)
 - **Merge assembles in grid order**: records are reassembled in `grid.cells`
   iteration order (NOT tile order) before coastal/sprawl, so their exact-
   distance tie-breaks (Ruhr seams) are deterministic.

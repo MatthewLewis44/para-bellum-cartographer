@@ -1,6 +1,8 @@
 """Run the streaming/tiled pipeline with metrics (Sprint 4 T7).
 
-Usage: uv run python run_streaming.py configs/<spec>.yaml
+Usage: uv run python run_streaming.py configs/<spec>.yaml [river_scalerank_max]
+       (the optional 2nd arg overrides river_scalerank_max for an AD-029
+        threshold comparison; output is suffixed _sr<N>)
 """
 
 import sys
@@ -12,8 +14,12 @@ from wargame_cartographer.memory import working_set_mb
 
 def main():
     spec = sys.argv[1] if len(sys.argv) > 1 else "configs/para_bellum_belgium_test.yaml"
+    sr = int(sys.argv[2]) if len(sys.argv) > 2 else None  # AD-029 threshold override
     t0 = time.perf_counter()
-    result = run_streaming_pipeline(spec, status_callback=lambda m: print(f"  {m}", flush=True))
+    result = run_streaming_pipeline(
+        spec, status_callback=lambda m: print(f"  {m}", flush=True),
+        scalerank_override=sr,
+    )
     total = time.perf_counter() - t0
     print("\n=== Streaming performance ===")
     print(f"spec: {spec}")

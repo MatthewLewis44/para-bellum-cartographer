@@ -104,6 +104,24 @@ def run_pipeline(
         waterways=len(osm_data.waterways) if osm_data else 0,
     )
 
+    # 4a. River selection (AD-029): replace the OSM/AD-011 waterway set with
+    # Natural Earth scalerank rivers (curated significance) + OSM major canals.
+    # The get_waterways call above already cached the OSM waterway parts that the
+    # canal pass reuses, so this only adds the NE rivers + re-filters canals.
+    if osm_data is not None:
+        try:
+            from wargame_cartographer.geo.rivers_global import compute_selected_rivers
+            osm_data.waterways = compute_selected_rivers(
+                spec.bbox, spec.river_scalerank_max
+            )
+            status(
+                f"Rivers (AD-029): {len(osm_data.waterways)} selected "
+                f"(NE scalerank<={spec.river_scalerank_max} + OSM canals)"
+            )
+        except Exception as e:
+            status(f"AD-029 river selection failed, keeping OSM waterways: {e}")
+    stage_done("rivers_ad029", waterways=len(osm_data.waterways) if osm_data else 0)
+
     # 4b. Load 1930 political boundaries (repo-committed, AD-018)
     status("Loading 1930 political boundaries...")
     boundaries_gdf = None
