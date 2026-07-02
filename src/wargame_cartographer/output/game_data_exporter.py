@@ -108,8 +108,11 @@ def export_game_data(
     # --- Build hex list ---
     hexes = []
     biome_counts: dict[str, int] = {}
+    n_defaulted = 0  # grid cells missing from hex_terrain (AD-030)
 
     for (q, r), cell in grid.cells.items():
+        if (q, r) not in hex_terrain:
+            n_defaulted += 1
         info = hex_terrain.get((q, r), {})
 
         # --- Coords ---
@@ -136,7 +139,7 @@ def export_game_data(
         river_edges = info.get("river_edges", [])  # list of ints 0-5 (render hint)
 
         # --- Rivers (v1.0.4, AD-026: hex-center node model) ---
-        # has_river: does a significant (AD-011) river pass through this hex.
+        # has_river: does an AD-029-selected river pass through this hex.
         # river_name: primary river by longest in-hex run. river_edges stays in
         # `terrain` as a rendering direction hint only; its gameplay role is
         # superseded by has_river (AD-026).
@@ -263,6 +266,15 @@ def export_game_data(
         }
 
         hexes.append(hex_obj)
+
+    # A grid cell absent from hex_terrain is silently exported as a default
+    # plains hex — a completeness hole. Fail loud (AD-030).
+    if n_defaulted:
+        raise RuntimeError(
+            f"export_game_data: {n_defaulted} of {len(grid.cells)} grid cells "
+            f"were missing from hex_terrain and would default to plains hexes "
+            f"(AD-030). Aborting rather than shipping filler terrain."
+        )
 
     # Sort by hex ID for deterministic output and Unity binary search
     hexes.sort(key=lambda h: h["id"])

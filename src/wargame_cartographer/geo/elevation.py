@@ -28,19 +28,20 @@ class ElevationProcessor:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def get_elevation(
-        self, bbox: BoundingBox, allow_synthetic: bool = True
+        self, bbox: BoundingBox, allow_synthetic: bool = False
     ) -> tuple[np.ndarray, dict]:
         """Get elevation data for a bounding box.
 
         Returns (elevation_array, metadata_dict).
         metadata_dict contains 'transform', 'crs', 'bounds', 'resolution'.
 
-        Uses SRTM via rasterio. With ``allow_synthetic`` (default) a failed SRTM
-        fetch falls back to a deterministic synthetic field. **The streaming
-        pipeline passes ``allow_synthetic=False``** (Sprint 4): a silent
-        synthetic substitution for one tile would be cached and shipped,
-        invisibly breaking the hex-for-hex guarantee — better to fail loudly and
-        retry the tile.
+        Uses SRTM via rasterio. ``allow_synthetic`` **defaults to False** (AD-030):
+        a silent sin/cos synthetic substitution on SRTM failure would be cached
+        and shipped, invisibly breaking the hex-for-hex guarantee. Both the
+        streaming and monolithic paths fail loud on SRTM failure. Offline dev
+        opts in explicitly by passing ``allow_synthetic=True`` (the monolithic
+        pipeline exposes this via the ``PARA_BELLUM_ALLOW_SYNTHETIC_ELEVATION=1``
+        env var).
         """
         cache_key = f"dem_{_bbox_hash(bbox)}.tif"
         cache_path = self.cache_dir / cache_key

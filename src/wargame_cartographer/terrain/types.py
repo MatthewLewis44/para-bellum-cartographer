@@ -146,8 +146,8 @@ class MoistureLevel(Enum):
 # These are STARTING VALUES. Unity applies modifier stack at runtime:
 #   ElevationTier, MoistureLevel, season, weather, infrastructure, unit type.
 #
-# NOT stored in hex JSON — Unity reads biome and looks up from game config.
-# Stored here as pipeline reference and for Folium debug tooltips.
+# These ARE exported to hex JSON as movement.base_cost / movement.base_defense
+# (see game_data_exporter); Unity reads them and applies the modifier stack.
 # ---------------------------------------------------------------------------
 
 BIOME_BASE_MOVEMENT: dict[Biome, int] = {

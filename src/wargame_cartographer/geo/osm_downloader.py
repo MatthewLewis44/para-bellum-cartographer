@@ -246,6 +246,7 @@ class OSMDownloader:
 
         frames: list[gpd.GeoDataFrame] = []
         live_fetches = 0
+        failed = False  # any sub-bbox fetch raised (AD-030 cache integrity)
         for i, sub in enumerate(subs):
             if len(subs) == 1:
                 part_path = cache_path
@@ -280,6 +281,7 @@ class OSMDownloader:
             except Exception as e:
                 console.print(f"  [yellow]{layer} fetch failed: {e}[/yellow]")
                 # Leave no cache for this part — next run retries it.
+                failed = True
                 continue
 
             records = []
@@ -301,26 +303,45 @@ class OSMDownloader:
             else:
                 del part_gdf  # streaming: don't hold parts in RAM
 
+        def _build_merged() -> gpd.GeoDataFrame:
+            if not frames:
+                return empty
+            if len(subs) == 1:
+                return frames[0]
+            m = gpd.GeoDataFrame(pd.concat(frames, ignore_index=True), crs="EPSG:4326")
+            if "osm_id" in m.columns:
+                m = m.drop_duplicates(subset="osm_id").reset_index(drop=True)
+            return m
+
         # Streaming (merge=False): parts are cached; caller reads them per tile.
+        # A failed part must NOT be swallowed — the tile sampler would silently
+        # sample a hole. Fail loud so the run aborts and retries (AD-030).
         if not merge:
+            if failed:
+                raise RuntimeError(
+                    f"{layer}: a sub-bbox fetch failed — cached parts are "
+                    f"incomplete. Refusing to sample a hole (AD-030 fail-loud); "
+                    f"re-run to retry the failed part(s)."
+                )
             return empty
 
-        if not frames:
-            return empty
+        if failed:
+            # A part failed: return what we have for THIS run but do NOT write the
+            # merged full-bbox cache — otherwise the missing part is never retried
+            # while the merged cache is fresh (the poisoning bug, AD-030).
+            console.print(
+                f"  [red]{layer}: sub-bbox fetch failed — NOT caching the merged "
+                f"result so the failed part(s) retry next run.[/red]"
+            )
+            return _build_merged()  # deliberately NOT persisted
 
-        if len(subs) == 1:
-            return frames[0]
-
-        merged = gpd.GeoDataFrame(
-            pd.concat(frames, ignore_index=True), crs="EPSG:4326"
-        )
-        if "osm_id" in merged.columns:
-            merged = merged.drop_duplicates(subset="osm_id").reset_index(drop=True)
-        merged.to_file(cache_path, driver="GPKG")
-        console.print(
-            f"  {layer}: {len(merged)} features merged from {len(subs)} sub-bboxes",
-            style="dim",
-        )
+        merged = _build_merged()
+        if not merged.empty and len(subs) > 1:
+            merged.to_file(cache_path, driver="GPKG")
+            console.print(
+                f"  {layer}: {len(merged)} features merged from {len(subs)} sub-bboxes",
+                style="dim",
+            )
         return merged
 
     # ------------------------------------------------------------------
@@ -545,31 +566,16 @@ out geom;
             }
 
         console.print("  Fetching OSM waterways...", style="dim")
-        gdf = self._fetch_layer(
+        # AD-029/AD-030: the AD-011 per-name geodesic-length RIVER significance
+        # filter that used to run here (the merge=True branch) is RETIRED — it was
+        # unreachable, both production callers pass merge=False (streaming reads
+        # parts per tile; rivers_global runs the canal pass). River SELECTION is
+        # now Natural Earth scalerank (geo/rivers_global.compute_selected_rivers).
+        # MIN_WATERWAY_TOTAL_M survives — the canal pass reuses it.
+        return self._fetch_layer(
             bbox, "waterways", build_query, parse_element,
             columns=["waterway_type", "name"], timeout=120, merge=merge,
         )
-        if not merge:
-            return gdf  # raw parts cached; global filter applied elsewhere
-        if gdf.empty:
-            return gdf
-
-        # Significance filter: per-name total geodesic length. Geodesic (not
-        # EPSG:3857) so the threshold means the same thing at any latitude.
-        from pyproj import Geod
-        geod = Geod(ellps="WGS84")
-        lengths = gdf.geometry.apply(geod.geometry_length)
-        name_total = lengths.groupby(gdf["name"]).sum()
-        keep_names = set(name_total[name_total > self.MIN_WATERWAY_TOTAL_M].index)
-        kept = gdf[gdf["name"].isin(keep_names)].reset_index(drop=True)
-
-        console.print(
-            f"  Waterways: kept {len(kept)}/{len(gdf)} ways, "
-            f"{len(keep_names)}/{gdf['name'].nunique()} names over "
-            f"{self.MIN_WATERWAY_TOTAL_M / 1000:.0f} km total",
-            style="dim",
-        )
-        return kept
 
     # ------------------------------------------------------------------
     # Bridges

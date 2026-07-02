@@ -3,7 +3,7 @@
 Samples all geographic data layers per hex and produces the full
 per-hex data dict consumed by game_data_exporter.py.
 
-Each hex goes through these stages in order:
+Each hex goes through these per-hex stages in order:
     1. Water detection (Natural Earth land polygon)
     2. Elevation + slope sampling (SRTM)
     3. Landuse classification (OSM landuse/natural areas)
@@ -11,15 +11,21 @@ Each hex goes through these stages in order:
     5. Biome classification (BiomeClassifier)
     6. Vegetation + moisture derivation
     7. Road/rail level (OSM highways + railways)
-    8. River edge detection (OSM waterways × hex edges)
+    8. Rivers (AD-026 node model): has_river/river_name from the AD-029 selected
+       set (Natural Earth scalerank rivers + OSM canals); river_edges kept as a
+       render-direction hint
     9. Bridge detection (OSM bridge=yes)
-    10. Coastal flag (hexes adjacent to water hexes)
-    11. Port detection (upstream DataDownloader ports layer)
+   10. Country + province at start (1930 boundaries / provinces, AD-018/023/027)
+   11. Strategic resources (hand-authored 1930 layer, F-2)
+   12. Port detection (upstream DataDownloader ports layer)
 
-OUT OF SCOPE (not sampled here — Sprint 2 or Unity):
-    - GADM political boundaries (country/province) — Sprint 2
-    - Strategic resources (oil/coal/steel) — Sprint 2, manual GeoJSON
-    - Fortification layer — Sprint 2, manual GeoJSON
+Global reconcile passes (over the whole grid, after per-hex sampling):
+    - Coastal flag (land hexes adjacent to a water hex)
+    - Multi-hex urban sprawl (AD-014)
+    - admin_tier capital / sub_capital (AD-023/027)
+
+OUT OF SCOPE (not sampled here):
+    - Fortification / airfield layers (not yet populated)
     - Player-placed buildings — Unity runtime
 """
 
@@ -37,13 +43,7 @@ from wargame_cartographer.geo.boundaries import assign_country
 from wargame_cartographer.geo.provinces import assign_province, assign_admin_tiers
 from wargame_cartographer.geo.elevation import ElevationProcessor
 from wargame_cartographer.hex.grid import HexGrid
-from wargame_cartographer.hex.coords import (
-    offset_neighbors,
-    CUBE_DIRECTIONS,
-    offset_to_cube,
-    cube_to_offset,
-    OffsetCoord,
-)
+from wargame_cartographer.hex.coords import offset_neighbors
 from wargame_cartographer.terrain.classifier import BiomeClassifier
 from wargame_cartographer.terrain.types import (
     Biome,
@@ -72,7 +72,7 @@ class HexSampler:
         hex_keys=None,           # iterable of (q,r) to sample; None = all cells
         precomputed=None,        # dict of reusable global tables (streaming mode)
         run_global_passes=True,  # run pass-2 coastal + pass-3 sprawl in-place
-        allow_synthetic_elevation=True,  # streaming passes False (fail loud)
+        allow_synthetic_elevation=False,  # AD-030 fail-loud default (was True)
     ) -> dict[tuple[int, int], dict]:
         """Build per-hex data for the grid (or a hex subset, for tiling).
 
@@ -762,23 +762,25 @@ def _best_rail_in_hex(hex_poly, railways_gdf) -> str:
 def _river_for_hex(
     q: int, r: int, grid: HexGrid, waterways_gdf
 ) -> tuple[list[int], bool, str]:
-    """River data for a hex against the AD-011 significant-waterway set.
+    """River data for a hex against the AD-029 selected-river set.
 
     Returns ``(river_edges, has_river, river_name)``:
-      river_edges — edge indices 0-5 the river crosses (NE=0, clockwise). A
+      river_edges — edge indices 0-5 the river crosses. Edge i runs between hex
+                    vertex i and i+1 (vertices at 60·i° from East), so the order
+                    is COUNTERCLOCKWISE: 0=NE, 1=N, 2=NW, 3=SW, 4=S, 5=SE. A
                     RENDERING DIRECTION HINT ONLY (AD-026): which neighbours to
                     draw the river spline toward.
-      has_river   — True if any significant river/canal geometry intersects the
+      has_river   — True if any selected river/canal geometry intersects the
                     hex polygon — the hex-center node model (AD-026).
       river_name  — name of the primary river: the one with the longest run
                     INSIDE this hex, so a trunk beats a tributary clipping a
                     corner at a confluence. "" when has_river is False.
 
-    ``waterways_gdf`` is the WHOLE AD-011-filtered set (named rivers/canals over
-    110 km total — majors only, bounded). It is passed identically to the
+    ``waterways_gdf`` is the WHOLE AD-029 selected set (Natural Earth scalerank
+    rivers + OSM major canals — bounded). It is passed identically to the
     monolithic pass and to every streaming tile (AD-025), so has_river /
     river_name are seam-identical and automatically consistent with river_edges
-    (no separate global pass needed: the filter that makes river_edges global is
+    (no separate global pass needed: the set that makes river_edges global is
     the same set that makes has_river global).
     """
     from shapely.affinity import scale

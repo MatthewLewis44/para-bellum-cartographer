@@ -2,17 +2,28 @@
 
 Two coordinate systems in use:
   - Offset (col, row): 1-based, used in JSON output and Unity. Wargame-standard.
-    Pointy-top hexes, odd columns shifted north.
+    FLAT-TOP hexes, odd-q offset (AD-012). col runs west → east, row runs
+    south → north.
   - Cube (q, r, s): used internally for math. q+r+s=0 always.
-    Neighbors, distance, and range are trivial in cube space.
 
-The upstream grid.py uses its own axial system tied to projection space.
-These utilities are independent and used by our new pipeline stages.
+The upstream grid.py uses its own axial system tied to projection space and is
+the AUTHORITATIVE source for grid geometry.
+
+⚠️  KNOWN DEFECT (surfaced pre-Sprint-6; NOT fixed in this doc pass because a fix
+    changes terrain output, which is out of scope): ``offset_neighbors`` here
+    does NOT agree with the correct ``grid.HexGrid.neighbors`` — its neighbour
+    set differs on every cell tested (its ``CUBE_DIRECTIONS`` are a pointy-top
+    vector set paired with a flat-top odd-q offset conversion, which is
+    internally inconsistent). ``sampler`` uses ``offset_neighbors`` ONLY for the
+    ``is_coastal`` flag, so that flag is computed against the wrong neighbours.
+    Reconcile with ``grid.neighbors`` (the verified flat-top implementation) and
+    Unity ``HexCoord.cs`` before Sprint 7 unit movement builds on these
+    directions. The per-index compass labels have been removed rather than left
+    wrong.
 """
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Iterator
 
 
 # ---------------------------------------------------------------------------
@@ -40,9 +51,9 @@ class CubeCoord:
 
 @dataclass(frozen=True)
 class OffsetCoord:
-    """Offset coordinate. 1-based col/row. Odd columns shifted north (up)."""
+    """Offset coordinate. 1-based col/row, flat-top odd-q (AD-012)."""
     col: int  # 1-based, west → east
-    row: int  # 1-based, north → south
+    row: int  # 1-based, south → north
 
     def hex_id(self) -> str:
         """Wargame hex ID: zero-padded CCCRR (e.g. col=5, row=1 → '00501')."""
@@ -50,8 +61,7 @@ class OffsetCoord:
 
 
 # ---------------------------------------------------------------------------
-# Conversion: offset ↔ cube
-# Pointy-top, odd-column-north (odd-q offset)
+# Conversion: offset ↔ cube — flat-top odd-q (AD-012)
 # Reference: https://www.redblobgames.com/grids/hexes/
 # ---------------------------------------------------------------------------
 
@@ -77,17 +87,19 @@ def cube_to_offset(cube: CubeCoord) -> OffsetCoord:
 # Neighbors
 # ---------------------------------------------------------------------------
 
-# The 6 cube directions (pointy-top)
+# The 6 cube neighbour steps (indices 0-5). ⚠️ Per-direction COMPASS LABELS
+# REMOVED — the old NE/E/SE/SW/W/NW labels were a pointy-top set and do not match
+# the projected flat-top layout (see the module ⚠️ note). The VECTORS are
+# UNCHANGED (they determine offset_neighbors' output). Reconcile against
+# grid.neighbors / Unity HexCoord.cs before assigning semantic directions.
 CUBE_DIRECTIONS: list[CubeCoord] = [
-    CubeCoord(+1, -1,  0),  # 0: NE
-    CubeCoord(+1,  0, -1),  # 1: E
-    CubeCoord( 0, +1, -1),  # 2: SE
-    CubeCoord(-1, +1,  0),  # 3: SW
-    CubeCoord(-1,  0, +1),  # 4: W
-    CubeCoord( 0, -1, +1),  # 5: NW
+    CubeCoord(+1, -1,  0),  # index 0
+    CubeCoord(+1,  0, -1),  # index 1
+    CubeCoord( 0, +1, -1),  # index 2
+    CubeCoord(-1, +1,  0),  # index 3
+    CubeCoord(-1,  0, +1),  # index 4
+    CubeCoord( 0, -1, +1),  # index 5
 ]
-
-DIRECTION_NAMES = ["NE", "E", "SE", "SW", "W", "NW"]
 
 
 def cube_neighbors(cube: CubeCoord) -> list[CubeCoord]:
@@ -116,74 +128,3 @@ def offset_distance(col1: int, row1: int, col2: int, row2: int) -> int:
         offset_to_cube(col1, row1),
         offset_to_cube(col2, row2),
     )
-
-
-# ---------------------------------------------------------------------------
-# Range: all hexes within N steps
-# ---------------------------------------------------------------------------
-
-def cube_range(center: CubeCoord, n: int) -> Iterator[CubeCoord]:
-    """Yield all cube coords within n steps of center (including center)."""
-    for q in range(-n, n + 1):
-        for r in range(max(-n, -q - n), min(n, -q + n) + 1):
-            s = -q - r
-            yield CubeCoord(center.q + q, center.r + r, center.s + s)
-
-
-def offset_range(col: int, row: int, n: int) -> Iterator[OffsetCoord]:
-    """Yield all offset coords within n steps of (col, row)."""
-    center = offset_to_cube(col, row)
-    for cube in cube_range(center, n):
-        yield cube_to_offset(cube)
-
-
-# ---------------------------------------------------------------------------
-# River edge indexing
-# Edge 0 = NE side, clockwise: 0=NE, 1=E, 2=SE, 3=SW, 4=W, 5=NW
-# Matches CUBE_DIRECTIONS order.
-# ---------------------------------------------------------------------------
-
-def edge_index_to_direction(edge: int) -> str:
-    """Human-readable direction for a river edge index (0–5)."""
-    return DIRECTION_NAMES[edge % 6]
-
-
-def shared_edge(a: OffsetCoord, b: OffsetCoord) -> int | None:
-    """Return the edge index (0-5) of hex a that borders hex b, or None."""
-    ca = offset_to_cube(a.col, a.row)
-    cb = offset_to_cube(b.col, b.row)
-    diff = cb - ca
-    try:
-        return CUBE_DIRECTIONS.index(diff)
-    except ValueError:
-        return None  # Not neighbors
-
-
-# ---------------------------------------------------------------------------
-# Grid bounds helper
-# ---------------------------------------------------------------------------
-
-@dataclass
-class GridBounds:
-    """Describes the full extent of the hex grid."""
-    col_min: int
-    col_max: int
-    row_min: int
-    row_max: int
-
-    @property
-    def num_cols(self) -> int:
-        return self.col_max - self.col_min + 1
-
-    @property
-    def num_rows(self) -> int:
-        return self.row_max - self.row_min + 1
-
-    @property
-    def total_hexes(self) -> int:
-        # Approximate — actual count depends on bbox clipping
-        return self.num_cols * self.num_rows
-
-    def contains(self, col: int, row: int) -> bool:
-        return (self.col_min <= col <= self.col_max and
-                self.row_min <= row <= self.row_max)

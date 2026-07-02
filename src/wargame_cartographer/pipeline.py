@@ -109,17 +109,18 @@ def run_pipeline(
     # The get_waterways call above already cached the OSM waterway parts that the
     # canal pass reuses, so this only adds the NE rivers + re-filters canals.
     if osm_data is not None:
-        try:
-            from wargame_cartographer.geo.rivers_global import compute_selected_rivers
-            osm_data.waterways = compute_selected_rivers(
-                spec.bbox, spec.river_scalerank_max
-            )
-            status(
-                f"Rivers (AD-029): {len(osm_data.waterways)} selected "
-                f"(NE scalerank<={spec.river_scalerank_max} + OSM canals)"
-            )
-        except Exception as e:
-            status(f"AD-029 river selection failed, keeping OSM waterways: {e}")
+        from wargame_cartographer.geo.rivers_global import compute_selected_rivers
+        # Rivers are P0 map content — NO silent fallback (AD-030). The old
+        # except-branch claimed "keeping OSM waterways" but osm_data.waterways is
+        # empty (fetched merge=False since Sprint 5), so a failure silently
+        # shipped a river-less map. Let a selection failure propagate and abort.
+        osm_data.waterways = compute_selected_rivers(
+            spec.bbox, spec.river_scalerank_max
+        )
+        status(
+            f"Rivers (AD-029): {len(osm_data.waterways)} selected "
+            f"(NE scalerank<={spec.river_scalerank_max} + OSM canals)"
+        )
     stage_done("rivers_ad029", waterways=len(osm_data.waterways) if osm_data else 0)
 
     # 4b. Load 1930 political boundaries (repo-committed, AD-018)
@@ -158,7 +159,13 @@ def run_pipeline(
     # 5. Get elevation + hillshade
     status("Processing elevation data...")
     elev_proc = ElevationProcessor()
-    elevation, elev_metadata = elev_proc.get_elevation(spec.bbox)
+    # Fail loud on SRTM failure (AD-030); offline dev opts into synthetic terrain
+    # explicitly via PARA_BELLUM_ALLOW_SYNTHETIC_ELEVATION=1.
+    import os as _os
+    allow_synth = _os.environ.get("PARA_BELLUM_ALLOW_SYNTHETIC_ELEVATION") == "1"
+    elevation, elev_metadata = elev_proc.get_elevation(
+        spec.bbox, allow_synthetic=allow_synth
+    )
     hillshade = elev_proc.compute_hillshade(
         elevation,
         azimuth=style.hillshade_azimuth,
@@ -176,6 +183,7 @@ def run_pipeline(
         boundaries_gdf=boundaries_gdf,
         resources_gdf=resources_gdf,
         provinces=provinces,
+        allow_synthetic_elevation=allow_synth,  # AD-030: env opt-in only
     )
 
     # Biome distribution summary

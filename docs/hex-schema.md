@@ -112,7 +112,7 @@ pipeline and never stored in JSON.
 | `vegetation` | enum string | `bare`, `sparse`, `light`, `dense`. |
 | `moisture` | enum string | `arid`, `dry`, `temperate`, `wet`, `flooded`. |
 | `is_coastal` | bool | Land hex with ≥1 water-hex neighbor. |
-| `river_edges` | int array | Edge indices 0–5 crossed by a river/canal. Edge 0 = NE, clockwise. Empty = no river. **v1.0.4 (AD-026): rendering direction hint only** — which neighbours to draw the river spline toward. Its gameplay role is superseded by `rivers.has_river`. |
+| `river_edges` | int array | Edge indices 0–5 crossed by a river/canal. Edge `i` runs between hex vertex `i` and `i+1` (vertices at 60·`i`° from East), so the enumeration is **counterclockwise**: 0=NE, 1=N, 2=NW, 3=SW, 4=S, 5=SE. Empty = no river. **v1.0.4 (AD-026): rendering direction hint only** — which neighbours to draw the river spline toward. Its gameplay role is superseded by `rivers.has_river`. |
 
 ### `rivers`
 

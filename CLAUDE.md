@@ -295,8 +295,20 @@ changes tracked here:
 
 - Upstream ports fetch (geo/downloader.py) fails with Overpass HTTP 406 →
   `port: false` everywhere. Pre-existing; not Sprint 2 scope.
-- Stray top-level `wargame_cartographer/hex/coords.py` duplicate outside
-  `src/` (untracked). Probably accidental; not imported.
+- **`hex/coords.py` `offset_neighbors` disagrees with `grid.HexGrid.neighbors`**
+  (surfaced pre-Sprint-6): its cube-direction vectors are a pointy-top set
+  paired with a flat-top odd-q offset conversion, so its neighbour set is wrong
+  on every cell. `sampler` uses it only for the `is_coastal` flag, so that flag
+  is computed against the wrong neighbours (a latent terrain-output bug). NOT
+  fixed in the cleanup pass (a fix changes output); reconcile with
+  `grid.neighbors` / Unity `HexCoord.cs` before Sprint 7 unit movement. The
+  per-index compass labels in coords.py were removed rather than left wrong.
+- **Deliberate deferral (do not re-flag):** the pipeline does NOT export
+  `rivers.scalerank` / `rivers.waterway_type` (so Unity currently infers
+  canal-vs-river from name substrings). This is a KNOWN, intentional deferral
+  bundled with future river-crossing gameplay + the river-class visual weight
+  (AD-029 "Future: river class"); scalerank is retained per-feature so it can be
+  added additively when that lands.
   (The AD-011 generic-name over-aggregation caveat — Mühlgraben/Mühlbach
   isolated hexes — is **resolved by AD-029**: river selection is now Natural
   Earth `scalerank`, which has no such generic features.)

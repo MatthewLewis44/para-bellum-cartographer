@@ -779,3 +779,46 @@ scope for this cleanup; noted as the natural next step when river-class gameplay
 (crossing difficulty scaled by river size) is implemented.
 
 ---
+## AD-030 — Cache integrity and fail-loud rules
+
+**Date:** 2026-06-18 (pre-Sprint-6 cleanup)
+**Status:** Accepted
+
+An audit found the fail-loud principle (AD-025, enforced for streaming
+elevation) was violated in the caching and fallback paths: a transient fetch
+failure or an edited data file could silently ship wrong output. This AD records
+the policy now enforced.
+
+**Rules:**
+
+1. **No merged cache from a partial fetch.** `osm_downloader._fetch_layer`
+   tracks whether any sub-bbox part failed. If so, the merged full-bbox cache is
+   NOT written (so the failed part is retried next run instead of being masked
+   by a fresh merged cache). The streaming path (`merge=False`) RAISES on a
+   failed part rather than caching an incomplete part set; `_read_layer_slice`
+   RAISES on an unreadable overlapping part instead of silently skipping it.
+
+2. **Tile caches are keyed on input-data content.** The streaming tile directory
+   includes an md5 of the boundaries / provinces / resources GeoJSON
+   (`_input_data_hash`). Editing any of those three (all pending historical
+   review) invalidates the tile cache — country/province/resource assignment
+   lives inside cached tiles. (`river_scalerank_max` and `STREAMING_VERSION`
+   also key the cache.)
+
+3. **No silent fallback for P0 map content.** River selection failure in the
+   monolithic pipeline propagates (no "keeping OSM waterways" lie — those are
+   empty since Sprint 5). Synthetic (sin/cos) elevation is now `allow_synthetic
+   = False` by default in BOTH pipelines; SRTM failure fails loud. Offline dev
+   opts in explicitly via `PARA_BELLUM_ALLOW_SYNTHETIC_ELEVATION=1`.
+
+4. **Merge and export assert completeness.** The streaming merge asserts
+   `len(result) == grid.hex_count` (a missing/empty tile pickle aborts). The
+   exporter counts grid cells absent from `hex_terrain` and RAISES if any (they
+   would otherwise export as default plains hexes).
+
+**Anti-goal for the pass that introduced this AD:** these are failure-path and
+cache-key changes only. Regenerated output is hex-for-hex identical to the
+pre-AD-030 shipped output (verified with `compare_hex_outputs.py`); the tile
+cache key change forces a resample but the resampled data is unchanged.
+
+---

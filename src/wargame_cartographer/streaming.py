@@ -6,8 +6,9 @@ hex-for-hex identical to the monolithic pipeline (the per-hex pass-1 body and
 the global coastal/sprawl passes are the SAME code; see hex/sampler.py).
 
 Architecture (see docs/streaming-pipeline-design.md):
-  GLOBAL once : hex grid, boundaries, resources, settlements→hex, AD-011
-                waterway filter (streamed from parts).
+  GLOBAL once : hex grid, boundaries, resources, settlements→hex, AD-029 river
+                selection (Natural Earth scalerank + OSM canals; canals streamed
+                from parts).
   PER ~1° TILE: read landuse/roads/rails/bridges slices from the cached
                 sub-bbox PARTS with a bbox(+0.2° margin) filter (never merging
                 the whole layer); elevation via get_elevation(tile+margin,
@@ -62,6 +63,28 @@ _LAYER_EMPTY_COLS = {
 }
 
 
+def _input_data_hash() -> str:
+    """Content hash of the repo data files that feed per-hex TILE content
+    (country/province/resource assignment): boundaries/provinces/resources
+    GeoJSON. Folded into the tile cache key so editing any of them invalidates
+    tiles (AD-030) — these three are pending historical review and WILL be
+    edited. The province *metadata* JSON is excluded: it drives only admin_tier
+    in the non-cached merge pass, which is recomputed every run.
+    """
+    import hashlib
+    root = Path(__file__).resolve().parents[2]
+    files = [
+        root / "data" / "boundaries" / "boundaries_1930.geojson",
+        root / "data" / "boundaries" / "provinces_1930.geojson",
+        root / "data" / "resources" / "resources_1930.geojson",
+    ]
+    h = hashlib.md5()
+    for f in files:
+        h.update(f.name.encode())
+        h.update(f.read_bytes() if f.exists() else b"<missing>")
+    return h.hexdigest()[:8]
+
+
 def _bbox_hash(bbox: BoundingBox) -> str:
     import hashlib
     key = f"{bbox.min_lon:.4f},{bbox.min_lat:.4f},{bbox.max_lon:.4f},{bbox.max_lat:.4f}"
@@ -89,8 +112,13 @@ def _read_layer_slice(dl: OSMDownloader, spec_bbox: BoundingBox,
             continue
         try:
             g = gpd.read_file(path, bbox=bb)
-        except Exception:
-            continue
+        except Exception as e:
+            # A part that overlaps this tile but can't be read means the tile
+            # would sample a hole — fail loud rather than proceed (AD-030).
+            raise RuntimeError(
+                f"Failed to read cached part for layer '{layer}' ({path}): {e}. "
+                f"Refusing to sample with a missing part (AD-030 fail-loud)."
+            ) from e
         if len(g):
             frames.append(g)
     if not frames:
@@ -176,8 +204,12 @@ def run_streaming_pipeline(
     # ---- TILE LOOP ----
     tiles = _tile_keys_for_grid(grid)
     # river_scalerank_max changes per-hex has_river (cached in the tile), so it
-    # keys the tile dir alongside the bbox (AD-029).
-    tile_dir = DEFAULT_CACHE_DIR / f"tiles_{_bbox_hash(spec.bbox)}_sr{spec.river_scalerank_max}"
+    # keys the tile dir alongside the bbox (AD-029). The input-data content hash
+    # keys it too, so editing boundaries/provinces/resources invalidates tiles
+    # (AD-030) — country/province/resource assignment lives inside cached tiles.
+    tile_dir = (DEFAULT_CACHE_DIR /
+                f"tiles_{_bbox_hash(spec.bbox)}_sr{spec.river_scalerank_max}"
+                f"_d{_input_data_hash()}")
     tile_dir.mkdir(parents=True, exist_ok=True)
     ne = DataDownloader()
     sampler = HexSampler()
@@ -282,6 +314,15 @@ def run_streaming_pipeline(
             result[key] = tile_lookup[key]
     del tile_lookup
     gc.collect()
+
+    # Every grid cell must have come from a tile — a missing/empty tile pickle
+    # would leave a hole the exporter defaults to plains. Fail loud (AD-030).
+    if len(result) != grid.hex_count:
+        raise RuntimeError(
+            f"Merge incomplete: assembled {len(result)} of {grid.hex_count} "
+            f"hexes — a tile pickle is missing or empty (AD-030). Delete the "
+            f"tile cache dir and re-run to resample."
+        )
 
     apply_global_passes(result, grid, settlement_by_hex,
                         provinces=provinces, settlements_gdf=settlements_gdf)
