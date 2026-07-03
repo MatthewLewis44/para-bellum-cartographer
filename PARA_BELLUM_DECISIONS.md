@@ -823,6 +823,62 @@ cache key change forces a resample but the resampled data is unchanged.
 
 ---
 
+## AD-031 — Hex id format: delimited `{col}_{row}` (schema v1.0.5)
+
+**Date:** 2026-07-02 (Sprint 6, P0-B)
+**Status:** Accepted
+
+The documented packed `CCCRR` id (3-digit col + 2-digit row) had already
+overflowed in shipped data: wceurope v1.0.4 has rows ≥ 100, so its ids mix 5
+and 6 characters, are positionally ambiguous, and their lexicographic sort no
+longer matches (col,row) order (row 100 sorts before row 11). Nothing broke
+only because Unity keys on `coords` — no consumer parses ids yet, which is
+exactly why the format is fixed NOW (audit finding D2).
+
+**New format: `{col}_{row}`** (e.g. `"17_103"`). Unambiguous at any scale, no
+future overflow, trivially human-readable. Ids remain display/debug only;
+`coords` stays the key. The exporter's ordering becomes a numeric sort by
+(col,row) — "sorted by id" is retired. The debug GeoJSON exporter follows the
+same format. Rejected alternatives: wider fixed packing (`CCCCRRR` — still
+overflows someday, still positionally fragile) and dropping `id` entirely
+(kept: PM/debug communication uses it; the Unity inspector displays it).
+
+Unity impact: accept v1.0.5; update `HexCoord.ToHexId()` display format.
+
+---
+
+## AD-032 — Signed elevation: below-sea-level land exports its true elevation (schema v1.0.5)
+
+**Date:** 2026-07-02 (Sprint 6, P0-B)
+**Status:** Accepted
+
+The sampler clamped land elevation to ≥ 0 (`max(0.0, elev)`), discarding data
+SRTM already gives us. Dutch polders are the obvious case (Zuidplas/Haarlemmer
+polders to ≈ −8 m). Rationale for the change: (a) data fidelity we already
+have and were throwing away; (b) era-plausible inundation gameplay (Walcheren,
+the Hollandic Water Line) stays unscoped, but the data now survives so that
+feature needs no pipeline rework when it lands.
+
+Ocean hexes were never clamped (shipped v1.0.4 already carries negative
+North Sea samples) — but the old clamp keyed on ocean-water only, so **lake**
+hexes were clamped too. As-built change set (regeneration diff, only
+`geo.elevation_m` moved): **5 hexes in Belgium** (−1..−2 m coastal polders);
+**183 in Benelux** = 163 land (Dutch polder belt −1..−8 m, incl.
+Hoofddorp/Delft/Amstelveen/Urk urban hexes; one −83 m outlier — the
+**Hambach open-pit lignite mine**, DEU, real modern terrain accepted under
+the AD-010 mixed-era posture, flagged for Matthew's review with the resource
+layer) + 20 IJsselmeer lake-bed hexes (−1..−5 m, genuinely below sea level).
+
+**Downstream check (polder report):** every elevation consumer uses
+upper-bound thresholds only (`_elevation_tier` > 1500; classifier glacier
+> 2800 / mountain ≥ 800 / plateau ≥ 1500 / tundra ≥ 1800; steppe rule needs
+lon > 25°E; moisture "wet" needs > 600 m) — polder hexes classify **identically**
+to their clamped-0 selves (verified by field diff: only `geo.elevation_m`
+changed on those hexes). SRTM void sentinels (−32768) are guarded to 0.0 at
+the sample site and gated (`validate_full_bbox.py` land band [−120, 4900] m).
+
+---
+
 ## AD-033 — Corrected slope computation: metric per-axis gradient at 90 m terrain scale; hill threshold restored to 8°
 
 **Date:** 2026-07-02 (Sprint 6, P0-A fix 2)

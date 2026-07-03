@@ -36,10 +36,10 @@ def hex_grid_to_geojson(
         else:
             biome_str = "plains"
 
-        # Col/row for display
+        # Col/row for display — v1.0.5 delimited id format (AD-031)
         col = q - grid._col_offset + 1
         row = r - grid._row_offset + 1
-        hex_id = f"{col:03d}{row:02d}"
+        hex_id = f"{col}_{row}"
 
         # Settlement display
         settlement_type = info.get("settlement_type", "none")

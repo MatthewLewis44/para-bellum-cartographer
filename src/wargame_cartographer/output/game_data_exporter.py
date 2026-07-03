@@ -2,7 +2,7 @@
 
 Produces the canonical hex JSON consumed by Unity 6.6 LTS.
 This is the contract between the cartography pipeline and the game engine.
-Schema version: see SCHEMA_VERSION below (currently 1.0.4).
+Schema version: see SCHEMA_VERSION below (currently 1.0.5).
 
 OUT OF SCOPE (not written here, implemented in Unity or later pipeline stages):
     - Tactical battle map selection logic
@@ -44,7 +44,7 @@ from wargame_cartographer.infrastructure.types import (
 # Schema version — bump when any field is added/removed/renamed.
 # Unity C# loader checks this on load and rejects incompatible versions.
 # ---------------------------------------------------------------------------
-SCHEMA_VERSION = "1.0.4"
+SCHEMA_VERSION = "1.0.5"
 
 
 def _safe_enum_value(val, default: str) -> str:
@@ -118,7 +118,11 @@ def export_game_data(
         # --- Coords ---
         col = q - grid._col_offset + 1
         row = r - grid._row_offset + 1
-        hex_id = f"{col:03d}{row:02d}"
+        # v1.0.5 (AD-031): delimited id — the packed CCCRR format overflowed
+        # (rows >= 100 in shipped wceurope produced ambiguous mixed-width ids
+        # whose lexicographic order no longer matched (col,row)). Display /
+        # debug only; consumers key on `coords`.
+        hex_id = f"{col}_{row}"
 
         # --- Terrain ---
         # Biome: pipeline stages write info["biome"] as a Biome enum or string.
@@ -276,8 +280,9 @@ def export_game_data(
             f"(AD-030). Aborting rather than shipping filler terrain."
         )
 
-    # Sort by hex ID for deterministic output and Unity binary search
-    hexes.sort(key=lambda h: h["id"])
+    # v1.0.5 (AD-031): sort numerically by (col, row) — deterministic and
+    # monotone in coords (the old string sort broke once id widths mixed).
+    hexes.sort(key=lambda h: (h["coords"]["col"], h["coords"]["row"]))
 
     # --- Top-level document ---
     document = {

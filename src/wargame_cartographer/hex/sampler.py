@@ -227,7 +227,9 @@ class HexSampler:
                 # an out-of-raster sample. The elevation-plausibility gate
                 # reports improbable values; never ship the sentinel.
                 elev_m = 0.0
-            elev_m = max(0.0, elev_m) if not is_water else elev_m
+            # v1.0.5 (AD-032): below-sea-level land keeps its true signed
+            # elevation (Dutch polders, Hambach pit) — the old max(0, elev)
+            # clamp discarded data the era's inundation gameplay may need.
 
             transform = elev_metadata["transform"]
             slope_deg = _sample_max_slope_in_hex(

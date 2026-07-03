@@ -35,7 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 from wargame_cartographer.config.map_spec import MapSpec           # noqa: E402
 from wargame_cartographer.hex.grid import OFFSET_NEIGHBOR_DELTAS   # noqa: E402
 
-EXPECTED_SCHEMA = "1.0.4"
+EXPECTED_SCHEMA = "1.0.5"
 
 # ---------------------------------------------------------------------------
 # Per-config expectations. Bands = measured at Sprint 6 fix bundle ± margin.

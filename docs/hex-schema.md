@@ -1,10 +1,11 @@
-# Para Bellum Hex JSON Schema — v1.0.4
+# Para Bellum Hex JSON Schema — v1.0.5
 
 The contract between the cartography pipeline (`output/game_data_exporter.py`)
 and the Unity 6 C# loader. The loader checks `schema_version` on load and
-rejects incompatible versions. **Bump `SCHEMA_VERSION` on any field
-add/remove/rename** and record the change in the changelog below and in
-`PARA_BELLUM_DECISIONS.md`.
+warns on mismatch (it does not hard-reject — see `unity-hex-loader.md`; a
+versioning policy with teeth is planned before save/load). **Bump
+`SCHEMA_VERSION` on any field add/remove/rename** and record the change in
+the changelog below and in `PARA_BELLUM_DECISIONS.md`.
 
 ## Top-Level Document
 
@@ -18,9 +19,9 @@ add/remove/rename** and record the change in the changelog below and in
 
 | Field | Type | Notes |
 |---|---|---|
-| `schema_version` | string | Semver. Currently `"1.0.4"`. |
+| `schema_version` | string | Semver. Currently `"1.0.5"`. |
 | `map_metadata` | object | See below. |
-| `hexes` | array | One object per hex, sorted by `id` ascending (enables binary search in Unity). |
+| `hexes` | array | One object per hex, sorted **numerically by `(coords.col, coords.row)`** (v1.0.5, AD-031 — the pre-1.0.5 "sorted by `id` string" ordering broke once packed id widths mixed). |
 
 ### `map_metadata`
 
@@ -35,7 +36,7 @@ add/remove/rename** and record the change in the changelog below and in
 | `pipeline_version` | string | Pipeline build version. |
 | `data_sources` | object | Provenance strings per layer (`terrain`, `elevation`, `boundaries`, `resources`). |
 | `bounds` | object | `min_lon`, `min_lat`, `max_lon`, `max_lat` (WGS84). |
-| `grid` | object | `orientation: "flat_top"`, `offset: "odd_q"` (flat-top odd-q offset, AD-012; corrected from `"odd_row_east"`), `col_min/max`, `row_min/max`, `num_cols`, `num_rows`. |
+| `grid` | object | `orientation: "flat_top"`, `offset: "odd_q"` (flat-top odd-q offset, AD-012), `col_min/max`, `row_min/max`, `num_cols`, `num_rows`. **The `odd_q` layout is exact and guaranteed since v1.0.5 (AD-034):** rows run south → north, and **odd `col` columns are shifted +half a row north**. (Pre-1.0.5 artifacts did not guarantee which parity was shifted — it varied per bbox; Belgium/wceurope shipped odd-shifted, Benelux even-shifted. The grid now normalizes parity, which renumbered Benelux cols +1.) Neighbor deltas, keyed by `col % 2`: even → `(+1,0)(+1,−1)(0,−1)(−1,−1)(−1,0)(0,+1)`; odd → `(+1,+1)(+1,0)(0,−1)(−1,0)(−1,+1)(0,+1)`. |
 | `hex_count` | int | Length of `hexes`. |
 | `biome_distribution` | object | biome string → hex count. |
 
@@ -43,7 +44,7 @@ add/remove/rename** and record the change in the changelog below and in
 
 ```json
 {
-  "id": "00501",
+  "id": "5_1",
   "coords": {"col": 5, "row": 1},
   "geo": {
     "center_lat": 51.2345, "center_lon": 4.8901,
@@ -87,12 +88,14 @@ add/remove/rename** and record the change in the changelog below and in
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | string | `CCCRR`: 3-digit zero-padded column + 2-digit zero-padded row, both 1-based. `"00501"` = col 5, row 1. |
+| `id` | string | **v1.0.5 (AD-031): delimited `{col}_{row}`** (e.g. `"17_103"` = col 17, row 103). Unambiguous at any grid size — the pre-1.0.5 packed `CCCRR` format overflowed in shipped wceurope data (rows ≥ 100 → mixed 5/6-char ids). **Display/debug only** — consumers MUST key on `coords`, never parse `id` positionally. |
 | `coords.col` | int | 1-based column. |
-| `coords.row` | int | 1-based row. |
+| `coords.row` | int | 1-based row (south → north). |
 
-Grid is **flat-top**, odd columns shifted; cube coordinates are internal to the
-pipeline and never stored in JSON.
+Grid is **flat-top**; **odd columns are shifted +half a row north**
+(guaranteed since v1.0.5, AD-034 — see `map_metadata.grid` above for the
+exact neighbor deltas). Cube coordinates are internal to the pipeline and
+never stored in JSON.
 
 ### `geo`
 
@@ -100,8 +103,8 @@ pipeline and never stored in JSON.
 |---|---|---|
 | `center_lat` | float | WGS84, 6 decimals. |
 | `center_lon` | float | WGS84, 6 decimals. |
-| `elevation_m` | float | SRTM sample at hex center, 1 decimal. ≥ 0 for land. |
-| `slope_deg` | float | 90th-percentile slope within hex, 2 decimals. |
+| `elevation_m` | float | SRTM sample at hex center, 1 decimal. **Signed since v1.0.5 (AD-032)**: below-sea-level land exports its true negative elevation (Dutch polders to ≈ −8 m; the Hambach open-pit reads −83 m). Pre-1.0.5 clamped land to ≥ 0. Water hexes were always signed. |
+| `slope_deg` | float | 90th-percentile slope within the hex, 2 decimals, measured at ~90 m terrain scale with metric per-axis spacing (AD-033 — pre-1.0.5 values were 3–4.5× too low; all values changed in the Sprint 6 regeneration). |
 
 ### `terrain`
 
@@ -187,6 +190,30 @@ added later without rework (AD-029).
 | `is_coastal` | bool | Duplicate of `terrain.is_coastal` for fast Unity filtering. |
 
 ## Changelog
+
+### v1.0.5 (2026-07-02, Sprint 6)
+
+- **`id` format (AD-031, breaking for anything that parsed ids):** packed
+  `CCCRR` → delimited **`{col}_{row}`** (`"17_103"`). The packed format had
+  already overflowed in shipped wceurope v1.0.4 data (rows ≥ 100 → ambiguous
+  mixed-width ids; string sort no longer matched (col,row)). `id` is
+  display/debug only; Unity keys on `coords` and is unaffected functionally.
+- **`hexes` ordering:** sorted numerically by `(coords.col, coords.row)`
+  (was: by `id` string).
+- **`geo.elevation_m` signed (AD-032):** below-sea-level land no longer
+  clamps to 0. Impact: 5 Belgium / 163 Benelux land hexes go negative
+  (Dutch/Belgian polders −1..−8 m; Hambach open-pit −83 m). Biome/tier
+  classification of these hexes is unchanged (all thresholds are upper
+  bounds; verified in the Sprint 6 polder report).
+- **Grid parity guarantee (AD-034, metadata semantics):** `grid.offset =
+  "odd_q"` is now exact — odd cols shifted north, all artifacts. **Benelux
+  cols renumbered +1** (Belgium/wceurope unchanged). Unity's `HexCoord`
+  decode can assert the convention instead of assuming it.
+- Ships together with the AD-033 slope correction (values-only change to
+  `slope_deg`, `elevation_tier`, and slope-driven biomes — see AD-033 delta).
+- **Unity migration:** accept `schema_version` 1.0.5; do not parse `id`
+  positionally (`ToHexId` display format should switch to `{col}_{row}`);
+  re-import the regenerated artifacts.
 
 ### v1.0.4 (2026-06-17, Sprint 5) — additive only
 
