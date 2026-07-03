@@ -1,7 +1,7 @@
 {
  "version": "0.2-sprint6-east",
  "era": "1930",
- "source_note": "Hand-curated capitals/sub-capitals over NE-admin-1-derived 1930-stopgap province polygons (AD-023/AD-027, public domain). Review pending. | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0).",
+ "source_note": "Hand-curated capitals/sub-capitals over NE-admin-1-derived 1930-stopgap province polygons (AD-023/AD-027, public domain). Review pending. | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0).",
  "provinces": [
   {
    "province_id": "BEL_ANTWERP",

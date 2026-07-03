@@ -325,12 +325,15 @@ class HexSampler:
 
             # -- Province at start (1930 provinces, AD-023/027) --
             # Tile-local PIP against the GLOBAL province polygons (same pattern
-            # as country_at_start). admin_tier (capital/sub_capital) is deferred
-            # to the global reconcile pass (needs all settlement nodes).
+            # as country_at_start), RESTRICTED to the hex's country so the
+            # 0.2° snap can never cross a 1930 border (Sprint 6 review fix).
+            # admin_tier (capital/sub_capital) is deferred to the global
+            # reconcile pass (needs all settlement nodes).
             province_id = ""
             if provinces is not None and not is_water and not is_lake:
                 province_id = assign_province(
-                    cell.center_lon, cell.center_lat, provinces
+                    cell.center_lon, cell.center_lat, provinces,
+                    country=country_code,
                 ) or ""
 
             result[(q, r)] = {

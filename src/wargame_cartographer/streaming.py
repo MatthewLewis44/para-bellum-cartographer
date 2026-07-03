@@ -48,7 +48,7 @@ from wargame_cartographer.hex.sampler import (
 from wargame_cartographer.memory import working_set_mb
 
 # Bump when the per-tile sampling logic changes, to invalidate stale tile caches.
-STREAMING_VERSION = "s6.2"  # Schema v1.0.5: signed elevation lands in tile data (AD-032; invalidates s6.1 tiles)
+STREAMING_VERSION = "s6.3"  # Sprint 6 review fixes: country-restricted province snap, real ports slice (invalidates s6.2 tiles)
 TILE_DEG = 1.0
 MARGIN_DEG = 0.2
 TILE_RAM_BUDGET_MB = 4096
@@ -228,6 +228,17 @@ def run_streaming_pipeline(
     gc.collect()
     status(f"[elev] mode: {'windowed full-DEM' if use_dem_window else 'per-tile merge'}")
 
+    # Ports: fetch ONCE with the same call the monolithic path makes, slice
+    # per tile. Previously streaming fed every tile an EMPTY ports frame while
+    # monolithic passed the real layer — identity held only because the
+    # upstream fetch 406-fails today (Sprint 6 review finding 3); the moment
+    # it heals, streaming would silently diverge. get_ports returns an empty
+    # frame on failure in both paths.
+    ports_global = ne.get_ports(spec.bbox)
+    if not ports_global.empty and "geometry" in ports_global:
+        ports_global = ports_global.set_crs("EPSG:4326", allow_override=True)
+    status(f"[global] ports: {len(ports_global)} features")
+
     tile_peak_mb = 0.0
     n_tiles = len(tiles)
     tile_files: list[Path] = []
@@ -262,9 +273,14 @@ def run_streaming_pipeline(
             lakes = ne.get_natural_earth("lakes", margin)
         except Exception:
             lakes = gpd.GeoDataFrame(geometry=[], crs="EPSG:4326")
+        if ports_global.empty:
+            tile_ports = gpd.GeoDataFrame(geometry=[], crs="EPSG:4326")
+        else:
+            tile_ports = ports_global.cx[
+                margin.min_lon:margin.max_lon, margin.min_lat:margin.max_lat]
         vector_tile = SimpleNamespace(
             land=land, lakes=lakes,
-            ports=gpd.GeoDataFrame(geometry=[], crs="EPSG:4326"),
+            ports=tile_ports,
         )
 
         # Per-tile elevation: windowed read of the full DEM (identical to

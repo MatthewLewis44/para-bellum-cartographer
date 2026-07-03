@@ -139,6 +139,9 @@ def overpass(query: str, cache_name: str) -> dict:
 def check_dates(tags: dict, label: str) -> None:
     start = tags.get("start_date", "")
     end = tags.get("end_date", "9999")
+    if not start:
+        # An empty start would compare as covering everything (review nit).
+        raise RuntimeError(f"{label}: relation has no start_date tag")
     if not (start <= SCENARIO_DATE < end):
         raise RuntimeError(
             f"{label}: relation validity [{start}, {end}) does not cover "
@@ -146,7 +149,12 @@ def check_dates(tags: dict, label: str) -> None:
 
 
 def assemble(elements: list, label: str):
-    """Polygonize a relation's outer/inner member ways (probe-validated)."""
+    """Polygonize a relation's outer/inner member ways (probe-validated).
+
+    Fail-loud (review finding 5): every merged outer line must close into a
+    ring — polygonize() silently DROPS unclosed lines, which could lose an
+    exclave while still passing the coarse area band.
+    """
     outers, inners = [], []
     for e in elements:
         for m in e.get("members", []):
@@ -158,7 +166,14 @@ def assemble(elements: list, label: str):
                     LineString(coords))
     if not outers:
         raise RuntimeError(f"{label}: no outer ways")
-    outer_polys = list(polygonize(linemerge(MultiLineString(outers))))
+    merged = linemerge(MultiLineString(outers))
+    lines = list(merged.geoms) if merged.geom_type == "MultiLineString" else [merged]
+    open_lines = [l for l in lines if not l.is_ring]
+    if open_lines:
+        raise RuntimeError(
+            f"{label}: {len(open_lines)} merged outer line(s) do not close "
+            f"into rings — polygonize would silently drop territory.")
+    outer_polys = list(polygonize(merged))
     if not outer_polys:
         raise RuntimeError(f"{label}: outer ways did not polygonize")
     geom = unary_union(outer_polys)
@@ -241,9 +256,17 @@ def main() -> int:
     features = [f for f in existing["features"]
                 if f["properties"]["country_code"] in KEEP]
     kept = sorted(f["properties"]["country_code"] for f in features)
-    print(f"kept as-is (1930 == modern at sub-hex): {kept}")
-    modern_deu = next(shape(f["geometry"]) for f in existing["features"]
-                      if f["properties"]["country_code"] == "DEU")
+    print(f"kept (1930 == modern at sub-hex): {kept}")
+
+    # Modern DEU for the SAA derivation comes from Natural Earth directly —
+    # NOT from the boundaries file, which this tool overwrites (its DEU is
+    # the OHM Reich after the first run; review finding: re-runnability).
+    from wargame_cartographer.geo.downloader import DataDownloader
+    from wargame_cartographer.config.map_spec import BoundingBox
+    ne = DataDownloader().get_natural_earth(
+        "countries", BoundingBox(min_lon=5, min_lat=46, max_lon=16, max_lat=56))
+    fld = "ADM0_A3" if "ADM0_A3" in ne.columns else "ISO_A3"
+    modern_deu = unary_union(ne[ne[fld] == "DEU"].geometry.values)
 
     print("fetching OHM 1930 relations:")
     geoms: dict[str, tuple] = {}
@@ -285,6 +308,42 @@ def main() -> int:
     if failures:
         print(f"\nABORT: {len(failures)} town checks failed — nothing written.")
         return 1
+
+    # --- Overlap resolution (review finding 2) ------------------------------
+    # Kept NE-modern polygons and OHM-1930 polygons are differently digitized
+    # along shared borders (AUT/DEU up to ~260 km² overlap). Precedence: the
+    # OHM 1930 geometry is authoritative where it claims territory — subtract
+    # the OHM/derived union from every KEPT polygon, then assert the whole
+    # layer is (near-)overlap-free.
+    ohm_union = unary_union([g for g, _ in geoms.values()] + [saa, sov])
+    for f in features:
+        g = shape(f["geometry"]).difference(ohm_union)
+        if not g.is_valid:
+            g = g.buffer(0)
+        f["geometry"] = mapping(g)
+        f["properties"]["notes"] = (f["properties"].get("notes") or "") + \
+            " | AD-035 review: OHM-1930 neighbours subtracted (overlap resolution)"
+
+    all_geoms = ([(f["properties"]["country_code"], shape(f["geometry"]))
+                  for f in features]
+                 + [(c, g) for c, (g, _) in geoms.items()]
+                 + [("SAA", saa), ("SOV", sov)])
+    worst = 0.0
+    worst_pair = None
+    for i in range(len(all_geoms)):
+        for j in range(i + 1, len(all_geoms)):
+            ci, gi = all_geoms[i]
+            cj, gj = all_geoms[j]
+            if not gi.intersects(gj):
+                continue
+            a = area_km2(gi.intersection(gj))
+            if a > worst:
+                worst, worst_pair = a, (ci, cj)
+    print(f"  overlap self-check: worst pair {worst_pair} = {worst:.1f} km²")
+    if worst > 5.0:
+        raise RuntimeError(
+            f"country overlap {worst_pair} = {worst:.1f} km² (> 5) — "
+            f"an overlap winner would be arbitrary sindex order.")
 
     # --- Write -------------------------------------------------------------
     def feat(code, geom, cname, notes):

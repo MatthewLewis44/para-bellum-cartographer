@@ -72,28 +72,40 @@ def load_provinces(
     return ProvinceSet(gdf=gdf, metadata=metadata)
 
 
-def assign_province(lon: float, lat: float, pset: ProvinceSet) -> str | None:
+def assign_province(
+    lon: float, lat: float, pset: ProvinceSet, country: str = ""
+) -> str | None:
     """Return the province_id containing point (lon, lat), or None.
 
     sindex shortlist + prepared covers(), then a COASTAL_SNAP_DEG nearest-province
     fallback (coarse-coastline guard, AD-010). None when no province within reach
-    (open sea, or land outside the authored 5-country coverage).
+    (open sea, or land in a country without authored provinces).
+
+    Sprint 6 adversarial-review fix: candidates are RESTRICTED to the hex's
+    ``country`` (country_at_start). The unrestricted 0.2° snap silently pulled
+    border hexes of province-less neighbour countries into the adjacent
+    country's provinces (Swiss hexes reading DEU_BADEN, HUN hexes reading CSK
+    lands — ~300 samples across the eastern bbox). A hex with no country gets
+    no province; the validator now gates country/province consistency.
     """
-    if pset is None or pset.gdf.empty:
+    if pset is None or pset.gdf.empty or not country:
         return None
     pt = Point(lon, lat)
     gdf = pset.gdf
     prepared = pset.prepared
     ids = gdf["province_id"].values
+    countries = gdf["country"].values
 
     for idx in gdf.sindex.query(pt):
-        if prepared[idx].covers(pt):
+        if countries[idx] == country and prepared[idx].covers(pt):
             return str(ids[idx])
 
     best_id = None
     best_dist = COASTAL_SNAP_DEG
     geoms = gdf.geometry.values
     for idx in gdf.sindex.query(pt.buffer(COASTAL_SNAP_DEG)):
+        if countries[idx] != country:
+            continue
         d = geoms[idx].distance(pt)
         if d < best_dist:
             best_dist = d

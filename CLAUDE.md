@@ -358,6 +358,13 @@ changes tracked here:
   discriminating power there; revisit with river-crossing gameplay.
 - The Veluwe sand-drift hexes (NL) classify as `desert` via OSM
   `natural=sand` (1 hex in Benelux). Cosmetic; noted Sprint 6.
+- Debug-renderer-only drift (accepted, Sprint 6 review): `grid.wargame_number`
+  still labels the PNG/NATO layers with packed `CCRR` ids (≠ the v1.0.5 JSON
+  id format), and `compute_hillshade` does not mask SRTM voids (a void would
+  wreck debug-PNG contrast only). Neither touches the JSON contract.
+- Exported `col`/`row` start at their bbox-dependent minimum (2–3 on shipped
+  artifacts), not 1 — Unity must key off `grid.col_min/row_min`, never
+  assume 1-based-from-1.
 - **Deliberate deferral (do not re-flag):** the pipeline does NOT export
   `rivers.scalerank` / `rivers.waterway_type` (so Unity currently infers
   canal-vs-river from name substrings). This is a KNOWN, intentional deferral

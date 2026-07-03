@@ -315,7 +315,16 @@ def assemble(elements: list, label: str, want_holes: bool = False):
                         LineString(c))
     if not outers:
         raise RuntimeError(f"{label}: no outer ways")
-    geom = unary_union(list(polygonize(linemerge(MultiLineString(outers)))))
+    merged = linemerge(MultiLineString(outers))
+    lines = list(merged.geoms) if merged.geom_type == "MultiLineString" else [merged]
+    open_lines = [l for l in lines if not l.is_ring]
+    if open_lines:
+        # polygonize() silently drops unclosed lines — an exclave (Pfalz,
+        # Birkenfeld, Bremerhaven) could vanish while the coarse coverage
+        # check still passes (review finding 5). Fail loud instead.
+        raise RuntimeError(
+            f"{label}: {len(open_lines)} merged outer line(s) do not close")
+    geom = unary_union(list(polygonize(merged)))
     holes = None
     if inners:
         hp = list(polygonize(linemerge(MultiLineString(inners))))
@@ -400,9 +409,9 @@ def main() -> int:
             tags = relel.get("tags", {})
             start = tags.get("start_date", "")
             end = tags.get("end_date", "9999")
-            if not (start <= SCENARIO_DATE < end):
+            if not start or not (start <= SCENARIO_DATE < end):
                 failures.append(f"{pid}: relation {rel} validity [{start},{end}) "
-                                f"misses {SCENARIO_DATE}")
+                                f"misses {SCENARIO_DATE} (empty start = untagged)")
                 continue
             want_holes = pid in ("DEU_BRANDENBURG", "AUT_NIEDEROESTERREICH")
             out = assemble(d["elements"], pid, want_holes=want_holes)
@@ -468,6 +477,12 @@ def main() -> int:
 
     geoms["SAA_SAAR"] = country_geom["SAA"]
     geoms["DZG_DANZIG"] = country_geom["DZG"]
+
+    # OHM Hannover does not cut out the Bremen/Bremerhaven exclaves (review
+    # finding 6: one-hex overlap at Bremerhaven) — Bremen wins.
+    if "DEU_HANNOVER" in geoms and "DEU_BREMEN" in geoms:
+        geoms["DEU_HANNOVER"] = geoms["DEU_HANNOVER"].difference(
+            geoms["DEU_BREMEN"])
 
     # --- pass 2: clip to country, self-check, emit ---------------------------
     for ccode, provs in PROVINCES.items():

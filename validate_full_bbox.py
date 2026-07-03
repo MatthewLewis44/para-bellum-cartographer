@@ -532,6 +532,27 @@ def main() -> int:
                    and not h["political"]["province_at_start"])
         check(f"[info] {c} partially authored — uncovered hexes reported",
               True, f"{n_un} uncovered (backfill pending)")
+
+    # Country/province consistency (Sprint 6 review fix): a hex's province
+    # must belong to its country — the old unrestricted 0.2° snap violated
+    # this along borders with province-less neighbours.
+    prov_country = {}
+    if mdp.exists():
+        prov_country = {p["province_id"]: p.get("country",
+                                                p["province_id"].split("_")[0])
+                        for p in md_prov["provinces"]}
+    inconsistent = [h["id"] for h in hexes
+                    if h["political"]["province_at_start"]
+                    and h["political"]["country_at_start"]
+                    and prov_country.get(h["political"]["province_at_start"])
+                    not in (None, h["political"]["country_at_start"])]
+    check("province country == country_at_start on every hex",
+          not inconsistent, f"{len(inconsistent)}: {inconsistent[:6]}")
+    orphan_prov = [h["id"] for h in hexes
+                   if h["political"]["province_at_start"]
+                   and not h["political"]["country_at_start"]]
+    check("no province on a country-less hex", not orphan_prov,
+          f"{len(orphan_prov)}: {orphan_prov[:4]}")
     bad_settled = [h["id"] for h in hexes
                    if h["political"]["province_at_start"]
                    and h["settlement"]["type"] != "none"
