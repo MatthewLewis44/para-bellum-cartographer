@@ -13,6 +13,20 @@ from wargame_cartographer.config.map_spec import BoundingBox
 from wargame_cartographer.geo.projection import make_transformer, select_crs
 
 
+#: THE hex-adjacency convention for Para Bellum, in both internal (q, r) and
+#: exported (col, row) coordinates (identical: the grid normalizes q_min to
+#: odd so col parity == q parity). Flat-top hexes; rows run south -> north;
+#: ODD columns are shifted +half a row NORTH. Keyed by column parity.
+#: Order: E-side pair, S, W-side pair, N (matches the historical table).
+#: Consumers outside the package (validators reading JSON) should import
+#: this rather than re-deriving deltas — the tests/test_neighbor_consistency
+#: gate asserts it matches HexGrid.neighbors geometry exactly.
+OFFSET_NEIGHBOR_DELTAS: dict[int, tuple[tuple[int, int], ...]] = {
+    0: ((1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (0, 1)),   # even col
+    1: ((1, 1), (1, 0), (0, -1), (-1, 0), (-1, 1), (0, 1)),     # odd col
+}
+
+
 @dataclass
 class HexCell:
     """A single hex in the grid."""
@@ -101,6 +115,20 @@ class HexGrid:
         r_min = int(math.floor(min_y / row_spacing))
         r_max = int(math.ceil(max_y / row_spacing))
 
+        # Parity normalization (Sprint 6): force q_min ODD so that exported
+        # 1-based col parity == internal q parity (col = q - q_min + 1). The
+        # geometry shifts odd-q columns +half a row north; without this, which
+        # JSON columns are the shifted ones depended on the bbox (q_min parity
+        # is an artifact of the projected extent), so per-artifact adjacency
+        # conventions differed (Belgium/wceurope shipped odd-shifted, Benelux
+        # even-shifted) and any fixed consumer decode was wrong for half the
+        # artifacts. Normalized invariant: ODD JSON col == shifted north,
+        # always. Pure renumbering — the candidate column added at q_min-1
+        # never survives the lon/lat membership filter (verified on all three
+        # shipped bboxes: identical cell sets).
+        if q_min % 2 == 0:
+            q_min -= 1
+
         self._col_offset = q_min
         self._row_offset = r_min
 
@@ -165,16 +193,16 @@ class HexGrid:
         return Polygon(self.hex_vertices(q, r))
 
     def neighbors(self, q: int, r: int) -> list[tuple[int, int]]:
-        """Return (q, r) tuples of the 6 neighbors that exist in the grid."""
-        # Flat-top offset grid neighbor directions depend on column parity
-        if q % 2 == 0:
-            directions = [
-                (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (0, 1)
-            ]
-        else:
-            directions = [
-                (1, 1), (1, 0), (0, -1), (-1, 0), (-1, 1), (0, 1)
-            ]
+        """Return (q, r) tuples of the 6 neighbors that exist in the grid.
+
+        THE single neighbor implementation for the pipeline (Sprint 6
+        neighbor-math reconciliation — the divergent coords.offset_neighbors
+        was deleted). Column parity picks the delta row from
+        OFFSET_NEIGHBOR_DELTAS; thanks to the q_min parity normalization in
+        _build_grid, internal q parity equals exported col parity, so the
+        same table applies to (col, row) offset coords in the JSON.
+        """
+        directions = OFFSET_NEIGHBOR_DELTAS[q % 2]
         result = []
         for dq, dr in directions:
             nq, nr = q + dq, r + dr

@@ -40,9 +40,16 @@ class BiomeClassifier:
     spatial intersection work). This class only contains decision logic.
     """
 
-    # Slope thresholds (degrees)
+    # Slope thresholds (degrees) against the CORRECTED 90 m-scale slope
+    # (AD-033). SLOPE_HILL is restored to its original 8.0: the 8 -> 4
+    # "rolling hills" tweak was compensating for the broken slope
+    # computation that under-read slopes ~3-4.5x (isotropic 90 m assumed on
+    # a 1-arcsec raster). With metrically correct slope, 8.0 reproduces the
+    # PM-approved Belgian hill set as a strict subset (66/66) and adds the
+    # Condroz/Ardennes-plateau terrain the broken math missed (172 total);
+    # 4.0 would classify half of flat Brabant as hills.
     SLOPE_MOUNTAIN  = 20.0   # Above → mountain
-    SLOPE_HILL      = 4.0    # Above → hill (originally 8- changed to 4 for rolling hills. change if everything hills)
+    SLOPE_HILL      = 8.0    # Above → hill (AD-033 restoration, was 4.0)
     SLOPE_HILLY     = 3.0    # Above → at minimum hilly elevation tier
 
     # Elevation thresholds (metres)

@@ -14,6 +14,12 @@ from wargame_cartographer.config.map_spec import BoundingBox
 
 console = Console()
 
+#: SRTM nodata / void sentinel. The AWS skadi tiles are void-filled (zero
+#: voids measured in the Belgium/Benelux DEMs) but voids are guaranteed
+#: somewhere at Europe scale; unmasked they produce huge slope spikes at
+#: void edges and a -32768 elevation sample.
+SRTM_VOID = -32768
+
 
 def _bbox_hash(bbox: BoundingBox) -> str:
     key = f"{bbox.min_lon:.4f},{bbox.min_lat:.4f},{bbox.max_lon:.4f},{bbox.max_lat:.4f}"
@@ -262,11 +268,58 @@ class ElevationProcessor:
             hillshade = np.ones_like(elevation) * 0.5
         return hillshade
 
-    def compute_slope(self, elevation: np.ndarray, cell_size_m: float = 90.0) -> np.ndarray:
-        """Compute slope in degrees from elevation array."""
-        dy, dx = np.gradient(elevation, cell_size_m)
-        slope_rad = np.arctan(np.sqrt(dx * dx + dy * dy))
-        return np.degrees(slope_rad)
+    def compute_slope(
+        self, elevation: np.ndarray, transform, scale_m: float = 90.0
+    ) -> np.ndarray:
+        """Compute terrain-scale slope in degrees from an EPSG:4326 DEM.
+
+        Sprint 6 fix (AD-033). The old implementation ran
+        ``np.gradient(elevation, 90.0)`` — isotropic 90 m pixels — but the
+        rasters are 1-arcsec (~30.9 m N-S; ~19.7 m E-W at 51°N), so slopes
+        were underestimated ~3x N-S and ~4.5x E-W. Now:
+
+        - **Per-axis metric pitch from the transform**: N-S pitch
+          ``|transform.e| * 111320``; E-W pitch additionally scaled by
+          cos(lat) **per row**, so the correction tracks latitude across a
+          tile and across Europe.
+        - **SRTM voids masked to NaN** before the gradient (no spikes at
+          void edges); downstream sampling is nan-aware.
+        - **Wide central difference spanning ~scale_m per side** (k pixels,
+          k = scale_m / N-S pitch): slope is measured at the ~90 m terrain
+          scale the biome classifier was designed for (SRTM3-equivalent),
+          not per-pixel micro-relief (embankments, road cuts) — see the
+          Sprint 6 slope probe. The stencil is window-invariant, which
+          preserves streaming/monolithic hex identity; block-aggregating
+          the raster would NOT be (block alignment differs between a full
+          raster and a windowed tile read).
+
+        Returns a float32 grid aligned with ``elevation`` (same transform).
+        The outer ``k`` rows/cols are NaN — one-sided differences there
+        would differ between a windowed read and the full raster. Tile
+        margins (0.2 deg >> 90 m) keep sampled hexes clear of the band.
+        """
+        e = elevation.astype(np.float32)
+        e[elevation == SRTM_VOID] = np.nan
+
+        lat_pitch_m = abs(transform.e) * 111_320.0
+        k = max(1, round(scale_m / lat_pitch_m))
+        if e.shape[0] <= 2 * k or e.shape[1] <= 2 * k:
+            return np.full_like(e, np.nan)
+
+        lats = transform.f + transform.e * (np.arange(e.shape[0]) + 0.5)
+        lon_pitch_m = (abs(transform.a) * 111_320.0
+                       * np.cos(np.radians(lats))).astype(np.float32)
+
+        dy = np.full_like(e, np.nan)
+        dx = np.full_like(e, np.nan)
+        dy[k:-k, :] = (e[2 * k:, :] - e[:-2 * k, :]) / np.float32(2 * k * lat_pitch_m)
+        dx[:, k:-k] = (e[:, 2 * k:] - e[:, :-2 * k]) / (
+            np.float32(2 * k) * lon_pitch_m[:, None])
+        # In-place: hypot -> arctan -> degrees, reusing dx as the output.
+        np.hypot(dx, dy, out=dx)
+        np.arctan(dx, out=dx)
+        np.degrees(dx, out=dx)
+        return dx
 
     def sample_at_point(
         self, elevation: np.ndarray, metadata: dict, lon: float, lat: float

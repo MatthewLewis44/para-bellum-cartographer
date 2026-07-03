@@ -41,9 +41,8 @@ from shapely.prepared import prep
 from wargame_cartographer.config.map_spec import BoundingBox
 from wargame_cartographer.geo.boundaries import assign_country
 from wargame_cartographer.geo.provinces import assign_province, assign_admin_tiers
-from wargame_cartographer.geo.elevation import ElevationProcessor
+from wargame_cartographer.geo.elevation import ElevationProcessor, SRTM_VOID
 from wargame_cartographer.hex.grid import HexGrid
-from wargame_cartographer.hex.coords import offset_neighbors
 from wargame_cartographer.terrain.classifier import BiomeClassifier
 from wargame_cartographer.terrain.types import (
     Biome,
@@ -101,7 +100,9 @@ class HexSampler:
             elevation, elev_metadata = self.elevation_proc.get_elevation(
                 bbox, allow_synthetic=allow_synthetic_elevation
             )
-        slope_grid = self.elevation_proc.compute_slope(elevation)
+        slope_grid = self.elevation_proc.compute_slope(
+            elevation, elev_metadata["transform"]
+        )
 
         # ----------------------------------------------------------------
         # 2. Build spatial indexes from vector layers
@@ -221,6 +222,11 @@ class HexSampler:
             elev_m = self.elevation_proc.sample_at_point(
                 elevation, elev_metadata, cell.center_lon, cell.center_lat
             )
+            if elev_m == SRTM_VOID:
+                # Void at the hex center: no data -> 0.0, same convention as
+                # an out-of-raster sample. The elevation-plausibility gate
+                # reports improbable values; never ship the sentinel.
+                elev_m = 0.0
             elev_m = max(0.0, elev_m) if not is_water else elev_m
 
             transform = elev_metadata["transform"]
@@ -298,12 +304,12 @@ class HexSampler:
             # -- Bridge --
             bridge = False
             if river_edges and bridges_gdf is not None:
-                bridge = _hex_has_bridge(pt, bridges_gdf, grid.hex_radius_m)
+                bridge = _feature_within_radius(pt, bridges_gdf, grid.hex_radius_m)
 
             # -- Port --
             port = False
             if ports_gdf is not None:
-                port = _hex_has_point_feature(pt, ports_gdf, grid.hex_radius_m * 0.6)
+                port = _feature_within_radius(pt, ports_gdf, grid.hex_radius_m * 0.6)
 
             # -- Anthrome --
             anthrome = _derive_anthrome(biome, landuse_type, settlement_type_str)
@@ -401,11 +407,11 @@ def _assign_coastal(result, grid) -> None:
     for (q, r), data in result.items():
         if data["biome"] in WATER_BIOMES:
             continue
-        col = q - grid._col_offset + 1
-        row = r - grid._row_offset + 1
-        for nbr in offset_neighbors(col, row):
-            nq = nbr.col + grid._col_offset - 1
-            nr = nbr.row + grid._row_offset - 1
+        # grid.neighbors is THE neighbor implementation (Sprint 6 fix 1) —
+        # the old coords.offset_neighbors was parity-inconsistent with the
+        # grid layout on odd-q_min bboxes, so is_coastal was computed against
+        # the wrong neighbours on Belgium/wceurope-parity grids.
+        for (nq, nr) in grid.neighbors(q, r):
             if (nq, nr) in water_qr:
                 data["is_coastal"] = True
                 # Upgrade beach classification
@@ -822,30 +828,42 @@ def _river_for_hex(
     return sorted(crossed), has_river, (best_name if has_river else "")
 
 
-def _hex_has_bridge(center: Point, bridges_gdf, radius_m: float) -> bool:
-    """True if any bridge point is within the hex radius."""
-    threshold_deg = radius_m / 111320.0
-    candidates = list(bridges_gdf.sindex.intersection(
-        (center.x - threshold_deg, center.y - threshold_deg,
-         center.x + threshold_deg, center.y + threshold_deg)
-    ))
-    for idx in candidates:
-        if center.distance(bridges_gdf.iloc[idx].geometry) < threshold_deg:
-            return True
-    return False
+def _feature_within_radius(center: Point, gdf, radius_m: float) -> bool:
+    """True if any feature in ``gdf`` lies within ``radius_m`` of ``center``.
 
+    Sprint 6 fix 3 (bridge/port detection): the old threshold divided
+    radius_m by 111320 and compared raw WGS84 degree distances — isotropic
+    in degrees, anisotropic in metres. One lon-degree is cos(lat) of a
+    lat-degree (~64 % at 51°N), so the effective E-W reach was only ~0.63x
+    the intended radius (under-detection; the sprint brief described it as
+    1.6x over-reach — same defect, opposite sign, identical fix). Distances
+    are now compared in cos(lat)-scaled degree space, the same correction
+    ``_river_for_hex`` applies to river run lengths.
 
-def _hex_has_point_feature(center: Point, gdf, threshold_deg: float) -> bool:
-    """True if any point feature in gdf is within threshold_deg of center."""
+    Also fixes a latent unit bug: the old port path passed metres into a
+    parameter compared against degrees, which made the port radius
+    effectively unbounded — masked only because the upstream ports fetch
+    has been failing (HTTP 406), leaving the layer empty.
+    """
+    from shapely.affinity import scale
+
+    lat_deg = radius_m / 111320.0
+    coslat = math.cos(math.radians(center.y))
+    lon_deg = lat_deg / max(coslat, 0.01)
     candidates = list(gdf.sindex.intersection(
-        (center.x - threshold_deg, center.y - threshold_deg,
-         center.x + threshold_deg, center.y + threshold_deg)
+        (center.x - lon_deg, center.y - lat_deg,
+         center.x + lon_deg, center.y + lat_deg)
     ))
+    if not candidates:
+        return False
+    center_scaled = Point(center.x * coslat, center.y)
     for idx in candidates:
-        row = gdf.iloc[idx]
-        if hasattr(row.geometry, "x"):
-            if center.distance(row.geometry) < threshold_deg:
-                return True
+        geom = gdf.iloc[idx].geometry
+        if geom is None:
+            continue
+        geom_scaled = scale(geom, xfact=coslat, yfact=1.0, origin=(0, 0))
+        if center_scaled.distance(geom_scaled) < lat_deg:
+            return True
     return False
 
 
@@ -916,4 +934,8 @@ def _sample_max_slope_in_hex(
     if patch.size == 0:
         return 0.0
 
-    return float(np.percentile(patch, 90))
+    # nan-aware: void pixels and the raster-edge stencil band are NaN
+    # (compute_slope). An all-NaN patch (fully void hex) reads as 0.0 and is
+    # left to the elevation-plausibility gate to flag.
+    p90 = np.nanpercentile(patch, 90)
+    return float(p90) if np.isfinite(p90) else 0.0

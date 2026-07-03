@@ -48,7 +48,7 @@ from wargame_cartographer.hex.sampler import (
 from wargame_cartographer.memory import working_set_mb
 
 # Bump when the per-tile sampling logic changes, to invalidate stale tile caches.
-STREAMING_VERSION = "s6.0"  # AD-029: river selection from NE scalerank + OSM canals (invalidates s5.x tiles)
+STREAMING_VERSION = "s6.1"  # Sprint 6 P0-A fix bundle: neighbor parity, corrected slope, bridge radius (invalidates s6.0 tiles)
 TILE_DEG = 1.0
 MARGIN_DEG = 0.2
 TILE_RAM_BUDGET_MB = 4096

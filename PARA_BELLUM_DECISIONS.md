@@ -822,3 +822,115 @@ pre-AD-030 shipped output (verified with `compare_hex_outputs.py`); the tile
 cache key change forces a resample but the resampled data is unchanged.
 
 ---
+
+## AD-033 — Corrected slope computation: metric per-axis gradient at 90 m terrain scale; hill threshold restored to 8°
+
+**Date:** 2026-07-02 (Sprint 6, P0-A fix 2)
+**Status:** Accepted (thresholds subject to PM visual review of the regenerated maps)
+
+### The defect was larger than briefed
+
+The Sprint 6 brief described `np.gradient(elevation, 90.0)` as underestimating
+E-W slopes ~1.6× (isotropic 90 m assumed, ~57 m E-W actual at 51°N). The
+empirical probe found the DEM is **1-arcsec** (AWS skadi tiles: ~30.9 m N-S,
+~19.7 m E-W at 51°N), not the 3-arcsec/90 m the pipeline assumed everywhere —
+so slopes were underestimated **~3× N-S and ~4.5× E-W**.
+
+### Decision (three parts)
+
+1. **Metric per-axis gradient.** N-S pixel pitch from the raster transform
+   (`|e|·111320 m`); E-W pitch additionally scaled by **cos(lat) per row**, so
+   the correction tracks latitude across tiles and across Europe.
+   (`ElevationProcessor.compute_slope`, now taking the transform.)
+2. **90 m terrain analysis scale via a wide central-difference stencil**
+   (k pixels per side, k = 90 m / N-S pitch → 3 for 1-arcsec, 1 for genuine
+   SRTM3). Rationale: per-pixel slope at 1-arcsec measures micro-relief
+   (embankments, road cuts) that the p90-per-hex statistic then max-biases —
+   probe: 79 % of Belgian land ≥ the hill threshold. 90 m is the scale the
+   classifier was designed for (every doc said "SRTM3/90 m"). The stencil —
+   not block aggregation — is **window-invariant**, preserving the AD-024/025
+   streaming/monolithic hex identity (block alignment would differ between a
+   windowed tile read and the full raster; verified IDENTICAL post-fix).
+   SRTM voids (−32768) are masked to NaN before the gradient (no void-edge
+   spikes; nan-aware percentile; raster-edge stencil band NaN too).
+3. **`SLOPE_HILL` restored 4° → 8°.** The in-code comment recorded that 8° was
+   lowered to 4° "for rolling hills" — a compensation for the broken math
+   (4° × the ~2–3× hex-level underread ≈ the intended 8–12°). With correct
+   slopes, geographic ground truth (probe): flat Flanders reads 1.5–2.6°,
+   Condroz 7.4°, Ardennes plateau ~9°, steep Ardennes valleys 11–16°. At 8°
+   the PM-approved Belgian hill set is reproduced as a **strict subset**
+   (66/66 kept) plus the Condroz/Ardennes-plateau/Thiérache terrain the broken
+   math missed. Keeping 4° would have classified half of flat Brabant as hills.
+
+### Output impact (the fix bundle delta, 2026-07-02)
+
+Belgium: slope_deg on 765/775 hexes; 84 plains→hill, 4 hill→mountain
+(steepest Ardennes valleys); hill 66→146 (19.8 % of land).
+Benelux: slope_deg on 2,182/2,479; 167 plains→hill, 41 hill→mountain
+(Eifel/Sauerland/Rhine gorge); 7 city-fringe hexes correctly left urban
+footprints (their fringe eligibility was an artifact of under-read slope).
+`elevation_tier` redistributes (~60 % of land reads `hilly` ≥3°); tier is
+descriptive metadata and its 3/10/20 bands were NOT recalibrated this sprint.
+
+**PM sanity-check items:** 4 Belgian + 41 Benelux `mountain` hexes (≥20° p90
+at 90 m scale — real gorge/low-mountain terrain, but "mountain" as a *biome*
+is a game-feel call); the `hilly` tier share. Both tunable by threshold only.
+
+### Validation
+
+Gates recalibrated (parameterized `validate_full_bbox.py`): land slope p90
+bands, biome-share tripwires, elevation plausibility (land ∈ [−120, 4900] m,
+no void sentinel, slope ∈ [0, 60]°). `check_rivers` / `check_provinces` /
+`compare_hex_outputs` all green.
+
+---
+
+## AD-034 — Grid parity normalization: one adjacency convention for all artifacts
+
+**Date:** 2026-07-02 (Sprint 6, P0-A fix 1)
+**Status:** Accepted
+
+### The known neighbor defect was a parity defect
+
+The pre-Sprint-6 note said `coords.offset_neighbors` disagreed with
+`grid.HexGrid.neighbors` "on every cell". The Sprint 6 probe sharpened this:
+it disagreed on 100 % of cells on **Belgium and wceurope** but on **0 % on
+Benelux**. Mechanism: the grid's internal `q_min` (an artifact of the
+projected bbox extent) has arbitrary parity per bbox, and exported
+`col = q − q_min + 1` — so *which JSON columns are the half-row-shifted ones*
+differed per artifact (Belgium/wceurope shipped odd-cols-shifted-north;
+Benelux even-cols-shifted). `coords.py`'s odd-q math was internally coherent
+but matched only even-`q_min` grids; the old gate script even brute-forced
+both parities per file. Any fixed consumer decode (Unity reads `odd_q`) was
+necessarily wrong for half the artifacts. `is_coastal` was therefore computed
+against wrong neighbours on Belgium/wceurope (9 Belgian hexes flipped on
+regeneration; Benelux was accidentally correct — 0 flips).
+
+### Decision
+
+1. **`HexGrid._build_grid` forces `q_min` odd** (pure renumbering; verified
+   identical cell sets on all three shipped bboxes — Benelux cols shift +1).
+   Invariant forever: **odd JSON `col` ⇔ column shifted +half row north**.
+   Odd parity chosen because it matches the artifacts Unity demonstrably
+   consumes correctly (wceurope in StreamingAssets, Belgium).
+2. **Exactly one neighbor implementation**: `grid.HexGrid.neighbors`, backed
+   by the module-level **`OFFSET_NEIGHBOR_DELTAS`** table (keyed by column
+   parity, valid in both internal (q,r) and exported (col,row) space since
+   the parities are now equal). `hex/coords.py` is **deleted** — its
+   `offset_neighbors`/`CUBE_DIRECTIONS` were the divergent second
+   implementation, and its remaining conversions/distances had zero callers
+   and the same parity trap. Validators import `OFFSET_NEIGHBOR_DELTAS`
+   instead of re-deriving deltas.
+3. **Permanent gate**: `tests/test_neighbor_consistency.py` asserts the
+   parity invariant on multiple bboxes, verifies neighbors against raw
+   geometry (exact hex-spacing distance), asserts the table matches
+   `grid.neighbors` in both parity views, and — if a `hex.coords` module
+   ever reappears — asserts any neighbor-named callable in it agrees with
+   `grid.neighbors` on every cell.
+
+**Unity note (v1.0.5 coordination):** Belgium and wceurope coords are
+unchanged; **Benelux cols renumber +1** at its next export. The schema doc now
+states the normalized convention precisely so `HexCoord.cs` can assert it
+instead of assuming it.
+
+---
