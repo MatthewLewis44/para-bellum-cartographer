@@ -297,9 +297,12 @@ def export_game_data(
             "pipeline_version": "0.1.0",
             "data_sources": {
                 "terrain": "OpenStreetMap (ODbL)",
-                "elevation": "SRTM3 (NASA, public domain)",
-                "boundaries": "Natural Earth admin_0 (public domain), 1930 stopgap per AD-018",
-                "provinces": "Natural Earth admin_1 derived (public domain), 1930 stopgap per AD-027",
+                "elevation": "SRTM 1-arcsec (NASA, public domain)",
+                "boundaries": ("1930 borders: OpenHistoricalMap (CC0) east + "
+                               "Natural Earth (public domain) west, AD-035"),
+                "provinces": ("1930 provinces: OpenHistoricalMap admin_level=4 "
+                              "(CC0) for DEU/POL/CSK/AUT + Natural Earth "
+                              "admin_1 derived for BEL/NLD/FRA/LUX (AD-027/035)"),
                 "resources": "hand-authored 1930 layer (public domain, F-2)",
             },
             "bounds": {

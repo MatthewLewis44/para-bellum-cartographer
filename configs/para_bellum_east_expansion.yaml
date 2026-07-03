@@ -1,0 +1,34 @@
+name: "para_bellum_east_expansion"
+title: "PARA BELLUM"
+subtitle: "Eastward expansion — Germany full + Poland + Czechoslovakia + Austria (Sprint 6, AD-035)"
+scenario: "1 January 1930"
+
+# Sprint 6 P0-C: Germany in FULL 1930 extent (East Prussia to 22.9°E),
+# Poland in full (Riga line to ~26.8°E), Czechoslovakia incl. Carpathian
+# Ruthenia, Austria. Frames (country-only coverage, AD-035): SAA, DZG, HUN,
+# LTU, LVA, DNK, SWE, ROU, YUG, SOV + the existing western countries.
+# ~21.1° x 9.7° ≈ 1.6M km² → ~18-19k hexes. STREAMING ONLY (~205 tiles).
+# NB: the SOV boundary strip in boundaries_1930.geojson is clipped to THIS
+# bbox (tools/build_boundaries_1930_east.py EAST_BBOX) — re-run the builder
+# if the bbox changes.
+bbox:
+  min_lon: 5.8
+  min_lat: 46.3
+  max_lon: 26.9
+  max_lat: 56.0
+
+hex_size_km: 10.0
+river_scalerank_max: 8  # AD-029: NE rivers scalerank<=8 + OSM canals
+
+designer_style: simonitch
+font_scale: 1.0
+dpi: 150
+
+show_elevation_shading: true
+show_rivers: true
+show_cities: true
+show_ports: true
+
+# Streaming runner emits JSON only; PNG/HTML are not produced at this scale.
+output_formats: [json]
+output_dir: ./output

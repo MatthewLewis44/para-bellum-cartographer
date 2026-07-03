@@ -1,5 +1,12 @@
 """Generate data/boundaries/provinces_1930.geojson + provinces_1930_metadata.json.
 
+⚠️  PARTIALLY SUPERSEDED (Sprint 6, AD-035): the German + Saar provinces this
+    tool authors were REPLACED by real 1930 boundaries from OpenHistoricalMap —
+    see tools/build_provinces_1930_east.py, which must be re-run AFTER this
+    tool if this tool is ever re-run (it rebuilds DEU/POL/CSK/AUT/SAA/DZG on
+    top of this tool's BEL/NLD/FRA/LUX output). Running this tool alone will
+    clobber the AD-035 layer.
+
 Reproducible province authoring for the 5-country western-front bbox (AD-023,
 AD-027). Geometry source: Natural Earth admin-1 ("states", public domain) — a
 1930 stopgap where 1930 boundaries ~= modern, with explicit manual adjustments

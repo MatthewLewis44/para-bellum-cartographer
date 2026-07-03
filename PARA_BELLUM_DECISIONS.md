@@ -990,3 +990,96 @@ states the normalized convention precisely so `HexCoord.cs` can assert it
 instead of assuming it.
 
 ---
+
+## AD-035 — 1930 eastern boundaries and provinces from OpenHistoricalMap (CC0)
+
+**Date:** 2026-07-03 (Sprint 6, P0-C)
+**Status:** Accepted (pending Matthew's ratification before push — this AD is
+the "propose before building" record; the probe evidence is below)
+
+### Problem
+
+Modern Natural Earth polygons are invalid for 1930 east of Germany (AD-018
+anticipated this): the 1922–1937 German–Polish border (Upper Silesia
+partition, Polish Corridor, East Prussia exclave), the Free City of Danzig,
+1930 Poland's eastern extent (Riga line), Memel under Lithuania. The AD-018
+ship rule excludes the obvious historical GIS sources: historical-basemaps
+(CC BY-NC-SA, removed in Sprint 3), CShapes 2.0 (CC BY-NC-SA), MPIDR/HGIS
+collections (non-commercial), Euratlas/GeaCron (proprietary). Hand-digitizing
+~3,000 km of 1930 border polylines from PD scans was the fallback plan.
+
+### Decision: extract from OpenHistoricalMap via its Overpass API
+
+**License (verified 2026-07-03, openhistoricalmap.org/copyright):**
+"OpenHistoricalMap data is dedicated to the public domain under a Creative
+Commons **CC0** dedication." CC0 is explicitly AD-018-acceptable. We attribute
+in `data_sources` anyway as good practice.
+
+**Coverage + quality (probed 2026-07-03):** OHM boundary relations are
+date-versioned (`start_date`/`end_date`); querying entities valid on the
+scenario date **1930-01-01** returns a complete, mutually consistent set for
+the expanded bbox: Deutsches Reich (rel 2696515, 1922-06-20→1935-03-01 — the
+post-Silesia-partition, pre-Saar-return snapshot), Polska (2692205, incl.
+Kresy/Riga line), Freie Stadt Danzig (2691478), Československá republika
+(2692233), Österreich (2858751), Magyar Királyság, Lietuva (incl. Memel),
+Latvija, Danmark, Sverige, Soviet Union, România, Jugoslavija. Assembly test:
+Danzig (749 vertices) and Provinz Oberschlesien (4,464 vertices) polygonize
+into valid polygons and pass all town-allegiance spot checks including the
+fine 1922 partition line (Gleiwitz/Beuthen German; Katowice/Königshütte/
+Rybnik/Tarnowskie Góry Polish; Gdynia outside Danzig). This beats any
+achievable hand-digitization.
+
+**Provinces too:** OHM admin_level=4 carries the actual 1930 units — all
+Prussian provinces (Ostpreußen, Pommern, Nieder-/Oberschlesien, Brandenburg,
+**Grenzmark Posen-Westpreußen**, Rheinprovinz, Westfalen, …), the German
+Länder, the 16 Polish voivodeships (in their 1930-01-01 versions — several
+relations are date-versioned within 1930), the Czechoslovak lands (Země
+Česká, Země Moravskoslezská, Podkarpatská Rus; Slovakia derived as country
+minus the other lands if no relation), and the 9 Austrian Bundesländer.
+
+### Scope of the boundary layer rebuild
+
+1. **Countries** (`boundaries_1930.geojson`): keep the existing NE-derived
+   geometry for BEL/NLD/LUX/FRA/CHE/ITA (1930 == modern at sub-hex accuracy;
+   preserves Benelux gates). Replace **DEU** with the OHM 1922–1935 Reich
+   polygon; add POL, **DZG** (Danzig), CSK, AUT, HUN, LTU, LVA, DNK, SWE,
+   ROU, YUG, SOV (SOV bbox-clipped — the in-bbox strip east of the Riga
+   line; the full USSR relation is impractically large).
+2. **Saar consequence (flagged deviation):** the OHM Reich correctly
+   EXCLUDES the Saar Basin territory (League-administered in 1930; returns
+   to Germany 1935 — a natural scripted-event hook). It becomes country
+   **`SAA`** (geometry = modern DEU minus OHM Reich, clipped to the Saar
+   area), consistent with the province layer that already treats Saar as
+   separate (AD-027). This CHANGES shipped Benelux/Belgium output (~15–30
+   hexes DEU→SAA); gates recalibrated; called out in the close report.
+3. **German provinces replaced with the real 1930 boundaries** (OHM) —
+   retiring the AD-027 meridian/parallel cut-line approximations for
+   Rheinland/Westfalen and the Hessens. Changes some German hexes'
+   `province_at_start` in shipped Benelux output (the Ruhr-edge fuzziness
+   AD-027 accepted is now resolved correctly); delta-reported.
+4. **New provinces + capitals/sub-capitals** (AD-023/027 model) for POL,
+   CSK, AUT, and eastern Prussia, hand-curated metadata (capitals from 1930
+   administrative fact; sub-capitals by industrial/rail/strategic weight —
+   e.g. Gdynia, Sosnowiec, Drohobycz oil, Ostrava/Vítkovice, Plzeň/Škoda,
+   Leoben/Erzberg, Steyr). Framed-but-unauthored countries (HUN, LTU, LVA,
+   DNK, SWE, ROU, YUG, SOV) get country-only coverage, like AD-028 CHE/AUT/
+   ITA — provinces deferred to their own expansion sprint.
+5. **Reproducibility:** relation IDs pinned in the builder
+   (`tools/build_boundaries_1930_east.py`); extraction date + OHM provenance
+   recorded in the geojson metadata and `data_sources`; raw Overpass
+   responses cached under the wargame cache dir. Builder self-checks the
+   town-allegiance table before writing; the same table gates the eastern
+   artifact in `validate_full_bbox.py`.
+
+### Rejected alternatives
+
+- **Modern admin-line proxies** (voivodeship/powiat edges as the 1930
+  border): 10–40 km errors on the Corridor and Silesian stretches — worse
+  than the ±1 hex (10 km) target, and unverifiable without exactly the
+  reference data OHM already provides.
+- **Hand-digitizing from PD atlases:** slower, error-prone, and strictly
+  dominated by OHM's existing digitization (which passes the same
+  town-allegiance verification we would have used).
+- **CShapes 2.0 / historical-basemaps / MPIDR:** license-excluded (AD-018).
+
+---

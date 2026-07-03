@@ -26,7 +26,13 @@ coordinate with the Unity loader. Full schema doc: `docs/hex-schema.md`.
 ## Hex Grid Convention
 
 - **Flat-top** hexes (changed from pointy-top in Sprint 1.5); JSON
-  `grid.offset = "odd_q"` (AD-012)
+  `grid.offset = "odd_q"` (AD-012). **Exact since Sprint 6 (AD-034):** the
+  grid normalizes `q_min` to odd, so **odd JSON `col` ⇔ column shifted +half
+  a row north** on every artifact (pre-Sprint-6 the shifted parity varied per
+  bbox; Benelux cols renumbered +1 when this landed). ONE neighbor
+  implementation exists: `grid.HexGrid.neighbors` backed by
+  `OFFSET_NEIGHBOR_DELTAS` (import that — never re-derive deltas); gate:
+  `uv run python tests/test_neighbor_consistency.py`.
 - Offset coords `(col, row)`, 1-based; axial `(q, r)` used internally only
 - **`hex_size_km: 10` = FLAT-TO-FLAT distance** (edge-to-edge, AD-013).
   `HexGrid.hex_flat_to_flat_m = size·1000`; `hex_radius_m` (circumradius) =
@@ -37,9 +43,11 @@ coordinate with the Unity loader. Full schema doc: `docs/hex-schema.md`.
   four bbox edges for its projected extent (not just two corners) so wide
   bboxes are fully tiled — a 2-corner extent left an uncovered SE wedge that
   dropped Frankfurt once AD-013 shrank the padding.
-- Hex ID = `CCCRR` zero-padded (`"00501"` = col 5, row 1)
+- Hex ID = delimited `{col}_{row}` (`"17_103"`; v1.0.5, AD-031 — the packed
+  CCCRR format overflowed at rows ≥ 100). Display/debug only; consumers key
+  on `coords`. Export order: numeric by (col, row).
 - Grid layout: col spacing `1.5·r`, row spacing `√3·r` (r = circumradius),
-  odd columns shifted down half a row — a proper tessellation, so
+  odd columns shifted north half a row — a proper tessellation, so
   *containing hex = nearest center* (`sampler._point_to_hex`, O(1) lookup)
 
 ## Architecture
@@ -61,7 +69,8 @@ src/wargame_cartographer/
 │   └── projection.py      — UTM CRS auto-selection from bbox
 ├── hex/
 │   ├── grid.py            — HexGrid (flat-top, axial coords, projected CRS)
-│   ├── coords.py          — cube/offset conversion, neighbors, river edges
+│   │                        + OFFSET_NEIGHBOR_DELTAS, THE single adjacency
+│   │                        convention (AD-034; coords.py deleted Sprint 6)
 │   └── sampler.py         — ★ ALL per-hex tagging happens here (HexSampler)
 ├── terrain/
 │   ├── types.py           — Biome enum (24), ElevationTier, Vegetation, Moisture
@@ -173,13 +182,54 @@ the per-hex pass-1 body and the global coastal/sprawl passes are the SAME code
 - `configs/para_bellum_wceurope_test.yaml` — Sprint 4 streaming scale test
   (W+C Europe, 5–15°E / 45–54°N), 8,607 hexes / 130 tiles. **Streaming only**
   (`uv run python run_streaming.py …`) — monolithic can't run it. Validated
-  742 MB/tile, 492 MB global; ~4 h cold (Overpass-fetch-bound). NB: only the
-  5 western countries have 1930 boundaries (CH/AT/IT → no country, AD-018).
+  742 MB/tile, 492 MB global; ~4 h cold (Overpass-fetch-bound), ~13 min warm
+  re-tile. Since Sprint 6 (AD-035) the full 1930 boundary set applies
+  (CSK/SAA/YUG etc. now framed; the eastern strip is 1930-DEU).
+- `configs/para_bellum_east_expansion.yaml` — Sprint 6 eastward expansion
+  (5.8–26.9°E / 46.3–56°N, ~19k hexes / ~205 tiles): Germany in full 1930
+  extent + Poland + Czechoslovakia + Austria (AD-035). **Streaming only.**
+  Gate: `uv run python validate_full_bbox.py configs/para_bellum_east_expansion.yaml`.
 
 ## Architecture Decisions & Change Log
 
 Decision records live in `PARA_BELLUM_DECISIONS.md` (AD-NNN). Sprint-level
 changes tracked here:
+
+### Sprint 6 (July 2026)
+
+- **P0-A fix bundle (one regeneration):** (1) neighbor-math reconciliation +
+  grid parity normalization (AD-034) — coords.py deleted, single
+  `grid.neighbors`/`OFFSET_NEIGHBOR_DELTAS` implementation, permanent gate
+  test; (2) slope computation corrected (AD-033) — the DEM is 1-arcsec, not
+  the assumed 90 m, so slopes were ~3–4.5× underread; now metric per-axis
+  with cos(lat), SRTM voids masked, wide-stencil 90 m terrain scale,
+  `SLOPE_HILL` restored 4°→8°. Belgium hill 66→146 hexes (Condroz/Ardennes),
+  Benelux +167 hill/+41 mountain (Eifel/Rhine gorge); (3) bridge/port radius
+  cos(lat)-corrected (+1 bridge Benelux; latent port unit bug fixed).
+- **Schema v1.0.5** (AD-031/032): hex id → delimited `{col}_{row}`; hexes
+  sorted numerically by (col,row); signed `elevation_m` (polders to −8 m,
+  IJsselmeer bed, Hambach pit −83 m; classifications unchanged).
+- **1930 eastern boundaries + provinces from OpenHistoricalMap, CC0
+  (AD-035):** boundaries_1930.geojson rebuilt — OHM Deutsches Reich
+  1922–1935 (full eastern extent), POL (Riga line), DZG, CSK, AUT-kept, HUN,
+  LTU, LVA, DNK, SWE, ROU, YUG, SOV-strip, **SAA** (Saar as separate League
+  territory — Benelux hexes flipped DEU→SAA). Provinces: DEU set replaced
+  with real 1930 lines (meridian-cut approximations retired), + 16 Polish
+  voivodeships, 4 CSK lands, 8 AUT Bundesländer (Wien merged into NÖ — no
+  OHM hole), DEU_BERLIN (from the Brandenburg hole), SAA_SAAR, DZG_DANZIG.
+  92 provinces / 92 capitals / 124 sub-capitals; `match_names` aliases for
+  renamed/Cyrillic places (Königsberg→Калининград). Builders:
+  `tools/build_boundaries_1930_east.py`, `tools/build_provinces_1930_east.py`
+  (fail-loud town-allegiance + area/coverage self-checks).
+- **Validation gates parameterized:** `validate_full_bbox.py` takes a config;
+  per-config expectation tables (Belgium/Benelux/wceurope/east) + shared
+  structural gates; elevation-plausibility gate; river connectivity via
+  `OFFSET_NEIGHBOR_DELTAS` (parity guessing removed).
+- **New config:** `configs/para_bellum_east_expansion.yaml` (5.8–26.9°E,
+  46.3–56°N, ~19k hexes, streaming only).
+- `STREAMING_VERSION` s6.0→s6.2. Unity coordination: v1.0.5 + Benelux col
+  renumbering + new country codes (SAA/DZG/POL/CSK/HUN/LTU/LVA/DNK/SWE/ROU/
+  YUG/SOV) must be accepted before this data ships.
 
 ### Sprint 5 (June 2026)
 
@@ -294,15 +344,20 @@ changes tracked here:
 ### Known Issues / Quirks
 
 - Upstream ports fetch (geo/downloader.py) fails with Overpass HTTP 406 →
-  `port: false` everywhere. Pre-existing; not Sprint 2 scope.
-- **`hex/coords.py` `offset_neighbors` disagrees with `grid.HexGrid.neighbors`**
-  (surfaced pre-Sprint-6): its cube-direction vectors are a pointy-top set
-  paired with a flat-top odd-q offset conversion, so its neighbour set is wrong
-  on every cell. `sampler` uses it only for the `is_coastal` flag, so that flag
-  is computed against the wrong neighbours (a latent terrain-output bug). NOT
-  fixed in the cleanup pass (a fix changes output); reconcile with
-  `grid.neighbors` / Unity `HexCoord.cs` before Sprint 7 unit movement. The
-  per-index compass labels in coords.py were removed rather than left wrong.
+  `port: false` everywhere. Pre-existing; not Sprint 2 scope. NB the port
+  radius check had a latent metres-passed-as-degrees bug, fixed in Sprint 6 —
+  when the fetch is repaired, ports will use the corrected metric radius.
+- **RESOLVED (Sprint 6, AD-034):** the `coords.offset_neighbors` /
+  `grid.neighbors` disagreement was a grid-parity artifact (bbox-dependent
+  `q_min` parity). `hex/coords.py` is deleted; parity is normalized; the
+  neighbor gate test prevents recurrence. `is_coastal` was regenerated
+  against correct neighbours (9 Belgian hexes flipped; Benelux had been
+  accidentally correct).
+- **Bridge ≈ river in W. Europe:** ~100 % of river hexes carry `bridge: true`
+  at 10 km scale (OSM bridge density). The field currently has ~no
+  discriminating power there; revisit with river-crossing gameplay.
+- The Veluwe sand-drift hexes (NL) classify as `desert` via OSM
+  `natural=sand` (1 hex in Benelux). Cosmetic; noted Sprint 6.
 - **Deliberate deferral (do not re-flag):** the pipeline does NOT export
   `rivers.scalerank` / `rivers.waterway_type` (so Unity currently infers
   canal-vs-river from name substrings). This is a KNOWN, intentional deferral

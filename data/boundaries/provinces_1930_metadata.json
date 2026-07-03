@@ -1,604 +1,1535 @@
 {
-  "version": "0.1",
-  "era": "1930",
-  "source_note": "Hand-curated capitals/sub-capitals over NE-admin-1-derived 1930-stopgap province polygons (AD-023/AD-027, public domain). Review pending.",
-  "provinces": [
+ "version": "0.2-sprint6-east",
+ "era": "1930",
+ "source_note": "Hand-curated capitals/sub-capitals over NE-admin-1-derived 1930-stopgap province polygons (AD-023/AD-027, public domain). Review pending. | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0).",
+ "provinces": [
+  {
+   "province_id": "BEL_ANTWERP",
+   "name": "Antwerpen",
+   "country": "BEL",
+   "capital": {
+    "city_name": "Antwerpen"
+   },
+   "sub_capitals": [
     {
-      "province_id": "BEL_ANTWERP",
-      "name": "Antwerpen",
-      "country": "BEL",
-      "capital": {
-        "city_name": "Antwerpen"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Mechelen",
-          "rationale": "rail+industry"
-        },
-        {
-          "city_name": "Turnhout",
-          "rationale": "Kempen centre"
-        }
-      ]
+     "city_name": "Mechelen",
+     "rationale": "rail+industry"
     },
     {
-      "province_id": "BEL_BRABANT",
-      "name": "Brabant",
-      "country": "BEL",
-      "capital": {
-        "city_name": "Bruxelles - Brussel"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Leuven",
-          "rationale": "university"
-        },
-        {
-          "city_name": "Nivelles",
-          "rationale": "Walloon Brabant seat"
-        }
-      ]
-    },
-    {
-      "province_id": "BEL_EAST_FLANDERS",
-      "name": "Oost-Vlaanderen",
-      "country": "BEL",
-      "capital": {
-        "city_name": "Gent"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Aalst",
-          "rationale": "Dender industry"
-        },
-        {
-          "city_name": "Sint-Niklaas",
-          "rationale": "Waasland"
-        }
-      ]
-    },
-    {
-      "province_id": "BEL_HAINAUT",
-      "name": "Hainaut",
-      "country": "BEL",
-      "capital": {
-        "city_name": "Mons"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Charleroi",
-          "rationale": "coal+steel"
-        },
-        {
-          "city_name": "Tournai",
-          "rationale": "Scheldt crossing"
-        }
-      ]
-    },
-    {
-      "province_id": "BEL_LIEGE",
-      "name": "Liège",
-      "country": "BEL",
-      "capital": {
-        "city_name": "Liège"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Verviers",
-          "rationale": "textiles"
-        },
-        {
-          "city_name": "Seraing",
-          "rationale": "Cockerill steel"
-        }
-      ]
-    },
-    {
-      "province_id": "BEL_LIMBURG",
-      "name": "Limburg",
-      "country": "BEL",
-      "capital": {
-        "city_name": "Hasselt"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Genk",
-          "rationale": "Campine coal"
-        }
-      ]
-    },
-    {
-      "province_id": "BEL_LUXEMBOURG",
-      "name": "Luxembourg (BE)",
-      "country": "BEL",
-      "capital": {
-        "city_name": "Arlon"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Bastogne",
-          "rationale": "Ardennes road hub"
-        }
-      ]
-    },
-    {
-      "province_id": "BEL_NAMUR",
-      "name": "Namur",
-      "country": "BEL",
-      "capital": {
-        "city_name": "Namur"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Dinant",
-          "rationale": "Meuse crossing"
-        }
-      ]
-    },
-    {
-      "province_id": "BEL_WEST_FLANDERS",
-      "name": "West-Vlaanderen",
-      "country": "BEL",
-      "capital": {
-        "city_name": "Brugge"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Kortrijk",
-          "rationale": "Leie industry"
-        },
-        {
-          "city_name": "Oostende",
-          "rationale": "North Sea port"
-        }
-      ]
-    },
-    {
-      "province_id": "DEU_HANNOVER",
-      "name": "Hannover",
-      "country": "DEU",
-      "capital": {
-        "city_name": "Hannover"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Osnabrück",
-          "rationale": "western seat"
-        },
-        {
-          "city_name": "Oldenburg",
-          "rationale": "NW"
-        },
-        {
-          "city_name": "Bremen",
-          "rationale": "Weser port"
-        }
-      ]
-    },
-    {
-      "province_id": "DEU_HESSEN_DARMSTADT",
-      "name": "Hesse-Darmstadt",
-      "country": "DEU",
-      "capital": {
-        "city_name": "Darmstadt"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Mainz",
-          "rationale": "Rheinhessen"
-        },
-        {
-          "city_name": "Gießen",
-          "rationale": "Oberhessen"
-        },
-        {
-          "city_name": "Offenbach",
-          "rationale": "industry"
-        }
-      ]
-    },
-    {
-      "province_id": "DEU_HESSEN_NASSAU",
-      "name": "Hesse-Nassau",
-      "country": "DEU",
-      "capital": {
-        "city_name": "Wiesbaden"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Frankfurt am Main",
-          "rationale": "finance/rail"
-        },
-        {
-          "city_name": "Kassel",
-          "rationale": "northern seat"
-        },
-        {
-          "city_name": "Fulda",
-          "rationale": "east"
-        }
-      ]
-    },
-    {
-      "province_id": "DEU_RHEINLAND",
-      "name": "Rheinland",
-      "country": "DEU",
-      "capital": {
-        "city_name": "Koblenz"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Köln",
-          "rationale": "largest, Rhine port"
-        },
-        {
-          "city_name": "Aachen",
-          "rationale": "western industry"
-        },
-        {
-          "city_name": "Düsseldorf",
-          "rationale": "Rhine, government"
-        },
-        {
-          "city_name": "Trier",
-          "rationale": "Mosel"
-        },
-        {
-          "city_name": "Bonn",
-          "rationale": "Rhine, university"
-        }
-      ]
-    },
-    {
-      "province_id": "DEU_SAAR",
-      "name": "Saar",
-      "country": "DEU",
-      "capital": {
-        "city_name": "Saarbrücken"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Saarlouis",
-          "rationale": "Saar steel"
-        },
-        {
-          "city_name": "Neunkirchen",
-          "rationale": "ironworks"
-        }
-      ]
-    },
-    {
-      "province_id": "DEU_WESTFALEN",
-      "name": "Westfalen",
-      "country": "DEU",
-      "capital": {
-        "city_name": "Münster"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Dortmund",
-          "rationale": "Ruhr coal/steel"
-        },
-        {
-          "city_name": "Bielefeld",
-          "rationale": "Ravensberg textiles"
-        },
-        {
-          "city_name": "Bochum",
-          "rationale": "Ruhr mining"
-        },
-        {
-          "city_name": "Hagen",
-          "rationale": "south Ruhr"
-        }
-      ]
-    },
-    {
-      "province_id": "FRA_AISNE",
-      "name": "Aisne",
-      "country": "FRA",
-      "capital": {
-        "city_name": "Laon"
-      },
-      "sub_capitals": []
-    },
-    {
-      "province_id": "FRA_ARDENNES",
-      "name": "Ardennes",
-      "country": "FRA",
-      "capital": {
-        "city_name": "Charleville-Mézières"
-      },
-      "sub_capitals": []
-    },
-    {
-      "province_id": "FRA_BAS_RHIN",
-      "name": "Bas-Rhin",
-      "country": "FRA",
-      "capital": {
-        "city_name": "Strasbourg"
-      },
-      "sub_capitals": []
-    },
-    {
-      "province_id": "FRA_MARNE",
-      "name": "Marne",
-      "country": "FRA",
-      "capital": {
-        "city_name": "Châlons-en-Champagne"
-      },
-      "sub_capitals": []
-    },
-    {
-      "province_id": "FRA_MEURTHE_MOSELLE",
-      "name": "Meurthe-et-Moselle",
-      "country": "FRA",
-      "capital": {
-        "city_name": "Nancy"
-      },
-      "sub_capitals": []
-    },
-    {
-      "province_id": "FRA_MEUSE",
-      "name": "Meuse",
-      "country": "FRA",
-      "capital": {
-        "city_name": "Bar-le-Duc"
-      },
-      "sub_capitals": []
-    },
-    {
-      "province_id": "FRA_MOSELLE",
-      "name": "Moselle",
-      "country": "FRA",
-      "capital": {
-        "city_name": "Metz"
-      },
-      "sub_capitals": []
-    },
-    {
-      "province_id": "FRA_NORD",
-      "name": "Nord",
-      "country": "FRA",
-      "capital": {
-        "city_name": "Lille"
-      },
-      "sub_capitals": []
-    },
-    {
-      "province_id": "FRA_OISE",
-      "name": "Oise",
-      "country": "FRA",
-      "capital": {
-        "city_name": "Beauvais"
-      },
-      "sub_capitals": []
-    },
-    {
-      "province_id": "FRA_PAS_DE_CALAIS",
-      "name": "Pas-de-Calais",
-      "country": "FRA",
-      "capital": {
-        "city_name": "Arras"
-      },
-      "sub_capitals": []
-    },
-    {
-      "province_id": "FRA_SOMME",
-      "name": "Somme",
-      "country": "FRA",
-      "capital": {
-        "city_name": "Amiens"
-      },
-      "sub_capitals": []
-    },
-    {
-      "province_id": "LUX_LUXEMBOURG",
-      "name": "Luxembourg",
-      "country": "LUX",
-      "capital": {
-        "city_name": "Luxembourg"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Esch-sur-Alzette",
-          "rationale": "Minett steel"
-        },
-        {
-          "city_name": "Diekirch",
-          "rationale": "Oesling"
-        }
-      ]
-    },
-    {
-      "province_id": "NLD_DRENTHE",
-      "name": "Drenthe",
-      "country": "NLD",
-      "capital": {
-        "city_name": "Assen"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Emmen",
-          "rationale": "peat/Veenkoloniën"
-        }
-      ]
-    },
-    {
-      "province_id": "NLD_FRIESLAND",
-      "name": "Friesland",
-      "country": "NLD",
-      "capital": {
-        "city_name": "Leeuwarden"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Sneek",
-          "rationale": "waterways"
-        }
-      ]
-    },
-    {
-      "province_id": "NLD_GELDERLAND",
-      "name": "Gelderland",
-      "country": "NLD",
-      "capital": {
-        "city_name": "Arnhem"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Nijmegen",
-          "rationale": "Waal crossing"
-        },
-        {
-          "city_name": "Apeldoorn",
-          "rationale": "Veluwe"
-        }
-      ]
-    },
-    {
-      "province_id": "NLD_GRONINGEN",
-      "name": "Groningen",
-      "country": "NLD",
-      "capital": {
-        "city_name": "Groningen"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Delfzijl",
-          "rationale": "Eems port"
-        }
-      ]
-    },
-    {
-      "province_id": "NLD_LIMBURG",
-      "name": "Limburg (NL)",
-      "country": "NLD",
-      "capital": {
-        "city_name": "Maastricht"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Heerlen",
-          "rationale": "coal"
-        },
-        {
-          "city_name": "Venlo",
-          "rationale": "Maas/rail border"
-        }
-      ]
-    },
-    {
-      "province_id": "NLD_NOORD_BRABANT",
-      "name": "Noord-Brabant",
-      "country": "NLD",
-      "capital": {
-        "city_name": "'s-Hertogenbosch"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Eindhoven",
-          "rationale": "Philips industry"
-        },
-        {
-          "city_name": "Tilburg",
-          "rationale": "textiles"
-        },
-        {
-          "city_name": "Breda",
-          "rationale": "garrison"
-        }
-      ]
-    },
-    {
-      "province_id": "NLD_NOORD_HOLLAND",
-      "name": "Noord-Holland",
-      "country": "NLD",
-      "capital": {
-        "city_name": "Haarlem"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Amsterdam",
-          "rationale": "largest city, port"
-        },
-        {
-          "city_name": "Zaandam",
-          "rationale": "Zaan industry"
-        },
-        {
-          "city_name": "Hilversum",
-          "rationale": "Gooi"
-        }
-      ]
-    },
-    {
-      "province_id": "NLD_OVERIJSSEL",
-      "name": "Overijssel",
-      "country": "NLD",
-      "capital": {
-        "city_name": "Zwolle"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Enschede",
-          "rationale": "Twente textiles"
-        },
-        {
-          "city_name": "Deventer",
-          "rationale": "IJssel trade"
-        }
-      ]
-    },
-    {
-      "province_id": "NLD_UTRECHT",
-      "name": "Utrecht",
-      "country": "NLD",
-      "capital": {
-        "city_name": "Utrecht"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Amersfoort",
-          "rationale": "rail junction"
-        }
-      ]
-    },
-    {
-      "province_id": "NLD_ZEELAND",
-      "name": "Zeeland",
-      "country": "NLD",
-      "capital": {
-        "city_name": "Middelburg"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Vlissingen",
-          "rationale": "Scheldt port"
-        }
-      ]
-    },
-    {
-      "province_id": "NLD_ZUID_HOLLAND",
-      "name": "Zuid-Holland",
-      "country": "NLD",
-      "capital": {
-        "city_name": "Den Haag"
-      },
-      "sub_capitals": [
-        {
-          "city_name": "Rotterdam",
-          "rationale": "world port"
-        },
-        {
-          "city_name": "Leiden",
-          "rationale": "university"
-        },
-        {
-          "city_name": "Dordrecht",
-          "rationale": "river junction"
-        }
-      ]
+     "city_name": "Turnhout",
+     "rationale": "Kempen centre"
     }
-  ]
+   ]
+  },
+  {
+   "province_id": "BEL_BRABANT",
+   "name": "Brabant",
+   "country": "BEL",
+   "capital": {
+    "city_name": "Bruxelles - Brussel"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Leuven",
+     "rationale": "university"
+    },
+    {
+     "city_name": "Nivelles",
+     "rationale": "Walloon Brabant seat"
+    }
+   ]
+  },
+  {
+   "province_id": "BEL_EAST_FLANDERS",
+   "name": "Oost-Vlaanderen",
+   "country": "BEL",
+   "capital": {
+    "city_name": "Gent"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Aalst",
+     "rationale": "Dender industry"
+    },
+    {
+     "city_name": "Sint-Niklaas",
+     "rationale": "Waasland"
+    }
+   ]
+  },
+  {
+   "province_id": "BEL_HAINAUT",
+   "name": "Hainaut",
+   "country": "BEL",
+   "capital": {
+    "city_name": "Mons"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Charleroi",
+     "rationale": "coal+steel"
+    },
+    {
+     "city_name": "Tournai",
+     "rationale": "Scheldt crossing"
+    }
+   ]
+  },
+  {
+   "province_id": "BEL_LIEGE",
+   "name": "Liège",
+   "country": "BEL",
+   "capital": {
+    "city_name": "Liège"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Verviers",
+     "rationale": "textiles"
+    },
+    {
+     "city_name": "Seraing",
+     "rationale": "Cockerill steel"
+    }
+   ]
+  },
+  {
+   "province_id": "BEL_LIMBURG",
+   "name": "Limburg",
+   "country": "BEL",
+   "capital": {
+    "city_name": "Hasselt"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Genk",
+     "rationale": "Campine coal"
+    }
+   ]
+  },
+  {
+   "province_id": "BEL_LUXEMBOURG",
+   "name": "Luxembourg (BE)",
+   "country": "BEL",
+   "capital": {
+    "city_name": "Arlon"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Bastogne",
+     "rationale": "Ardennes road hub"
+    }
+   ]
+  },
+  {
+   "province_id": "BEL_NAMUR",
+   "name": "Namur",
+   "country": "BEL",
+   "capital": {
+    "city_name": "Namur"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Dinant",
+     "rationale": "Meuse crossing"
+    }
+   ]
+  },
+  {
+   "province_id": "BEL_WEST_FLANDERS",
+   "name": "West-Vlaanderen",
+   "country": "BEL",
+   "capital": {
+    "city_name": "Brugge"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Kortrijk",
+     "rationale": "Leie industry"
+    },
+    {
+     "city_name": "Oostende",
+     "rationale": "North Sea port"
+    }
+   ]
+  },
+  {
+   "province_id": "FRA_AISNE",
+   "name": "Aisne",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Laon"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_ARDENNES",
+   "name": "Ardennes",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Charleville-Mézières"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_BAS_RHIN",
+   "name": "Bas-Rhin",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Strasbourg"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_MARNE",
+   "name": "Marne",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Châlons-en-Champagne"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_MEURTHE_MOSELLE",
+   "name": "Meurthe-et-Moselle",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Nancy"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_MEUSE",
+   "name": "Meuse",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Bar-le-Duc"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_MOSELLE",
+   "name": "Moselle",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Metz"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_NORD",
+   "name": "Nord",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Lille"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_OISE",
+   "name": "Oise",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Beauvais"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_PAS_DE_CALAIS",
+   "name": "Pas-de-Calais",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Arras"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_SOMME",
+   "name": "Somme",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Amiens"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "LUX_LUXEMBOURG",
+   "name": "Luxembourg",
+   "country": "LUX",
+   "capital": {
+    "city_name": "Luxembourg"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Esch-sur-Alzette",
+     "rationale": "Minett steel"
+    },
+    {
+     "city_name": "Diekirch",
+     "rationale": "Oesling"
+    }
+   ]
+  },
+  {
+   "province_id": "NLD_DRENTHE",
+   "name": "Drenthe",
+   "country": "NLD",
+   "capital": {
+    "city_name": "Assen"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Emmen",
+     "rationale": "peat/Veenkoloniën"
+    }
+   ]
+  },
+  {
+   "province_id": "NLD_FRIESLAND",
+   "name": "Friesland",
+   "country": "NLD",
+   "capital": {
+    "city_name": "Leeuwarden"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Sneek",
+     "rationale": "waterways"
+    }
+   ]
+  },
+  {
+   "province_id": "NLD_GELDERLAND",
+   "name": "Gelderland",
+   "country": "NLD",
+   "capital": {
+    "city_name": "Arnhem"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Nijmegen",
+     "rationale": "Waal crossing"
+    },
+    {
+     "city_name": "Apeldoorn",
+     "rationale": "Veluwe"
+    }
+   ]
+  },
+  {
+   "province_id": "NLD_GRONINGEN",
+   "name": "Groningen",
+   "country": "NLD",
+   "capital": {
+    "city_name": "Groningen"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Delfzijl",
+     "rationale": "Eems port"
+    }
+   ]
+  },
+  {
+   "province_id": "NLD_LIMBURG",
+   "name": "Limburg (NL)",
+   "country": "NLD",
+   "capital": {
+    "city_name": "Maastricht"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Heerlen",
+     "rationale": "coal"
+    },
+    {
+     "city_name": "Venlo",
+     "rationale": "Maas/rail border"
+    }
+   ]
+  },
+  {
+   "province_id": "NLD_NOORD_BRABANT",
+   "name": "Noord-Brabant",
+   "country": "NLD",
+   "capital": {
+    "city_name": "'s-Hertogenbosch"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Eindhoven",
+     "rationale": "Philips industry"
+    },
+    {
+     "city_name": "Tilburg",
+     "rationale": "textiles"
+    },
+    {
+     "city_name": "Breda",
+     "rationale": "garrison"
+    }
+   ]
+  },
+  {
+   "province_id": "NLD_NOORD_HOLLAND",
+   "name": "Noord-Holland",
+   "country": "NLD",
+   "capital": {
+    "city_name": "Haarlem"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Amsterdam",
+     "rationale": "largest city, port"
+    },
+    {
+     "city_name": "Zaandam",
+     "rationale": "Zaan industry"
+    },
+    {
+     "city_name": "Hilversum",
+     "rationale": "Gooi"
+    }
+   ]
+  },
+  {
+   "province_id": "NLD_OVERIJSSEL",
+   "name": "Overijssel",
+   "country": "NLD",
+   "capital": {
+    "city_name": "Zwolle"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Enschede",
+     "rationale": "Twente textiles"
+    },
+    {
+     "city_name": "Deventer",
+     "rationale": "IJssel trade"
+    }
+   ]
+  },
+  {
+   "province_id": "NLD_UTRECHT",
+   "name": "Utrecht",
+   "country": "NLD",
+   "capital": {
+    "city_name": "Utrecht"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Amersfoort",
+     "rationale": "rail junction"
+    }
+   ]
+  },
+  {
+   "province_id": "NLD_ZEELAND",
+   "name": "Zeeland",
+   "country": "NLD",
+   "capital": {
+    "city_name": "Middelburg"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Vlissingen",
+     "rationale": "Scheldt port"
+    }
+   ]
+  },
+  {
+   "province_id": "NLD_ZUID_HOLLAND",
+   "name": "Zuid-Holland",
+   "country": "NLD",
+   "capital": {
+    "city_name": "Den Haag"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Rotterdam",
+     "rationale": "world port"
+    },
+    {
+     "city_name": "Leiden",
+     "rationale": "university"
+    },
+    {
+     "city_name": "Dordrecht",
+     "rationale": "river junction"
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_OSTPREUSSEN",
+   "name": "Ostpreußen",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Königsberg",
+    "match_names": [
+     "Калининград",
+     "Kaliningrad"
+    ]
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Allenstein",
+     "rationale": "rail hub of Masuria",
+     "match_names": [
+      "Olsztyn"
+     ]
+    },
+    {
+     "city_name": "Tilsit",
+     "rationale": "Memel-border industry",
+     "match_names": [
+      "Советск",
+      "Sovetsk"
+     ]
+    },
+    {
+     "city_name": "Insterburg",
+     "rationale": "rail junction",
+     "match_names": [
+      "Черняховск",
+      "Chernyakhovsk"
+     ]
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_POMMERN",
+   "name": "Pommern",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Stettin",
+    "match_names": [
+     "Szczecin"
+    ]
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Stolp",
+     "rationale": "eastern rail centre",
+     "match_names": [
+      "Słupsk"
+     ]
+    },
+    {
+     "city_name": "Stralsund",
+     "rationale": "Baltic port"
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_BRANDENBURG",
+   "name": "Brandenburg",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Potsdam",
+    "note": "provincial seat sat in Charlottenburg (Berlin); Potsdam designated for the game"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Frankfurt an der Oder",
+     "rationale": "Oder crossing + rail",
+     "match_names": [
+      "Frankfurt (Oder)"
+     ]
+    },
+    {
+     "city_name": "Cottbus",
+     "rationale": "Lusatian industry"
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_BERLIN",
+   "name": "Berlin (Reichshauptstadt)",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Berlin"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "DEU_NIEDERSCHLESIEN",
+   "name": "Niederschlesien",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Breslau",
+    "match_names": [
+     "Wrocław"
+    ]
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Liegnitz",
+     "rationale": "rail + garrison",
+     "match_names": [
+      "Legnica"
+     ]
+    },
+    {
+     "city_name": "Waldenburg",
+     "rationale": "coal basin",
+     "match_names": [
+      "Wałbrzych"
+     ]
+    },
+    {
+     "city_name": "Görlitz",
+     "rationale": "Neisse rail junction"
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_OBERSCHLESIEN",
+   "name": "Oberschlesien",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Oppeln",
+    "match_names": [
+     "Opole"
+    ]
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Gleiwitz",
+     "rationale": "border industry triangle",
+     "match_names": [
+      "Gliwice"
+     ]
+    },
+    {
+     "city_name": "Beuthen",
+     "rationale": "coal + zinc",
+     "match_names": [
+      "Bytom"
+     ]
+    },
+    {
+     "city_name": "Ratibor",
+     "rationale": "Oder industry",
+     "match_names": [
+      "Racibórz"
+     ]
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_GRENZMARK",
+   "name": "Grenzmark Posen-Westpreußen",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Schneidemühl",
+    "match_names": [
+     "Piła"
+    ]
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "DEU_SACHSEN_PROVINZ",
+   "name": "Provinz Sachsen",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Magdeburg"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Halle",
+     "rationale": "Leuna/Merseburg chemicals",
+     "match_names": [
+      "Halle (Saale)"
+     ]
+    },
+    {
+     "city_name": "Erfurt",
+     "rationale": "exclave admin + rail"
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_SCHLESWIG_HOLSTEIN",
+   "name": "Schleswig-Holstein",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Kiel"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Flensburg",
+     "rationale": "border port"
+    },
+    {
+     "city_name": "Neumünster",
+     "rationale": "rail junction"
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_BAYERN",
+   "name": "Bayern",
+   "country": "DEU",
+   "capital": {
+    "city_name": "München"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Nürnberg",
+     "rationale": "rail + industry"
+    },
+    {
+     "city_name": "Augsburg",
+     "rationale": "MAN works"
+    },
+    {
+     "city_name": "Ludwigshafen",
+     "rationale": "BASF (Pfalz exclave)",
+     "match_names": [
+      "Ludwigshafen am Rhein"
+     ]
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_WUERTTEMBERG",
+   "name": "Württemberg",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Stuttgart"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Ulm",
+     "rationale": "fortress + rail"
+    },
+    {
+     "city_name": "Friedrichshafen",
+     "rationale": "Zeppelin/Dornier works"
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_BADEN",
+   "name": "Baden",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Karlsruhe"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Mannheim",
+     "rationale": "Rhine port + industry"
+    },
+    {
+     "city_name": "Freiburg",
+     "rationale": "upper-Rhine centre",
+     "match_names": [
+      "Freiburg im Breisgau"
+     ]
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_THUERINGEN",
+   "name": "Thüringen",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Weimar"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Jena",
+     "rationale": "Zeiss optics"
+    },
+    {
+     "city_name": "Gera",
+     "rationale": "textile industry"
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_SACHSEN_FREISTAAT",
+   "name": "Freistaat Sachsen",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Dresden"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Leipzig",
+     "rationale": "rail hub + trade fair"
+    },
+    {
+     "city_name": "Chemnitz",
+     "rationale": "machine tools"
+    },
+    {
+     "city_name": "Zwickau",
+     "rationale": "coal + vehicles"
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_MECKLENBURG_SCHWERIN",
+   "name": "Mecklenburg-Schwerin",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Schwerin"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Rostock",
+     "rationale": "Baltic port + aviation"
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_MECKLENBURG_STRELITZ",
+   "name": "Mecklenburg-Strelitz",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Neustrelitz"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "DEU_OLDENBURG",
+   "name": "Oldenburg",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Oldenburg"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "DEU_BRAUNSCHWEIG",
+   "name": "Braunschweig",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Braunschweig"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "DEU_ANHALT",
+   "name": "Anhalt",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Dessau",
+    "note": "Junkers works in the capital"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "DEU_LIPPE",
+   "name": "Lippe",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Detmold"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "DEU_SCHAUMBURG_LIPPE",
+   "name": "Schaumburg-Lippe",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Bückeburg"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "DEU_HAMBURG",
+   "name": "Hamburg",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Hamburg"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "DEU_LUEBECK",
+   "name": "Lübeck",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Lübeck"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "DEU_BREMEN",
+   "name": "Bremen",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Bremen"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Bremerhaven",
+     "rationale": "North Sea port (exclave)"
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_HOHENZOLLERN",
+   "name": "Hohenzollerische Lande",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Sigmaringen"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "DEU_RHEINLAND",
+   "name": "Rheinland",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Köln",
+    "note": "1930 seat was Koblenz, whose hex center quantizes into Hessen-Nassau (AD-027 border-quantization); Köln designated"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Koblenz",
+     "rationale": "historical provincial seat"
+    },
+    {
+     "city_name": "Aachen",
+     "rationale": "western industry"
+    },
+    {
+     "city_name": "Düsseldorf",
+     "rationale": "Rhine, government"
+    },
+    {
+     "city_name": "Trier",
+     "rationale": "Mosel"
+    },
+    {
+     "city_name": "Bonn",
+     "rationale": "Rhine, university"
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_WESTFALEN",
+   "name": "Westfalen",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Münster"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Dortmund",
+     "rationale": "Ruhr coal/steel"
+    },
+    {
+     "city_name": "Bielefeld",
+     "rationale": "Ravensberg textiles"
+    },
+    {
+     "city_name": "Bochum",
+     "rationale": "Ruhr mining"
+    },
+    {
+     "city_name": "Hagen",
+     "rationale": "south Ruhr"
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_HANNOVER",
+   "name": "Hannover",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Hannover"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Osnabrück",
+     "rationale": "western seat"
+    },
+    {
+     "city_name": "Oldenburg",
+     "rationale": "NW"
+    },
+    {
+     "city_name": "Bremen",
+     "rationale": "Weser port"
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_HESSEN_NASSAU",
+   "name": "Hesse-Nassau",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Wiesbaden"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Frankfurt am Main",
+     "rationale": "finance/rail"
+    },
+    {
+     "city_name": "Kassel",
+     "rationale": "northern seat"
+    },
+    {
+     "city_name": "Fulda",
+     "rationale": "east"
+    }
+   ]
+  },
+  {
+   "province_id": "DEU_HESSEN_DARMSTADT",
+   "name": "Hesse-Darmstadt",
+   "country": "DEU",
+   "capital": {
+    "city_name": "Darmstadt"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Mainz",
+     "rationale": "Rheinhessen"
+    },
+    {
+     "city_name": "Gießen",
+     "rationale": "Oberhessen"
+    },
+    {
+     "city_name": "Offenbach",
+     "rationale": "industry"
+    }
+   ]
+  },
+  {
+   "province_id": "POL_WARSZAWSKIE",
+   "name": "Województwo warszawskie",
+   "country": "POL",
+   "capital": {
+    "city_name": "Warszawa"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Płock",
+     "rationale": "Vistula crossing"
+    },
+    {
+     "city_name": "Włocławek",
+     "rationale": "river industry"
+    }
+   ]
+  },
+  {
+   "province_id": "POL_LODZKIE",
+   "name": "Województwo łódzkie",
+   "country": "POL",
+   "capital": {
+    "city_name": "Łódź"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Piotrków",
+     "rationale": "rail junction",
+     "match_names": [
+      "Piotrków Trybunalski"
+     ]
+    }
+   ]
+  },
+  {
+   "province_id": "POL_KIELECKIE",
+   "name": "Województwo kieleckie",
+   "country": "POL",
+   "capital": {
+    "city_name": "Kielce"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Częstochowa",
+     "rationale": "steel + rail"
+    },
+    {
+     "city_name": "Radom",
+     "rationale": "arms works"
+    },
+    {
+     "city_name": "Sosnowiec",
+     "rationale": "Dąbrowa coal basin"
+    }
+   ]
+  },
+  {
+   "province_id": "POL_LUBELSKIE",
+   "name": "Województwo lubelskie",
+   "country": "POL",
+   "capital": {
+    "city_name": "Lublin"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Chełm",
+     "rationale": "rail junction"
+    }
+   ]
+  },
+  {
+   "province_id": "POL_BIALOSTOCKIE",
+   "name": "Województwo białostockie",
+   "country": "POL",
+   "capital": {
+    "city_name": "Białystok"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Grodno",
+     "rationale": "Neman garrison town",
+     "match_names": [
+      "Гродна",
+      "Гродно",
+      "Hrodna",
+      "Grodno"
+     ]
+    },
+    {
+     "city_name": "Łomża",
+     "rationale": "Narew garrison"
+    }
+   ]
+  },
+  {
+   "province_id": "POL_POMORSKIE",
+   "name": "Województwo pomorskie",
+   "country": "POL",
+   "capital": {
+    "city_name": "Toruń"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Gdynia",
+     "rationale": "the Corridor port"
+    },
+    {
+     "city_name": "Grudziądz",
+     "rationale": "garrison + industry"
+    }
+   ]
+  },
+  {
+   "province_id": "POL_POZNANSKIE",
+   "name": "Województwo poznańskie",
+   "country": "POL",
+   "capital": {
+    "city_name": "Poznań"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Gniezno",
+     "rationale": "rail + regional centre"
+    }
+   ]
+  },
+  {
+   "province_id": "POL_SLASKIE",
+   "name": "Województwo śląskie",
+   "country": "POL",
+   "capital": {
+    "city_name": "Katowice"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Chorzów",
+     "rationale": "Królewska Huta steel"
+    },
+    {
+     "city_name": "Bielsko",
+     "rationale": "textile industry",
+     "match_names": [
+      "Bielsko-Biała"
+     ]
+    }
+   ]
+  },
+  {
+   "province_id": "POL_KRAKOWSKIE",
+   "name": "Województwo krakowskie",
+   "country": "POL",
+   "capital": {
+    "city_name": "Kraków"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Tarnów",
+     "rationale": "chemicals (Mościce)"
+    }
+   ]
+  },
+  {
+   "province_id": "POL_LWOWSKIE",
+   "name": "Województwo lwowskie",
+   "country": "POL",
+   "capital": {
+    "city_name": "Lwów",
+    "match_names": [
+     "Львів",
+     "Lviv"
+    ]
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Przemyśl",
+     "rationale": "fortress + rail"
+    },
+    {
+     "city_name": "Borysław",
+     "rationale": "oil basin",
+     "match_names": [
+      "Борислав",
+      "Boryslav"
+     ]
+    },
+    {
+     "city_name": "Rzeszów",
+     "rationale": "rail + industry"
+    }
+   ]
+  },
+  {
+   "province_id": "POL_STANISLAWOWSKIE",
+   "name": "Województwo stanisławowskie",
+   "country": "POL",
+   "capital": {
+    "city_name": "Stanisławów",
+    "match_names": [
+     "Івано-Франківськ",
+     "Ivano-Frankivsk"
+    ]
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Kołomyja",
+     "rationale": "rail junction",
+     "match_names": [
+      "Коломия",
+      "Kolomyia"
+     ]
+    }
+   ]
+  },
+  {
+   "province_id": "POL_TARNOPOLSKIE",
+   "name": "Województwo tarnopolskie",
+   "country": "POL",
+   "capital": {
+    "city_name": "Tarnopol",
+    "match_names": [
+     "Тернопіль",
+     "Ternopil"
+    ]
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "POL_WOLYNSKIE",
+   "name": "Województwo wołyńskie",
+   "country": "POL",
+   "capital": {
+    "city_name": "Łuck",
+    "match_names": [
+     "Луцьк",
+     "Lutsk"
+    ]
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Równe",
+     "rationale": "rail junction",
+     "match_names": [
+      "Рівне",
+      "Rivne"
+     ]
+    }
+   ]
+  },
+  {
+   "province_id": "POL_POLESKIE",
+   "name": "Województwo poleskie",
+   "country": "POL",
+   "capital": {
+    "city_name": "Brześć nad Bugiem",
+    "match_names": [
+     "Брэст",
+     "Брест",
+     "Brest"
+    ]
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Pińsk",
+     "rationale": "Pripyat flotilla base",
+     "match_names": [
+      "Пінск",
+      "Пинск",
+      "Pinsk"
+     ]
+    }
+   ]
+  },
+  {
+   "province_id": "POL_NOWOGRODZKIE",
+   "name": "Województwo nowogródzkie",
+   "country": "POL",
+   "capital": {
+    "city_name": "Nowogródek",
+    "match_names": [
+     "Навагрудак",
+     "Novogrudok",
+     "Navahrudak"
+    ]
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Baranowicze",
+     "rationale": "rail junction",
+     "match_names": [
+      "Баранавічы",
+      "Барановичи",
+      "Baranavichy"
+     ]
+    }
+   ]
+  },
+  {
+   "province_id": "POL_WILENSKIE",
+   "name": "Województwo wileńskie",
+   "country": "POL",
+   "capital": {
+    "city_name": "Wilno",
+    "match_names": [
+     "Vilnius"
+    ]
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CSK_CESKA",
+   "name": "Země Česká",
+   "country": "CSK",
+   "capital": {
+    "city_name": "Praha"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Plzeň",
+     "rationale": "Škoda works"
+    },
+    {
+     "city_name": "Kladno",
+     "rationale": "steel + coal"
+    },
+    {
+     "city_name": "Liberec",
+     "rationale": "Sudeten industry"
+    },
+    {
+     "city_name": "Ústí nad Labem",
+     "rationale": "Elbe port + chemicals"
+    }
+   ]
+  },
+  {
+   "province_id": "CSK_MORAVSKOSLEZSKA",
+   "name": "Země Moravskoslezská",
+   "country": "CSK",
+   "capital": {
+    "city_name": "Brno"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Moravská Ostrava",
+     "rationale": "Vítkovice steel + coal",
+     "match_names": [
+      "Ostrava"
+     ]
+    },
+    {
+     "city_name": "Olomouc",
+     "rationale": "rail junction"
+    },
+    {
+     "city_name": "Zlín",
+     "rationale": "Baťa industry"
+    }
+   ]
+  },
+  {
+   "province_id": "CSK_SLOVENSKO",
+   "name": "Slovenská krajina",
+   "country": "CSK",
+   "capital": {
+    "city_name": "Bratislava"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Košice",
+     "rationale": "eastern rail + industry"
+    },
+    {
+     "city_name": "Žilina",
+     "rationale": "rail junction"
+    }
+   ]
+  },
+  {
+   "province_id": "CSK_RUS",
+   "name": "Podkarpatská Rus",
+   "country": "CSK",
+   "capital": {
+    "city_name": "Užhorod",
+    "match_names": [
+     "Ужгород",
+     "Uzhhorod"
+    ]
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Mukačevo",
+     "rationale": "garrison + rail",
+     "match_names": [
+      "Мукачево",
+      "Mukachevo"
+     ]
+    }
+   ]
+  },
+  {
+   "province_id": "AUT_NIEDEROESTERREICH",
+   "name": "Niederösterreich",
+   "country": "AUT",
+   "capital": {
+    "city_name": "Wien",
+    "note": "NÖ merged with Wien (no OHM hole; AD-027 Brabant precedent)"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Wiener Neustadt",
+     "rationale": "industry + rail"
+    }
+   ]
+  },
+  {
+   "province_id": "AUT_OBEROESTERREICH",
+   "name": "Oberösterreich",
+   "country": "AUT",
+   "capital": {
+    "city_name": "Linz"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Steyr",
+     "rationale": "arms works"
+    }
+   ]
+  },
+  {
+   "province_id": "AUT_SALZBURG",
+   "name": "Salzburg",
+   "country": "AUT",
+   "capital": {
+    "city_name": "Salzburg"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "AUT_STEIERMARK",
+   "name": "Steiermark",
+   "country": "AUT",
+   "capital": {
+    "city_name": "Graz"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Leoben",
+     "rationale": "Erzberg iron"
+    }
+   ]
+  },
+  {
+   "province_id": "AUT_KAERNTEN",
+   "name": "Kärnten",
+   "country": "AUT",
+   "capital": {
+    "city_name": "Klagenfurt",
+    "match_names": [
+     "Klagenfurt am Wörthersee"
+    ]
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Villach",
+     "rationale": "rail junction"
+    }
+   ]
+  },
+  {
+   "province_id": "AUT_TIROL",
+   "name": "Tirol",
+   "country": "AUT",
+   "capital": {
+    "city_name": "Innsbruck"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "AUT_VORARLBERG",
+   "name": "Vorarlberg",
+   "country": "AUT",
+   "capital": {
+    "city_name": "Bregenz"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "AUT_BURGENLAND",
+   "name": "Burgenland",
+   "country": "AUT",
+   "capital": {
+    "city_name": "Eisenstadt"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "SAA_SAAR",
+   "name": "Saargebiet",
+   "country": "SAA",
+   "capital": {
+    "city_name": "Saarbrücken"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Neunkirchen",
+     "rationale": "steel works"
+    },
+    {
+     "city_name": "Völklingen",
+     "rationale": "ironworks"
+    }
+   ]
+  },
+  {
+   "province_id": "DZG_DANZIG",
+   "name": "Freie Stadt Danzig",
+   "country": "DZG",
+   "capital": {
+    "city_name": "Danzig",
+    "match_names": [
+     "Gdańsk"
+    ]
+   },
+   "sub_capitals": []
+  }
+ ]
 }

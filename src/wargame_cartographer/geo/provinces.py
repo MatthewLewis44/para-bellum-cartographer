@@ -212,16 +212,22 @@ def assign_admin_tiers(
         cands = prov_nodes.get(pid, [])
         claimed: set = set()
 
-        def best_match(city_name: str):
+        def best_match(city_names: list[str]):
             # Prefer match quality, then population (so an exact pop-0 node beats
-            # a higher-pop weaker match).
-            hits = [(_match_score(city_name, nn), pop, qr)
+            # a higher-pop weaker match). Several candidate names may be given:
+            # the 1930 display name plus optional `match_names` aliases for
+            # places renamed since 1930 or whose OSM node name is non-Latin
+            # (Königsberg → Калининград, Lwów → Львів — Sprint 6 eastern
+            # expansion, AD-035).
+            hits = [(max(_match_score(n, nn) for n in city_names), pop, qr)
                     for (qr, pop, nn) in cands if qr not in claimed]
             hits = [h for h in hits if h[0] > 0]
             return max(hits)[2] if hits else None
 
-        cap_name = (prov.get("capital") or {}).get("city_name", "")
-        cap_qr = best_match(cap_name) if cap_name else None
+        cap = prov.get("capital") or {}
+        cap_name = cap.get("city_name", "")
+        cap_names = [cap_name] + list(cap.get("match_names", []))
+        cap_qr = best_match(cap_names) if cap_name else None
         if cap_qr is not None:
             pop = next((p for (q, p, n) in cands if q == cap_qr), 0)
             _designate(result[cap_qr], "capital", cap_name, pop)
@@ -232,7 +238,8 @@ def assign_admin_tiers(
 
         for sub in prov.get("sub_capitals", []):
             sname = sub.get("city_name", "")
-            sqr = best_match(sname) if sname else None
+            snames = [sname] + list(sub.get("match_names", []))
+            sqr = best_match(snames) if sname else None
             if sqr is not None and result[sqr].get("admin_tier") != "capital":
                 pop = next((p for (q, p, n) in cands if q == sqr), 0)
                 _designate(result[sqr], "sub_capital", sname, pop)

@@ -77,8 +77,16 @@ EXPECTATIONS = {
     "para_bellum_benelux_germany_test": dict(
         hex_count=(2350, 2650),
         countries={"BEL": (300, 410), "NLD": (340, 460), "LUX": (20, 42),
-                   "DEU": (820, 990), "FRA": (230, 330)},
+                   "DEU": (820, 990), "FRA": (230, 330),
+                   # AD-035: the Saar Basin's northern edge frames into this
+                   # bbox (min_lat 49.4 cuts the territory at ~half height).
+                   "SAA": (3, 25)},
         water_min=400,
+        country_points=[
+            ("Merzig (Saar Territory)", 49.44, 6.63, "SAA"),
+            ("Sankt Wendel (Saar Territory)", 49.47, 7.17, "SAA"),
+            ("Trier (Rhineland, not Saar)", 49.76, 6.64, "DEU"),
+        ],
         cities=[
             ("Brussels", 50.85, 4.35, ("Bruxelles", "Brussel"), "BEL"),
             ("Antwerp", 51.22, 4.40, ("Antwerpen",), "BEL"),
@@ -116,8 +124,138 @@ EXPECTATIONS = {
         biome_bands={"hill": ("pct", 15, 27), "mountain": ("count", 10, 60),
                      "urban": ("pct", 15, 28), "forest": ("pct", 4, 12)},
     ),
-    # wceurope + eastern-expansion entries are added when their artifacts
-    # regenerate under the Sprint 6 fixes (bands measured then).
+    "para_bellum_east_expansion": dict(
+        # PROVISIONAL bands (geometry-derived estimates, Sprint 6) — tighten
+        # to measured values once the first reviewed artifact exists. The
+        # structural gates + spot checks below are the real 1930 assertions.
+        hex_count=(16500, 20500),
+        countries={"DEU": (4600, 6000), "POL": (3900, 5000),
+                   "CSK": (1350, 1850), "AUT": (800, 1150),
+                   "HUN": (600, 1200), "CHE": (350, 600),
+                   "DZG": (10, 40), "SAA": (10, 40),
+                   "LTU": (400, 750), "DNK": (350, 650),
+                   "ROU": (800, 1900), "FRA": (300, 900),
+                   "NLD": (100, 380), "SWE": (50, 320)},
+        water_min=800,
+        country_points=[
+            ("Katowice (Polish E. Upper Silesia)", 50.26, 19.02, "POL"),
+            ("Beuthen (German Upper Silesia)", 50.35, 18.92, "DEU"),
+            ("Danzig Free City", 54.35, 18.65, "DZG"),
+            ("Gdynia (Polish Corridor port)", 54.52, 18.53, "POL"),
+            ("Toruń (Corridor)", 53.01, 18.60, "POL"),
+            ("Schneidemühl (Grenzmark, German)", 53.15, 16.74, "DEU"),
+            ("Königsberg (East Prussia)", 54.71, 20.51, "DEU"),
+            ("Memel (Lithuanian since 1923)", 55.71, 21.13, "LTU"),
+            ("Wilno (Polish since 1922)", 54.69, 25.28, "POL"),
+            ("Lwów (Polish Galicia)", 49.84, 24.03, "POL"),
+            ("Cheb/Eger (Sudetenland, CSK)", 50.08, 12.37, "CSK"),
+            ("Užhorod (Ruthenia, CSK)", 48.62, 22.30, "CSK"),
+            ("Wien (pre-Anschluss Austria)", 48.21, 16.37, "AUT"),
+            ("Sopron (Hungarian, 1921 plebiscite)", 47.68, 16.59, "HUN"),
+            ("Saarbrücken (League territory)", 49.23, 7.00, "SAA"),
+            ("Sønderborg (Danish, 1920 plebiscite)", 54.91, 9.79, "DNK"),
+            ("Cernăuți (Romanian Bukovina)", 48.29, 25.94, "ROU"),
+        ],
+        cities=[
+            ("Berlin", 52.52, 13.40, ("Berlin",), "DEU"),
+            ("Warszawa", 52.23, 21.01, ("Warszawa",), "POL"),
+            ("Praha", 50.09, 14.42, ("Praha",), "CSK"),
+            ("Wien", 48.21, 16.37, ("Wien",), "AUT"),
+            ("München", 48.14, 11.58, ("München",), "DEU"),
+            ("Breslau", 51.11, 17.03, ("Wrocław",), "DEU"),
+            ("Königsberg", 54.71, 20.51, ("Калининград", "Kaliningrad"), "DEU"),
+            ("Kraków", 50.06, 19.94, ("Kraków",), "POL"),
+            ("Budapest", 47.50, 19.04, ("Budapest",), "HUN"),
+            ("Danzig", 54.35, 18.65, ("Gdańsk",), "DZG"),
+        ],
+        river_points=[
+            ("Vistula at Warsaw", 52.25, 21.03),
+            ("Oder at Breslau", 51.11, 17.03),
+            ("Danube at Vienna", 48.22, 16.40),
+            ("Elbe at Dresden", 51.05, 13.74),
+            ("Rhine at Cologne", 50.94, 6.96),
+        ],
+        river_hex_band=(1400, 2800),
+        cities_min=120,
+        sprawl=[("Berlin", 4, ("Berlin",)), ("Warszawa", 3, ("Warszaw",)),
+                ("Wien", 3, ("Wien",)), ("Praha", 2, ("Praha",))],
+        ruhr_min=10,
+        resources=dict(coal_min=10, steel_min=3, iron_min=1),
+        resource_points=[("Essen coal+steel", 51.45, 7.01, ("coal", "steel"))],
+        provinces_min=70,
+        province_partial_countries=("FRA",),
+        province_points=[
+            ("Breslau -> DEU_NIEDERSCHLESIEN", 51.11, 17.03, "DEU_NIEDERSCHLESIEN"),
+            ("Königsberg -> DEU_OSTPREUSSEN", 54.71, 20.51, "DEU_OSTPREUSSEN"),
+            ("Katowice -> POL_SLASKIE", 50.26, 19.02, "POL_SLASKIE"),
+            ("Praha -> CSK_CESKA", 50.09, 14.42, "CSK_CESKA"),
+            ("Bratislava -> CSK_SLOVENSKO", 48.14, 17.11, "CSK_SLOVENSKO"),
+            ("Wien -> AUT_NIEDEROESTERREICH", 48.21, 16.37, "AUT_NIEDEROESTERREICH"),
+            ("Danzig -> DZG_DANZIG", 54.35, 18.65, "DZG_DANZIG"),
+            ("Saarbrücken -> SAA_SAAR", 49.23, 7.00, "SAA_SAAR"),
+            ("Berlin -> DEU_BERLIN", 52.52, 13.40, "DEU_BERLIN"),
+        ],
+        land_slope_p90_band=(9, 22),
+        biome_bands={"hill": ("pct", 10, 30), "mountain": ("count", 80, 1100),
+                     "urban": ("pct", 5, 20), "forest": ("pct", 8, 35)},
+    ),
+    "para_bellum_wceurope_test": dict(
+        # Bands measured from the Sprint 6 regeneration (fixes + AD-035
+        # boundaries): 8,607 hexes / 8,238 land.
+        hex_count=(8500, 8700),
+        countries={"DEU": (3700, 4400), "FRA": (850, 1100),
+                   "ITA": (850, 1060), "AUT": (570, 710),
+                   "CHE": (420, 520), "CSK": (380, 480),
+                   "NLD": (270, 350), "BEL": (130, 190),
+                   "YUG": (120, 200), "LUX": (24, 40), "SAA": (15, 32)},
+        water_min=300,
+        country_points=[
+            ("Saarbrücken (League territory)", 49.23, 7.00, "SAA"),
+            ("Stettin (German Pomerania)", 53.43, 14.55, "DEU"),
+            ("Cheb/Eger (Sudetenland, CSK)", 50.08, 12.37, "CSK"),
+            ("Ljubljana (Yugoslav Slovenia)", 46.05, 14.51, "YUG"),
+            ("Zürich", 47.37, 8.54, "CHE"),
+            ("Milano", 45.46, 9.19, "ITA"),
+        ],
+        cities=[
+            ("Berlin", 52.52, 13.40, ("Berlin",), "DEU"),
+            ("München", 48.14, 11.58, ("München",), "DEU"),
+            ("Köln", 50.94, 6.96, ("Köln", "Cologne"), "DEU"),
+            ("Praha", 50.09, 14.42, ("Praha",), "CSK"),
+            ("Zürich", 47.37, 8.54, ("Zürich",), "CHE"),
+            ("Milano", 45.46, 9.19, ("Milano",), "ITA"),
+        ],
+        river_points=[
+            ("Rhine at Cologne", 50.94, 6.96),
+            ("Danube at Linz", 48.31, 14.29),
+            ("Elbe at Dresden", 51.05, 13.74),
+            ("Po at Cremona", 45.13, 10.02),
+            ("Rhône at Geneva", 46.20, 6.14),
+        ],
+        river_hex_band=(950, 1350),
+        cities_min=200,
+        sprawl=[("Berlin", 4, ("Berlin",)), ("München", 3, ("München",)),
+                ("Milano", 3, ("Milano",)),
+                # Köln reads 2 here (per-tile-merge DEM slopes differ from the
+                # Benelux windowed-DEM artifact at the footprint fringe).
+                ("Köln", 2, ("Köln",))],
+        ruhr_min=10,
+        resources=dict(coal_min=10, steel_min=3, iron_min=1),
+        resource_points=[("Essen coal+steel", 51.45, 7.01, ("coal", "steel"))],
+        provinces_min=50,
+        province_partial_countries=("FRA",),
+        province_points=[
+            ("Köln -> DEU_RHEINLAND", 50.94, 6.96, "DEU_RHEINLAND"),
+            ("München -> DEU_BAYERN", 48.14, 11.58, "DEU_BAYERN"),
+            ("Berlin -> DEU_BERLIN", 52.52, 13.40, "DEU_BERLIN"),
+            ("Dresden -> DEU_SACHSEN_FREISTAAT", 51.05, 13.74, "DEU_SACHSEN_FREISTAAT"),
+            ("Praha -> CSK_CESKA", 50.09, 14.42, "CSK_CESKA"),
+            ("Innsbruck -> AUT_TIROL", 47.27, 11.39, "AUT_TIROL"),
+        ],
+        land_slope_p90_band=(30, 45),   # the Alps are in-frame
+        biome_bands={"hill": ("pct", 18, 32), "mountain": ("count", 1400, 2300),
+                     "urban": ("pct", 7, 15), "forest": ("pct", 5, 13)},
+    ),
 }
 
 # Elevation plausibility (generic, AD-032/fix-2 gate): band covers the Dutch
@@ -226,16 +364,33 @@ def main() -> int:
         else:
             check(f"{biome} count in [{blo},{bhi}]", blo <= n <= bhi, f"{n}")
 
-    # --- Major city spot checks ------------------------------------------------
-    for label, lat, lon, name_keys, country in exp["cities"]:
+    # --- Country spot checks (1930 border placement, AD-035) --------------------
+    for label, lat, lon, want in exp.get("country_points", []):
         h = closest_hex(lat, lon)
-        s = h["settlement"]
-        ok = (any(k in s["name"] for k in name_keys)
-              and s["type"] in ("city", "metropolis")
-              and h["political"]["country_at_start"] == country)
-        check(f"{label}: tagged city/metropolis, {country}", ok,
-              f"hex {h['id']}: name={s['name']!r} type={s['type']} "
-              f"country={h['political']['country_at_start']}")
+        check(f"{label} -> {want}",
+              h["political"]["country_at_start"] == want,
+              f"hex {h['id']} -> {h['political']['country_at_start'] or '(none)'}")
+
+    # --- Major city spot checks ------------------------------------------------
+    # The city's tagged hex is not always the closest-center hex (a metropolis
+    # node near a hex edge tags the CONTAINING hex, and its suburb ring
+    # surrounds it) — scan the 3 nearest hexes for the named city.
+    def nearest_hexes(lat, lon, n=3):
+        return sorted(hexes, key=lambda h: math.hypot(
+            h["geo"]["center_lat"] - lat,
+            (h["geo"]["center_lon"] - lon) * math.cos(math.radians(lat))))[:n]
+
+    for label, lat, lon, name_keys, country in exp["cities"]:
+        cands = nearest_hexes(lat, lon)
+        hit = next((h for h in cands
+                    if any(k in h["settlement"]["name"] for k in name_keys)
+                    and h["settlement"]["type"] in ("city", "metropolis")
+                    and h["political"]["country_at_start"] == country), None)
+        h0 = cands[0]
+        check(f"{label}: tagged city/metropolis, {country}", hit is not None,
+              f"nearest hex {h0['id']}: name={h0['settlement']['name']!r} "
+              f"type={h0['settlement']['type']} "
+              f"country={h0['political']['country_at_start']}")
 
     # --- Rivers: node model (AD-026/029) ---------------------------------------
     river = {(h["coords"]["col"], h["coords"]["row"])
@@ -351,14 +506,32 @@ def main() -> int:
     framed = [p for p in provs if cap_by_prov[p]]
     check("every framed province has exactly one capital",
           all(cap_by_prov[p] == 1 for p in framed), f"{len(framed)} framed")
-    prov_land = [h for h in land if h["political"]["country_at_start"]]
+    # Countries with an authored province layer — derived from the metadata,
+    # not hardcoded (Sprint 6: DEU/POL/CSK/AUT/SAA/DZG joined; HUN etc. are
+    # country-only per AD-035, CHE/ITA still pending per AD-028).
+    covered_countries = set()
+    mdp = Path("data/boundaries/provinces_1930_metadata.json")
+    if mdp.exists():
+        md_prov = json.load(open(mdp, encoding="utf-8"))
+        covered_countries = {p.get("country", p["province_id"].split("_")[0])
+                             for p in md_prov["provinces"]}
+    # Countries whose authored provinces only cover PART of this bbox are
+    # excluded from the hard gate but reported (e.g. FRA outside the Sprint 5
+    # Benelux-frame départements — backfill pending).
+    partial = set(exp.get("province_partial_countries", ()))
+    covered_countries -= partial
+    prov_land = [h for h in land
+                 if h["political"]["country_at_start"] in covered_countries]
     no_prov = [h for h in prov_land if not h["political"]["province_at_start"]]
-    # CH/AT/IT have country but no authored provinces yet (AD-028) — exclude.
-    no_prov = [h for h in no_prov
-               if h["political"]["country_at_start"] not in ("CHE", "AUT", "ITA")]
     check("province coverage of covered-country land >= 98%",
           len(no_prov) <= 0.02 * max(1, len(prov_land)),
-          f"{len(no_prov)} of {len(prov_land)} uncovered")
+          f"{len(no_prov)} of {len(prov_land)} uncovered "
+          f"({len(covered_countries)} covered countries)")
+    for c in sorted(partial):
+        n_un = sum(1 for h in land if h["political"]["country_at_start"] == c
+                   and not h["political"]["province_at_start"])
+        check(f"[info] {c} partially authored — uncovered hexes reported",
+              True, f"{n_un} uncovered (backfill pending)")
     bad_settled = [h["id"] for h in hexes
                    if h["political"]["province_at_start"]
                    and h["settlement"]["type"] != "none"
@@ -383,9 +556,10 @@ def main() -> int:
         caps = sum(1 for p in md["provinces"]
                    if p.get("capital", {}).get("city_name"))
         subs = sum(len(p.get("sub_capitals", [])) for p in md["provinces"])
-        check("authored layer has 30+ capitals", caps >= 30, f"{caps}")
-        check("authored layer sub-capitals sane (50-120)",
-              50 <= subs <= 120, f"{subs}")
+        # Sprint 6 (AD-035): 92 provinces / 92 capitals / 124 sub-capitals.
+        check("authored layer has 80+ capitals", caps >= 80, f"{caps}")
+        check("authored layer sub-capitals sane (100-200)",
+              100 <= subs <= 200, f"{subs}")
 
     # --- Summary -----------------------------------------------------------------
     print(f"Validation — {spec.name}  ({output})")
