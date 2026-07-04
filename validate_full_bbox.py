@@ -125,15 +125,16 @@ EXPECTATIONS = {
                      "urban": ("pct", 15, 28), "forest": ("pct", 4, 12)},
     ),
     "para_bellum_east_expansion": dict(
-        # PROVISIONAL bands (geometry-derived estimates, Sprint 6) — tighten
-        # to measured values once the first reviewed artifact exists. The
-        # structural gates + spot checks below are the real 1930 assertions.
+        # Bands calibrated to the first Sprint 6 artifact (18,719 hexes,
+        # 2026-07-04); initial geometry-derived guesses corrected for DNK
+        # (bbox cuts Denmark at 56°N) and the Alpine/Carpathian slope share.
+        # The structural gates + spot checks are the real 1930 assertions.
         hex_count=(16500, 20500),
         countries={"DEU": (4600, 6000), "POL": (3900, 5000),
                    "CSK": (1350, 1850), "AUT": (800, 1150),
                    "HUN": (600, 1200), "CHE": (350, 600),
                    "DZG": (10, 40), "SAA": (10, 40),
-                   "LTU": (400, 750), "DNK": (350, 650),
+                   "LTU": (400, 750), "DNK": (200, 400),
                    "ROU": (800, 1900), "FRA": (300, 900),
                    "NLD": (100, 380), "SWE": (50, 320)},
         water_min=800,
@@ -153,7 +154,9 @@ EXPECTATIONS = {
             ("Wien (pre-Anschluss Austria)", 48.21, 16.37, "AUT"),
             ("Sopron (Hungarian, 1921 plebiscite)", 47.68, 16.59, "HUN"),
             ("Saarbrücken (League territory)", 49.23, 7.00, "SAA"),
-            ("Sønderborg (Danish, 1920 plebiscite)", 54.91, 9.79, "DNK"),
+            # (Sønderborg's nearest hex center is open water in the
+            #  Flensburg Fjord — Haderslev is the inland plebiscite check.)
+            ("Haderslev (Danish, 1920 plebiscite)", 55.25, 9.49, "DNK"),
             ("Cernăuți (Romanian Bukovina)", 48.29, 25.94, "ROU"),
         ],
         cities=[
@@ -195,8 +198,9 @@ EXPECTATIONS = {
             ("Saarbrücken -> SAA_SAAR", 49.23, 7.00, "SAA_SAAR"),
             ("Berlin -> DEU_BERLIN", 52.52, 13.40, "DEU_BERLIN"),
         ],
-        land_slope_p90_band=(9, 22),
-        biome_bands={"hill": ("pct", 10, 30), "mountain": ("count", 80, 1100),
+        land_slope_p90_band=(18, 30),   # full Alps + Tatra/Carpathians framed
+        biome_bands={"hill": ("pct", 10, 30),
+                     "mountain": ("count", 1500, 2700),
                      "urban": ("pct", 5, 20), "forest": ("pct", 8, 35)},
     ),
     "para_bellum_wceurope_test": dict(
