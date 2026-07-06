@@ -162,9 +162,9 @@ added later without rework (AD-029).
 | `road` | enum string | `none`, `dirt`, `paved`, `highway`. |
 | `rail` | enum string | `none`, `narrow`, `standard`, `double`. |
 | `bridge` | bool | Bridge present on a river hex. |
-| `port` | bool | Port facility in hex. |
-| `airfield` | bool | Sprint 2 manual layer — currently always `false`. |
-| `fortification` | enum string | `none`, `field`, `permanent`. Sprint 2 manual layer — currently always `none`. |
+| `port` | bool | **AD-036: authored, NOT pipeline-detected.** Starting infrastructure (port facilities) is construction-system scenario data, filled from an authored layer when that system exists — like `resources`. The pipeline emits `false` for every hex; this empty value is intentional, not a bug. Do not "fix" it with OSM detection. |
+| `airfield` | bool | **AD-036: authored, NOT pipeline-detected** (same as `port`). Always `false` from the pipeline; filled from authored scenario data later. |
+| `fortification` | enum string | `none`, `field`, `permanent`. **AD-036: authored, NOT pipeline-detected.** Always `none` from the pipeline. Independent of `settlement.anthrome = "fortified"`, which is descriptive military-land *character* for tactical-map selection (AD-015), not a strategic-works flag. |
 
 ### `resources`
 

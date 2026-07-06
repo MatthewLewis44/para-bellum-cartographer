@@ -195,6 +195,32 @@ the per-hex pass-1 body and the global coastal/sprawl passes are the SAME code
 Decision records live in `PARA_BELLUM_DECISIONS.md` (AD-NNN). Sprint-level
 changes tracked here:
 
+### Sprint 7 (July 2026)
+
+- **Province layer complete (AD-035 addendum):** no city-provinces — Berlin
+  merged into `DEU_BRANDENBURG` (its provincial capital; Potsdam → sub),
+  Wien-into-Niederösterreich ratified. `DEU_BERLIN` **removed**. Backfill
+  (`tools/build_provinces_1930_backfill.py`, runs third: west → east →
+  backfill) added 25 CHE cantons, 6 ITA compartimenti, 16 eastern-FRA
+  départements (NE admin-1 stopgap, `era:1930-stopgap`). **92 → 138
+  provinces / 138 capitals / 138 sub-capitals.** Countries still country-only:
+  HUN/LTU/LVA/DNK/SWE/ROU/YUG/SOV.
+- **Infrastructure deferral (AD-036) — policy:** `infrastructure.port` /
+  `airfield` / `fortification` are **authored construction-system scenario
+  data, NOT pipeline-detected.** They stay inert (`false`/`false`/`"none"`) —
+  those empty values are intentional, not defects. A mid-sprint attempt to
+  detect ports/airfields from OSM/OHM was retired as the wrong model (modern
+  facilities ≠ the 1930 starting network). The OSM port-detection path
+  (`get_ports`, `_overpass_to_gdf`, the vector/streaming fetch, the sampler
+  sniff) is **deleted**. Rule: pipeline work needs a consuming system that
+  exists or is in the current sprint. `anthrome="fortified"` is descriptive
+  land character (AD-015), independent of the (inert) fortification field.
+- **Gates:** an AD-036 inertness guard (port/airfield/fortification all inert)
+  added; Berlin→Brandenburg + CHE/ITA province spot-checks. Schema v1.0.5
+  UNCHANGED. `STREAMING_VERSION` s6.3 → s7.0 (province layer + port retirement;
+  province content-hash invalidates tiles). Unity handoff:
+  `docs/sprint7-unity-handoff.md` (DEU_BERLIN removed + 47 province ids added).
+
 ### Sprint 6 (July 2026)
 
 - **P0-A fix bundle (one regeneration):** (1) neighbor-math reconciliation +

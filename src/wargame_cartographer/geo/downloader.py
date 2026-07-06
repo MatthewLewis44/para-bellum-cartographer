@@ -10,15 +10,12 @@ import zipfile
 from pathlib import Path
 
 import geopandas as gpd
-import pandas as pd
 import requests
 from rich.console import Console
-from shapely.geometry import Point
 
 from wargame_cartographer.config.defaults import (
     CACHE_MAX_AGE_DAYS,
     NATURAL_EARTH_LAYERS,
-    OVERPASS_API_URL,
 )
 from wargame_cartographer.config.map_spec import BoundingBox
 
@@ -103,57 +100,10 @@ class DataDownloader:
             console.print(f"  [yellow]City data failed: {e}[/yellow]")
             return gpd.GeoDataFrame()
 
-    def get_ports(self, bbox: BoundingBox) -> gpd.GeoDataFrame:
-        """Get ports via direct Overpass API query (fast)."""
-        cache_key = f"ports_{_bbox_hash(bbox)}"
-        cache_path = self.cache_dir / "osm" / f"{cache_key}.gpkg"
-
-        if _is_fresh(cache_path):
-            return gpd.read_file(cache_path)
-
-        console.print("  Fetching ports from Overpass API...", style="dim")
-        try:
-            query = f"""
-            [out:json][timeout:30];
-            (
-              node["harbour"="yes"]({bbox.min_lat},{bbox.min_lon},{bbox.max_lat},{bbox.max_lon});
-              node["landuse"="port"]({bbox.min_lat},{bbox.min_lon},{bbox.max_lat},{bbox.max_lon});
-              way["landuse"="port"]({bbox.min_lat},{bbox.min_lon},{bbox.max_lat},{bbox.max_lon});
-            );
-            out center;
-            """
-            gdf = self._overpass_to_gdf(query)
-            if not gdf.empty:
-                gdf.to_file(cache_path, driver="GPKG")
-            return gdf
-        except Exception as e:
-            console.print(f"  [yellow]Port fetch failed: {e}[/yellow]")
-            return gpd.GeoDataFrame()
-
-    def _overpass_to_gdf(self, query: str) -> gpd.GeoDataFrame:
-        """Execute Overpass query and return GeoDataFrame of points."""
-        resp = requests.post(
-            OVERPASS_API_URL,
-            data={"data": query},
-            timeout=60,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-
-        records = []
-        for element in data.get("elements", []):
-            lat = element.get("lat") or element.get("center", {}).get("lat")
-            lon = element.get("lon") or element.get("center", {}).get("lon")
-            if lat is None or lon is None:
-                continue
-            tags = element.get("tags", {})
-            records.append({
-                "geometry": Point(lon, lat),
-                "name": tags.get("name", ""),
-                "type": element.get("type", ""),
-            })
-
-        if not records:
-            return gpd.GeoDataFrame()
-
-        return gpd.GeoDataFrame(records, crs="EPSG:4326")
+    # NOTE (AD-036): port detection was RETIRED in Sprint 7. Starting
+    # infrastructure (ports/airfields/fortifications) is authored
+    # construction-system scenario data, not something to sniff from modern
+    # OSM. The old get_ports()/_overpass_to_gdf() Overpass path is gone; the
+    # `infrastructure.port` schema field stays inert (False) until the
+    # construction system fills it from authored data. Do NOT re-add
+    # OSM/OHM port detection here.

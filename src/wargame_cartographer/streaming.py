@@ -12,7 +12,7 @@ Architecture (see docs/streaming-pipeline-design.md):
   PER ~1° TILE: read landuse/roads/rails/bridges slices from the cached
                 sub-bbox PARTS with a bbox(+0.2° margin) filter (never merging
                 the whole layer); elevation via get_elevation(tile+margin,
-                allow_synthetic=False); NE land/lakes/ports clipped to
+                allow_synthetic=False); NE land/lakes clipped to
                 tile+margin (so land detection is tile-local). Sample only the
                 tile's hexes (run_global_passes=False); pickle the tile; discard.
   MERGE       : assemble all tiles in grid order, run coastal + sprawl globally,
@@ -48,7 +48,7 @@ from wargame_cartographer.hex.sampler import (
 from wargame_cartographer.memory import working_set_mb
 
 # Bump when the per-tile sampling logic changes, to invalidate stale tile caches.
-STREAMING_VERSION = "s6.3"  # Sprint 6 review fixes: country-restricted province snap, real ports slice (invalidates s6.2 tiles)
+STREAMING_VERSION = "s7.0"  # Sprint 7: port detection retired (AD-036) + province layer complete (Berlin→Brandenburg, CHE/ITA/FRA backfill)
 TILE_DEG = 1.0
 MARGIN_DEG = 0.2
 TILE_RAM_BUDGET_MB = 4096
@@ -228,17 +228,10 @@ def run_streaming_pipeline(
     gc.collect()
     status(f"[elev] mode: {'windowed full-DEM' if use_dem_window else 'per-tile merge'}")
 
-    # Ports: fetch ONCE with the same call the monolithic path makes, slice
-    # per tile. Previously streaming fed every tile an EMPTY ports frame while
-    # monolithic passed the real layer — identity held only because the
-    # upstream fetch 406-fails today (Sprint 6 review finding 3); the moment
-    # it heals, streaming would silently diverge. get_ports returns an empty
-    # frame on failure in both paths.
-    ports_global = ne.get_ports(spec.bbox)
-    if not ports_global.empty and "geometry" in ports_global:
-        ports_global = ports_global.set_crs("EPSG:4326", allow_override=True)
-    status(f"[global] ports: {len(ports_global)} features")
-
+    # Ports are NOT detected (AD-036) — starting infrastructure is authored
+    # construction-system data, not sniffed from OSM. No port fetch; every
+    # tile's ports frame is empty, matching the monolithic path (which also
+    # passes an empty ports layer now).
     tile_peak_mb = 0.0
     n_tiles = len(tiles)
     tile_files: list[Path] = []
@@ -264,7 +257,7 @@ def run_streaming_pipeline(
             waterways=filtered_waterways,        # global filtered set, whole
             settlements=gpd.GeoDataFrame(geometry=[], crs="EPSG:4326"),  # precomputed
         )
-        # tile-local NE land/lakes/ports (clipped to margin → tile-local prep)
+        # tile-local NE land/lakes (clipped to margin → tile-local prep)
         try:
             land = ne.get_natural_earth("land", margin)
         except Exception:
@@ -273,14 +266,9 @@ def run_streaming_pipeline(
             lakes = ne.get_natural_earth("lakes", margin)
         except Exception:
             lakes = gpd.GeoDataFrame(geometry=[], crs="EPSG:4326")
-        if ports_global.empty:
-            tile_ports = gpd.GeoDataFrame(geometry=[], crs="EPSG:4326")
-        else:
-            tile_ports = ports_global.cx[
-                margin.min_lon:margin.max_lon, margin.min_lat:margin.max_lat]
         vector_tile = SimpleNamespace(
             land=land, lakes=lakes,
-            ports=tile_ports,
+            ports=gpd.GeoDataFrame(geometry=[], crs="EPSG:4326"),  # AD-036: inert
         )
 
         # Per-tile elevation: windowed read of the full DEM (identical to

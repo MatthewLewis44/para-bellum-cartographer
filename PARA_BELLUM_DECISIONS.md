@@ -1082,4 +1082,76 @@ minus the other lands if no relation), and the 9 Austrian Bundesländer.
   town-allegiance verification we would have used).
 - **CShapes 2.0 / historical-basemaps / MPIDR:** license-excluded (AD-018).
 
+## AD-036 — Starting infrastructure (port / airfield / fortification) is AUTHORED scenario data, not pipeline detection
+
+**Date:** 2026-07-06 (Sprint 7, P0-B)
+**Status:** Accepted — Matthew's ruling, now project policy
+
+`infrastructure.port`, `infrastructure.airfield`, and
+`infrastructure.fortification` remain schema fields but are **NOT populated by
+the pipeline**. Starting infrastructure is **construction-system scenario
+data**: airfields, port facilities, and fortifications are things the player
+builds and upgrades, and where the 1930 scenario begins with a level-1 or
+level-2 structure will be **AUTHORED** (like `data/resources/resources_1930.geojson`,
+F-2) when the construction system exists — not sniffed from modern OSM/OHM.
+
+### Why the reversal
+
+A mid-sprint attempt to *detect* these from OSM/OHM (ports via
+`harbour=yes` / `industrial=port`; airfields via OHM `aeroway=aerodrome`) was
+the wrong model. Modern OSM harbours and aerodromes are present-day
+facilities, not the 1930 starting network, and detection cannot distinguish a
+"level-1 field the scenario starts with" from a "modern container terminal."
+The test any future pipeline work must pass: **a system that consumes the data
+exists or is in the current sprint.** Empty inert schema fields are NOT
+defects — do not "fix" them by re-adding detection. (This AD exists precisely
+because a session did exactly that; the note is now in `hex-schema.md`,
+`CLAUDE.md`, and the code itself.)
+
+### As-built
+
+The OSM/OHM port-detection path is RETIRED as dead code:
+`DataDownloader.get_ports` + `_overpass_to_gdf` deleted; the `vector` and
+`streaming` port fetches removed; the sampler no longer sniffs
+`vector_data.ports`. `infrastructure.port` = `False`, `airfield` = `False`,
+`fortification` = `"none"` for every hex, awaiting the authored layer.
+`bridge` / `road` / `rail` are terrain facts and remain sampled.
+
+### Fortified-anthrome independence
+
+The 28 eastern hexes with `settlement.anthrome = "fortified"` and
+`infrastructure.fortification = "none"` are correct as-is — the fields are
+independent by design. `anthrome=fortified` is descriptive LAND CHARACTER
+(from OSM `landuse=military`; drives tactical-map-pool selection per AD-015);
+`infrastructure.fortification` is future construction state. One line in the
+schema doc; no field-linking, no gate.
+
+---
+
+### Addendum to AD-035 (Sprint 7, 2026-07-06) — no city-provinces; province layer complete
+
+**Matthew's ruling: no city-provinces** (HOI4-style state model). Berlin's
+province polygon merges back into **Brandenburg**; Berlin becomes
+Brandenburg's *provincial* capital (it remains the Reich capital), Potsdam
+demoted to sub-capital — holding Berlin = holding Brandenburg under the
+AD-023 capture semantics. The Sprint 6 Wien-into-Niederösterreich merge
+(then a fallback for a missing OHM hole) is **ratified** under the same
+principle. `DEU_BERLIN` is REMOVED from the layer — flagged to Unity in the
+Sprint 7 handoff (province ids are about to be referenced by save files).
+
+**Province layer completed** (`tools/build_provinces_1930_backfill.py`,
+runs third in the chain west → east → backfill): 25 Swiss cantons (Jura
+merged into Bern — 1979 split undone for 1930), 6 Italian compartimenti
+(Valle d'Aosta into Piemonte — 1948 split undone; Trentino-Alto Adige →
+Venezia Tridentina; Friuli-Venezia Giulia split at 13.35°E into Veneto /
+Venezia Giulia per the AD-027 cut-line pattern — approximate, flagged), and
+16 eastern-French départements (préfecture = capital). All NE admin-1
+derived, `era: "1930-stopgap"`, pending Matthew's historical review like
+the Sprint 5 western set. NE data quirks handled: Italian admin-1 rows are
+provinces (grouped via their `region` column); "Haute-Rhin" misspelling;
+French-spelled "Lucerne". Layer totals: **138 provinces / 138 capitals /
+138 sub-capitals**; countries with authored provinces: BEL NLD LUX FRA DEU
+POL CSK AUT SAA DZG CHE ITA (HUN/LTU/LVA/DNK/SWE/ROU/YUG/SOV remain
+country-only per the AD-035 frame rule).
+
 ---

@@ -39,6 +39,22 @@ def tier(h):
 land = [h for h in hexes if not h["flags"]["is_water"]]
 land_with_country = [h for h in land if h["political"]["country_at_start"]]
 
+# Countries with an AUTHORED province layer (derived from the metadata, not
+# hardcoded). Countries framed by a wide bbox but NOT authored — the AD-035
+# country-only frame (HUN/LTU/LVA/DNK/SWE/ROU/YUG/SOV) — legitimately have
+# province-less land and must be EXCLUDED from the coverage denominator, else
+# improving coverage (e.g. CHE/ITA backfill dropping the uncovered fraction
+# below a fixed heuristic cutoff) paradoxically trips the gate.
+covered_countries = set()
+if os.path.exists(METADATA):
+    with open(METADATA, encoding="utf-8") as _mf:
+        covered_countries = {
+            p.get("country", p["province_id"].split("_")[0])
+            for p in json.load(_mf)["provinces"]
+        }
+covered_land = [h for h in land_with_country
+                if h["political"]["country_at_start"] in covered_countries]
+
 provinces = sorted({pol(h) for h in hexes if pol(h)})
 cap_hexes = defaultdict(list)
 sub_hexes = defaultdict(list)
@@ -61,10 +77,11 @@ print(f"distinct provinces tagged: {len(provinces)}")
 print(f"provinces with a capital hex: {n_caps} (exactly one: {n_caps_exact})")
 print(f"sub-capital hexes: {n_subs}")
 
-# coverage: land hexes that have a country but no province
-no_prov = [h for h in land_with_country if not pol(h)]
-print(f"land hexes with country but NO province: {len(no_prov)} "
-      f"({len(no_prov) / max(1, len(land_with_country)) * 100:.1f}%)")
+# coverage: covered-country land hexes with no province (AD-035: the
+# country-only frame is excluded from the denominator).
+no_prov = [h for h in covered_land if not pol(h)]
+print(f"covered-country land hexes with NO province: {len(no_prov)} "
+      f"({len(no_prov) / max(1, len(covered_land)) * 100:.1f}%)")
 
 # settled in-province hexes must be capital/sub_capital/urban (not rural/none)
 bad_settled = [h["id"] for h in hexes
@@ -118,20 +135,23 @@ check(not n_multi_cap, f"no province has >1 capital hex ({len(n_multi_cap)} do: 
 check(not bad_settled, f"settled in-province hexes are capital/sub_capital/urban "
                        f"({len(bad_settled)} violations)")
 check(not rural_named, f"no rural hex carries a settlement name ({len(rural_named)} do)")
-# Coverage gate is meaningful only where province coverage is meant to be
-# complete (the 5-country western bbox). A wider run (e.g. W+C Europe) extends
-# far beyond the authored provinces — eastern Germany, southern France, CH/AT/IT
-# legitimately have no province this sprint — so a high uncovered fraction is
-# expected there, not a polygon gap. Hard-gate only when coverage is meant to be
-# near-complete; report otherwise.
-cov_frac = len(no_prov) / max(1, len(land_with_country))
-if cov_frac > 0.20:
-    print(f"  [info] partial-coverage run: {cov_frac * 100:.0f}% of land lacks a province "
-          f"(bbox extends beyond the authored western coverage) — coverage gate skipped")
-else:
-    check(len(no_prov) <= 0.02 * max(1, len(land_with_country)),
-          f"province coverage of land hexes "
-          f"({len(no_prov)} uncovered = {cov_frac * 100:.1f}%, allow <=2%)")
+# Coverage gate over COVERED-country land only (the country-only frame is
+# excluded above). FRA is partially authored — only départements framed by
+# the run's bbox exist — so its uncovered hexes are reported, not hard-gated.
+partial = {"FRA"}
+gated_land = [h for h in covered_land
+              if h["political"]["country_at_start"] not in partial]
+gated_no_prov = [h for h in gated_land if not pol(h)]
+cov_frac = len(gated_no_prov) / max(1, len(gated_land))
+check(len(gated_no_prov) <= 0.02 * max(1, len(gated_land)),
+      f"province coverage of covered-country land "
+      f"({len(gated_no_prov)} uncovered = {cov_frac * 100:.1f}%, allow <=2%)")
+for c in sorted(partial):
+    n_un = sum(1 for h in covered_land
+               if h["political"]["country_at_start"] == c and not pol(h))
+    if n_un:
+        print(f"  [info] {c} partially authored — {n_un} uncovered hexes "
+              f"(framed départements only; backfill pending)")
 framed = [p for p in provinces if cap_hexes[p]]
 check(all(len(cap_hexes[p]) == 1 for p in framed),
       f"every framed province has exactly one capital ({len(framed)} framed)")

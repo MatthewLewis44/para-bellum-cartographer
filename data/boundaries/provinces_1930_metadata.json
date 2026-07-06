@@ -1,7 +1,7 @@
 {
- "version": "0.2-sprint6-east",
+ "version": "0.3-sprint7-backfill",
  "era": "1930",
- "source_note": "Hand-curated capitals/sub-capitals over NE-admin-1-derived 1930-stopgap province polygons (AD-023/AD-027, public domain). Review pending. | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0).",
+ "source_note": "Hand-curated capitals/sub-capitals over NE-admin-1-derived 1930-stopgap province polygons (AD-023/AD-027, public domain). Review pending. | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 7: CHE/ITA/eastern-FRA backfill (NE admin-1 stopgap).",
  "provinces": [
   {
    "province_id": "BEL_ANTWERP",
@@ -523,13 +523,17 @@
   },
   {
    "province_id": "DEU_BRANDENBURG",
-   "name": "Brandenburg",
+   "name": "Brandenburg (mit Berlin)",
    "country": "DEU",
    "capital": {
-    "city_name": "Potsdam",
-    "note": "provincial seat sat in Charlottenburg (Berlin); Potsdam designated for the game"
+    "city_name": "Berlin",
+    "note": "Reich capital; provincial capital by the no-city-province ruling"
    },
    "sub_capitals": [
+    {
+     "city_name": "Potsdam",
+     "rationale": "historical provincial seat"
+    },
     {
      "city_name": "Frankfurt an der Oder",
      "rationale": "Oder crossing + rail",
@@ -542,15 +546,6 @@
      "rationale": "Lusatian industry"
     }
    ]
-  },
-  {
-   "province_id": "DEU_BERLIN",
-   "name": "Berlin (Reichshauptstadt)",
-   "country": "DEU",
-   "capital": {
-    "city_name": "Berlin"
-   },
-   "sub_capitals": []
   },
   {
    "province_id": "DEU_NIEDERSCHLESIEN",
@@ -1530,6 +1525,492 @@
     ]
    },
    "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_AARGAU",
+   "name": "Aargau",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Aarau"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_APPENZELL_AR",
+   "name": "Appenzell Ausserrhoden",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Herisau"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_APPENZELL_IR",
+   "name": "Appenzell Innerrhoden",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Appenzell"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_BASEL_LAND",
+   "name": "Basel-Landschaft",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Liestal"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_BASEL_STADT",
+   "name": "Basel-Stadt",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Basel"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_BERN",
+   "name": "Bern",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Bern"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Biel/Bienne",
+     "rationale": "watch industry + rail"
+    }
+   ]
+  },
+  {
+   "province_id": "CHE_FRIBOURG",
+   "name": "Fribourg",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Fribourg"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_GENEVE",
+   "name": "Genève",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Genève"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_GLARUS",
+   "name": "Glarus",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Glarus"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_GRAUBUENDEN",
+   "name": "Graubünden",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Chur"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_LUZERN",
+   "name": "Luzern",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Luzern"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_NEUCHATEL",
+   "name": "Neuchâtel",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Neuchâtel"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "La Chaux-de-Fonds",
+     "rationale": "watch industry"
+    }
+   ]
+  },
+  {
+   "province_id": "CHE_NIDWALDEN",
+   "name": "Nidwalden",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Stans"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_OBWALDEN",
+   "name": "Obwalden",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Sarnen"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_SCHAFFHAUSEN",
+   "name": "Schaffhausen",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Schaffhausen"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_SCHWYZ",
+   "name": "Schwyz",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Schwyz"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_SOLOTHURN",
+   "name": "Solothurn",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Solothurn"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_ST_GALLEN",
+   "name": "St. Gallen",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Sankt Gallen"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_THURGAU",
+   "name": "Thurgau",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Frauenfeld"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_TICINO",
+   "name": "Ticino",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Bellinzona"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Lugano",
+     "rationale": "southern centre"
+    }
+   ]
+  },
+  {
+   "province_id": "CHE_URI",
+   "name": "Uri",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Altdorf"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_VALAIS",
+   "name": "Valais",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Sion"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_VAUD",
+   "name": "Vaud",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Lausanne"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "CHE_ZUERICH",
+   "name": "Zürich",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Zürich"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Winterthur",
+     "rationale": "machine industry"
+    }
+   ]
+  },
+  {
+   "province_id": "CHE_ZUG",
+   "name": "Zug",
+   "country": "CHE",
+   "capital": {
+    "city_name": "Zug"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_AIN",
+   "name": "Ain",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Bourg-en-Bresse"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_BELFORT",
+   "name": "Territoire de Belfort",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Belfort"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_COTE_D_OR",
+   "name": "Côte-d'Or",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Dijon"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_DOUBS",
+   "name": "Doubs",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Besançon"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Montbéliard",
+     "rationale": "Peugeot works"
+    }
+   ]
+  },
+  {
+   "province_id": "FRA_DROME",
+   "name": "Drôme",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Valence"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_HAUTES_ALPES",
+   "name": "Hautes-Alpes",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Gap"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_HAUTE_MARNE",
+   "name": "Haute-Marne",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Chaumont"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_HAUTE_SAONE",
+   "name": "Haute-Saône",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Vesoul"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_HAUTE_SAVOIE",
+   "name": "Haute-Savoie",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Annecy"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_HAUT_RHIN",
+   "name": "Haut-Rhin",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Colmar"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Mulhouse",
+     "rationale": "textile + potash industry"
+    }
+   ]
+  },
+  {
+   "province_id": "FRA_ISERE",
+   "name": "Isère",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Grenoble"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_JURA",
+   "name": "Jura",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Lons-le-Saunier"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_RHONE",
+   "name": "Rhône",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Lyon"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_SAONE_ET_LOIRE",
+   "name": "Saône-et-Loire",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Mâcon"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Le Creusot",
+     "rationale": "Schneider arms works"
+    }
+   ]
+  },
+  {
+   "province_id": "FRA_SAVOIE",
+   "name": "Savoie",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Chambéry"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "FRA_VOSGES",
+   "name": "Vosges",
+   "country": "FRA",
+   "capital": {
+    "city_name": "Épinal"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "ITA_EMILIA",
+   "name": "Emilia",
+   "country": "ITA",
+   "capital": {
+    "city_name": "Bologna"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "ITA_LOMBARDIA",
+   "name": "Lombardia",
+   "country": "ITA",
+   "capital": {
+    "city_name": "Milano"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Brescia",
+     "rationale": "arms industry"
+    },
+    {
+     "city_name": "Bergamo",
+     "rationale": "industry"
+    }
+   ]
+  },
+  {
+   "province_id": "ITA_PIEMONTE",
+   "name": "Piemonte",
+   "country": "ITA",
+   "capital": {
+    "city_name": "Torino"
+   },
+   "sub_capitals": []
+  },
+  {
+   "province_id": "ITA_VENETO",
+   "name": "Veneto",
+   "country": "ITA",
+   "capital": {
+    "city_name": "Venezia"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Verona",
+     "rationale": "rail junction"
+    },
+    {
+     "city_name": "Udine",
+     "rationale": "Friuli centre"
+    }
+   ]
+  },
+  {
+   "province_id": "ITA_VENEZIA_GIULIA",
+   "name": "Venezia Giulia",
+   "country": "ITA",
+   "capital": {
+    "city_name": "Trieste"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Gorizia",
+     "rationale": "Isonzo centre"
+    }
+   ]
+  },
+  {
+   "province_id": "ITA_VENEZIA_TRIDENTINA",
+   "name": "Venezia Tridentina",
+   "country": "ITA",
+   "capital": {
+    "city_name": "Trento"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Bolzano",
+     "rationale": "Alto Adige centre"
+    }
+   ]
   }
  ]
 }

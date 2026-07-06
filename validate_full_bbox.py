@@ -196,7 +196,8 @@ EXPECTATIONS = {
             ("Wien -> AUT_NIEDEROESTERREICH", 48.21, 16.37, "AUT_NIEDEROESTERREICH"),
             ("Danzig -> DZG_DANZIG", 54.35, 18.65, "DZG_DANZIG"),
             ("Saarbrücken -> SAA_SAAR", 49.23, 7.00, "SAA_SAAR"),
-            ("Berlin -> DEU_BERLIN", 52.52, 13.40, "DEU_BERLIN"),
+            # Berlin merged into Brandenburg (Sprint 7 AD-035 addendum)
+            ("Berlin -> DEU_BRANDENBURG", 52.52, 13.40, "DEU_BRANDENBURG"),
         ],
         land_slope_p90_band=(18, 30),   # full Alps + Tatra/Carpathians framed
         biome_bands={"hill": ("pct", 10, 30),
@@ -251,10 +252,13 @@ EXPECTATIONS = {
         province_points=[
             ("Köln -> DEU_RHEINLAND", 50.94, 6.96, "DEU_RHEINLAND"),
             ("München -> DEU_BAYERN", 48.14, 11.58, "DEU_BAYERN"),
-            ("Berlin -> DEU_BERLIN", 52.52, 13.40, "DEU_BERLIN"),
+            # Berlin merged into Brandenburg (Sprint 7 AD-035 addendum)
+            ("Berlin -> DEU_BRANDENBURG", 52.52, 13.40, "DEU_BRANDENBURG"),
             ("Dresden -> DEU_SACHSEN_FREISTAAT", 51.05, 13.74, "DEU_SACHSEN_FREISTAAT"),
             ("Praha -> CSK_CESKA", 50.09, 14.42, "CSK_CESKA"),
             ("Innsbruck -> AUT_TIROL", 47.27, 11.39, "AUT_TIROL"),
+            ("Zürich -> CHE_ZUERICH", 47.37, 8.54, "CHE_ZUERICH"),
+            ("Milano -> ITA_LOMBARDIA", 45.46, 9.19, "ITA_LOMBARDIA"),
         ],
         land_slope_p90_band=(30, 45),   # the Alps are in-frame
         biome_bands={"hill": ("pct", 18, 32), "mountain": ("count", 1400, 2300),
@@ -367,6 +371,19 @@ def main() -> int:
                   f"{n} hexes = {v:.1f}%")
         else:
             check(f"{biome} count in [{blo},{bhi}]", blo <= n <= bhi, f"{n}")
+
+    # --- Starting infrastructure is INERT (AD-036) ----------------------------
+    # port / airfield / fortification are authored construction-system data,
+    # NOT pipeline-detected. This guard fails if a future change re-populates
+    # them from OSM/OHM (the exact regression AD-036 exists to prevent) — it is
+    # NOT a detection gate. `anthrome=fortified` (descriptive land character,
+    # AD-015) is deliberately independent and NOT checked against fortification.
+    non_inert = [h["id"] for h in hexes
+                 if h["infrastructure"]["port"]
+                 or h["infrastructure"]["airfield"]
+                 or h["infrastructure"]["fortification"] != "none"]
+    check("port/airfield/fortification inert per AD-036 (authored, not detected)",
+          not non_inert, f"{len(non_inert)} populated, e.g. {non_inert[:4]}")
 
     # --- Country spot checks (1930 border placement, AD-035) --------------------
     for label, lat, lon, want in exp.get("country_points", []):

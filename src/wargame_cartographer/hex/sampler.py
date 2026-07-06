@@ -17,16 +17,17 @@ Each hex goes through these per-hex stages in order:
     9. Bridge detection (OSM bridge=yes)
    10. Country + province at start (1930 boundaries / provinces, AD-018/023/027)
    11. Strategic resources (hand-authored 1930 layer, F-2)
-   12. Port detection (upstream DataDownloader ports layer)
 
 Global reconcile passes (over the whole grid, after per-hex sampling):
     - Coastal flag (land hexes adjacent to a water hex)
     - Multi-hex urban sprawl (AD-014)
     - admin_tier capital / sub_capital (AD-023/027)
 
-OUT OF SCOPE (not sampled here):
-    - Fortification / airfield layers (not yet populated)
-    - Player-placed buildings — Unity runtime
+OUT OF SCOPE (NOT sampled here — AD-036): port / airfield / fortification are
+    starting-infrastructure fields filled from AUTHORED construction-system
+    scenario data (like resources_1930.geojson), NOT detected from OSM/OHM.
+    They stay inert (False/False/"none"). Player-placed buildings are Unity
+    runtime state.
 """
 
 from __future__ import annotations
@@ -130,7 +131,6 @@ class HexSampler:
         railways_gdf = None
         waterways_gdf = None
         bridges_gdf = None
-        ports_gdf = None
 
         if osm_data is not None:
             if hasattr(osm_data, "landuse") and not osm_data.landuse.empty:
@@ -152,10 +152,7 @@ class HexSampler:
             if hasattr(osm_data, "bridges") and not osm_data.bridges.empty:
                 bridges_gdf = osm_data.bridges
 
-        # Ports from upstream vector_data
-        if vector_data is not None and hasattr(vector_data, "ports"):
-            if not vector_data.ports.empty:
-                ports_gdf = vector_data.ports
+        # (Ports are NOT sampled — AD-036. vector_data.ports is empty.)
 
         # Streaming mode reuses globally-prepped geometry so a feature just
         # outside a tile cannot change a hex inside it (and avoids re-prepping
@@ -308,11 +305,6 @@ class HexSampler:
             if river_edges and bridges_gdf is not None:
                 bridge = _feature_within_radius(pt, bridges_gdf, grid.hex_radius_m)
 
-            # -- Port --
-            port = False
-            if ports_gdf is not None:
-                port = _feature_within_radius(pt, ports_gdf, grid.hex_radius_m * 0.6)
-
             # -- Anthrome --
             anthrome = _derive_anthrome(biome, landuse_type, settlement_type_str)
 
@@ -357,13 +349,19 @@ class HexSampler:
                 # Internal: dominant landuse at hex center (used by the coastal
                 # beach upgrade and the urban-sprawl gate; exporter ignores it).
                 "landuse_type":     landuse_type,
-                # Infrastructure
+                # Infrastructure. port / airfield / fortification are NOT
+                # detected by the pipeline (AD-036): starting infrastructure is
+                # authored construction-system scenario data (like resources),
+                # not something to sniff from modern OSM/OHM. They stay inert
+                # here and are filled from authored data when that system
+                # exists. Do NOT re-add detection. bridge/road/rail are terrain
+                # facts and ARE sampled.
                 "road":      road_level,
                 "rail":      rail_level,
                 "bridge":    bridge,
-                "port":      port,
-                "airfield":  False,       # Sprint 2 — manual layer
-                "fortification": "none",  # Sprint 2 — manual layer
+                "port":      False,        # AD-036 — authored, not detected
+                "airfield":  False,        # AD-036 — authored, not detected
+                "fortification": "none",   # AD-036 — authored, not detected
                 # Resources — booleans from the hand-authored 1930 layer (F-2);
                 # agriculture/industry derived from OSM landuse.
                 "oil":            "oil" in resource_by_hex.get((q, r), ()),
@@ -836,19 +834,12 @@ def _river_for_hex(
 def _feature_within_radius(center: Point, gdf, radius_m: float) -> bool:
     """True if any feature in ``gdf`` lies within ``radius_m`` of ``center``.
 
-    Sprint 6 fix 3 (bridge/port detection): the old threshold divided
-    radius_m by 111320 and compared raw WGS84 degree distances — isotropic
-    in degrees, anisotropic in metres. One lon-degree is cos(lat) of a
-    lat-degree (~64 % at 51°N), so the effective E-W reach was only ~0.63x
-    the intended radius (under-detection; the sprint brief described it as
-    1.6x over-reach — same defect, opposite sign, identical fix). Distances
-    are now compared in cos(lat)-scaled degree space, the same correction
-    ``_river_for_hex`` applies to river run lengths.
-
-    Also fixes a latent unit bug: the old port path passed metres into a
-    parameter compared against degrees, which made the port radius
-    effectively unbounded — masked only because the upstream ports fetch
-    has been failing (HTTP 406), leaving the layer empty.
+    Used for BRIDGE detection (the only caller since AD-036 retired port
+    detection). Sprint 6 fix 3: distances are compared in cos(lat)-scaled
+    degree space (the old threshold divided radius_m by 111320 and compared
+    raw WGS84 degrees — isotropic in degrees, anisotropic in metres, ~0.63x
+    the intended E-W reach at 51°N), the same correction ``_river_for_hex``
+    applies to river run lengths.
     """
     from shapely.affinity import scale
 

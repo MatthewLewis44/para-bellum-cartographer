@@ -94,14 +94,15 @@ PROVINCES: dict[str, dict[str, tuple]] = {
             cap("Stettin", 14.55, 53.43, ("Szczecin",)),
             [sub("Stolp", "eastern rail centre", ("Słupsk",)),
              sub("Stralsund", "Baltic port")]),
-        "DEU_BRANDENBURG": (2806722, "Brandenburg",
-            cap("Potsdam", 13.06, 52.40, (),
-                "provincial seat sat in Charlottenburg (Berlin); Potsdam designated for the game"),
-            [sub("Frankfurt an der Oder", "Oder crossing + rail", ("Frankfurt (Oder)",)),
+        # Sprint 7 (AD-035 addendum, Matthew's ruling): no city-provinces —
+        # Berlin merges into Brandenburg (HOI4-style state model) and becomes
+        # its provincial capital; holding Berlin = holding Brandenburg.
+        "DEU_BRANDENBURG": (2806722, "Brandenburg (mit Berlin)",
+            cap("Berlin", 13.40, 52.52, (),
+                "Reich capital; provincial capital by the no-city-province ruling"),
+            [sub("Potsdam", "historical provincial seat"),
+             sub("Frankfurt an der Oder", "Oder crossing + rail", ("Frankfurt (Oder)",)),
              sub("Cottbus", "Lusatian industry")]),
-        "DEU_BERLIN": (None, "Berlin (Reichshauptstadt)",
-            cap("Berlin", 13.40, 52.52),
-            []),
         "DEU_NIEDERSCHLESIEN": (2694765, "Niederschlesien",
             cap("Breslau", 17.03, 51.11, ("Wrocław",)),
             [sub("Liegnitz", "rail + garrison", ("Legnica",)),
@@ -426,19 +427,21 @@ def main() -> int:
             geoms[pid] = geom
 
     # --- special geometries --------------------------------------------------
-    # Berlin: the hole in Brandenburg that contains the Berlin point.
+    # Berlin: the hole in the Brandenburg relation gets merged BACK into
+    # Brandenburg (Sprint 7 AD-035 addendum — no city-provinces); other holes
+    # (genuine enclaves) stay holes.
     berlin_pt = Point(13.40, 52.52)
     if brandenburg_holes is None:
-        failures.append("DEU_BERLIN: Brandenburg relation has no holes")
+        failures.append("DEU_BRANDENBURG: relation has no holes (expected a Berlin hole)")
     else:
         parts = (list(brandenburg_holes.geoms)
                  if brandenburg_holes.geom_type == "MultiPolygon"
                  else [brandenburg_holes])
         hit = [p for p in parts if p.contains(berlin_pt)]
         if not hit:
-            failures.append("DEU_BERLIN: no Brandenburg hole contains Berlin")
+            failures.append("DEU_BRANDENBURG: no hole contains Berlin")
         else:
-            geoms["DEU_BERLIN"] = hit[0]
+            geoms["DEU_BRANDENBURG"] = geoms["DEU_BRANDENBURG"].union(hit[0])
 
     # Wien: if the NÖ relation has a hole containing Vienna, that hole is the
     # Bundesland Wien; otherwise fall back to merging Wien into NÖ (AD-027

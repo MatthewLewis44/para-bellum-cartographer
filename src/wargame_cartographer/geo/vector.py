@@ -64,7 +64,10 @@ def load_vector_data(bbox: BoundingBox, spec: MapSpec) -> VectorData:
     lakes     = dl.get_natural_earth("lakes", bbox)
     countries = dl.get_natural_earth("countries", bbox)
     cities    = dl.get_cities(bbox) if spec.show_cities else gpd.GeoDataFrame()
-    ports     = dl.get_ports(bbox) if spec.show_ports else gpd.GeoDataFrame()
+    # Ports are NOT detected (AD-036) — starting infrastructure is authored
+    # construction-system data. The field stays for the renderer's dataclass
+    # but is always empty; `infrastructure.port` is inert in the JSON.
+    ports     = gpd.GeoDataFrame()
 
     return VectorData(
         coastline=coastline,
