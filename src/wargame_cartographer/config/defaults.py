@@ -13,8 +13,9 @@ NATURAL_EARTH_LAYERS = {
     "populated_places": f"{NATURAL_EARTH_BASE}/10m/cultural/ne_10m_populated_places.zip",
 }
 
-# Overpass API for targeted OSM queries
-OVERPASS_API_URL = "https://overpass-api.de/api/interpreter"
+# (OVERPASS_API_URL removed in Sprint 7: its only consumer was the retired
+#  port-detection path, AD-036. The OSM layer fetcher uses its own
+#  OVERPASS_URL in geo/osm_downloader.py.)
 
 # Cache settings
 CACHE_MAX_AGE_DAYS = 30
