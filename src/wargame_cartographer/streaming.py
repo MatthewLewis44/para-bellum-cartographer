@@ -85,6 +85,36 @@ def _input_data_hash() -> str:
     return h.hexdigest()[:8]
 
 
+# Source modules whose content DETERMINES per-tile hex output. Their md5 is
+# folded into the tile-cache key so any edit to the sampling code invalidates
+# stale tiles automatically — even if STREAMING_VERSION is unchanged or a
+# burned version name is reused (Sprint 7 hazard: reusing "s7.0" after the
+# port-retirement code change silently reused port-containing tiles; the
+# streaming≡monolithic check happened to catch it). STREAMING_VERSION stays as
+# a human-readable marker + a manual invalidation lever, but is no longer
+# load-bearing for cache correctness. Comment-only edits here do force a
+# re-tile — correctness over cache-hit rate; these files change rarely.
+_SAMPLING_CODE_MODULES = (
+    "hex/sampler.py", "hex/grid.py",
+    "terrain/classifier.py", "terrain/types.py",
+    "geo/boundaries.py", "geo/provinces.py",
+    "geo/elevation.py", "geo/rivers_global.py",
+    "streaming.py",
+)
+
+
+def _sampling_code_hash() -> str:
+    """md5 of the sampling-critical source modules (see note above)."""
+    import hashlib
+    pkg = Path(__file__).resolve().parent  # src/wargame_cartographer
+    h = hashlib.md5()
+    for rel in _SAMPLING_CODE_MODULES:
+        p = pkg / rel
+        h.update(rel.encode())
+        h.update(p.read_bytes() if p.exists() else b"<missing>")
+    return h.hexdigest()[:8]
+
+
 def _bbox_hash(bbox: BoundingBox) -> str:
     import hashlib
     key = f"{bbox.min_lon:.4f},{bbox.min_lat:.4f},{bbox.max_lon:.4f},{bbox.max_lat:.4f}"
@@ -209,7 +239,7 @@ def run_streaming_pipeline(
     # (AD-030) — country/province/resource assignment lives inside cached tiles.
     tile_dir = (DEFAULT_CACHE_DIR /
                 f"tiles_{_bbox_hash(spec.bbox)}_sr{spec.river_scalerank_max}"
-                f"_d{_input_data_hash()}")
+                f"_d{_input_data_hash()}_c{_sampling_code_hash()}")
     tile_dir.mkdir(parents=True, exist_ok=True)
     ne = DataDownloader()
     sampler = HexSampler()

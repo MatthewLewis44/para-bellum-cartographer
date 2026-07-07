@@ -798,12 +798,22 @@ the policy now enforced.
    failed part rather than caching an incomplete part set; `_read_layer_slice`
    RAISES on an unreadable overlapping part instead of silently skipping it.
 
-2. **Tile caches are keyed on input-data content.** The streaming tile directory
-   includes an md5 of the boundaries / provinces / resources GeoJSON
-   (`_input_data_hash`). Editing any of those three (all pending historical
-   review) invalidates the tile cache — country/province/resource assignment
-   lives inside cached tiles. (`river_scalerank_max` and `STREAMING_VERSION`
-   also key the cache.)
+2. **Tile caches are keyed on input-data content AND sampling-code content.**
+   The streaming tile directory includes an md5 of the boundaries / provinces
+   / resources GeoJSON (`_input_data_hash`) so editing any of those three (all
+   pending historical review) invalidates the tile cache — country / province
+   / resource assignment lives inside cached tiles. It ALSO includes an md5 of
+   the sampling-critical source modules (`_sampling_code_hash`:
+   `hex/sampler.py`, `hex/grid.py`, `terrain/classifier.py`+`types.py`,
+   `geo/boundaries.py`+`provinces.py`+`elevation.py`+`rivers_global.py`,
+   `streaming.py`) so any change to the code that produces per-hex tile content
+   invalidates stale tiles automatically. **Added Sprint 7** after a
+   `STREAMING_VERSION` NAME was reused across a sampling-code change (port
+   retirement) and silently reused port-containing tiles — the manual version
+   string is a fragile proxy for "the code changed"; the content hash is not.
+   `STREAMING_VERSION` remains a human marker + manual invalidation lever but
+   is no longer load-bearing for cache correctness. (`river_scalerank_max` and
+   `STREAMING_VERSION` still key the cache too.)
 
 3. **No silent fallback for P0 map content.** River selection failure in the
    monolithic pipeline propagates (no "keeping OSM waterways" lie — those are
@@ -1125,6 +1135,20 @@ independent by design. `anthrome=fortified` is descriptive LAND CHARACTER
 (from OSM `landuse=military`; drives tactical-map-pool selection per AD-015);
 `infrastructure.fortification` is future construction state. One line in the
 schema doc; no field-linking, no gate.
+
+### Guard + sanctioned replacement path
+
+`validate_full_bbox.py` carries an INERTNESS GUARD: while no authored
+infrastructure layer exists it fails if anything re-populates
+port/airfield/fortification (the regression this AD exists to prevent — a
+session already did it once). **The guard must not trip AD-036's own
+replacement mechanism.** Sanctioned path: the authored layer lands at
+**`data/infrastructure/infrastructure_1930.geojson`** (the `resources_1930`
+pattern). When that file exists, the inertness guard retires automatically and
+emits a reminder to add POSITIVE validation for the new layer; until then it
+enforces inertness. Fold the file into the streaming tile-cache input hash
+(like boundaries/provinces/resources) when it lands, since it will feed
+per-hex tile content.
 
 ---
 

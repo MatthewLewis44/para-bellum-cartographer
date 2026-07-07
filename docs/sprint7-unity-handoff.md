@@ -52,4 +52,30 @@ artifacts is the province layer (`province_at_start` + follow-on
 `admin_tier`); terrain / country / rivers / resources / movement are
 byte-identical.
 
+## Canonical content hashes — CONFIRM YOUR INTEGRATED COPIES MATCH
+
+Verify each integrated copy against the hash below before baking save
+fixtures. Two hashes per file (recompute with `uv run python
+tools/artifact_hash.py <file>`):
+
+- **`content_sha256`** — the canonical hash: JSON with `map_metadata.generated_at`
+  removed, keys sorted, compact UTF-8. Stable across re-exports of identical
+  content. **This is the one to match** (Unity: parse → delete
+  `map_metadata.generated_at` → serialize sorted-keys/no-whitespace → SHA256).
+- **`raw_sha256`** — sha256 of the exact bytes I handed over (changes on any
+  re-export because `generated_at` moves). Use it for a byte-exact check of
+  *these* files.
+
+| artifact | hex_count | bytes | content_sha256 | raw_sha256 |
+|---|---|---|---|---|
+| belgium_test | 775 | 1,167,685 | `ce0453fb0086559e016e64313afee666b3b72aceca2b3ce83fc258e842c40626` | `b0004cf7618783aaf9f6190a4a20fce11fc6ecfc473295ac278d863959a7df4f` |
+| benelux_germany_test | 2,479 | 3,732,327 | `3de72caa9f516a398bed8fdb954c5eba545867b9133c466da3566db2cdf75672` | `efc90ca9435f11d605c439193c884120dad695143bae9e2f372733d68357d86e` |
+| wceurope_test | 8,607 | 13,008,565 | `a14cd835afbf085663e8398a4536bce8debf01a1294c28796272ea1ca6707159` | `d958a3787f28f66401ae2593bd7f394d11a09a51c8fa4a2f37d7f15713a9762f` |
+| east_expansion | 18,719 | 28,201,009 | `a76eaa0ba16ae9f65840143d3fdab9ac5a53cd8f2bf39fed7713335f0527c466` | `d8395633bb375550baf4e68a4fe799dfd2c69708226a7b8ea488eff19a4d923f` |
+
+If a `content_sha256` mismatches, the integrated copy is stale or from a
+different build — re-sync from the pipeline `output/` before proceeding. (These
+are the specific files behind commit `53fa213`; `raw_sha256` reflects one
+export of each. Ask Pipeline to re-emit if you need a fresh matching pair.)
+
 _Details: `PARA_BELLUM_DECISIONS.md` AD-035 addendum + AD-036._

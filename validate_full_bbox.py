@@ -372,18 +372,31 @@ def main() -> int:
         else:
             check(f"{biome} count in [{blo},{bhi}]", blo <= n <= bhi, f"{n}")
 
-    # --- Starting infrastructure is INERT (AD-036) ----------------------------
+    # --- Starting infrastructure: inert UNLESS an authored layer exists (AD-036)
     # port / airfield / fortification are authored construction-system data,
-    # NOT pipeline-detected. This guard fails if a future change re-populates
-    # them from OSM/OHM (the exact regression AD-036 exists to prevent) — it is
-    # NOT a detection gate. `anthrome=fortified` (descriptive land character,
-    # AD-015) is deliberately independent and NOT checked against fortification.
-    non_inert = [h["id"] for h in hexes
-                 if h["infrastructure"]["port"]
-                 or h["infrastructure"]["airfield"]
-                 or h["infrastructure"]["fortification"] != "none"]
-    check("port/airfield/fortification inert per AD-036 (authored, not detected)",
-          not non_inert, f"{len(non_inert)} populated, e.g. {non_inert[:4]}")
+    # NOT pipeline-detected. While no authored layer exists the guard fails if
+    # anything re-populates them from OSM/OHM (the regression AD-036 exists to
+    # prevent) — it is NOT a detection gate. `anthrome=fortified` (descriptive
+    # land character, AD-015) is deliberately independent and NOT checked here.
+    #
+    # SANCTIONED REPLACEMENT PATH: when AD-036's authored infrastructure layer
+    # lands at INFRA_LAYER, the inertness guard is retired automatically (the
+    # populated fields ARE the authored data) and a placeholder reminds the
+    # engineer to add positive validation for the new layer. This keeps
+    # AD-036's own replacement mechanism from tripping its guard.
+    INFRA_LAYER = Path("data/infrastructure/infrastructure_1930.geojson")
+    if INFRA_LAYER.exists():
+        check("[info] authored infrastructure layer present — inertness guard "
+              "retired; ADD positive validation for it (AD-036 replacement)",
+              True, str(INFRA_LAYER))
+    else:
+        non_inert = [h["id"] for h in hexes
+                     if h["infrastructure"]["port"]
+                     or h["infrastructure"]["airfield"]
+                     or h["infrastructure"]["fortification"] != "none"]
+        check("port/airfield/fortification inert per AD-036 "
+              "(authored, not detected; no authored layer yet)",
+              not non_inert, f"{len(non_inert)} populated, e.g. {non_inert[:4]}")
 
     # --- Country spot checks (1930 border placement, AD-035) --------------------
     for label, lat, lon, want in exp.get("country_points", []):
