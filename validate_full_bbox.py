@@ -183,8 +183,22 @@ EXPECTATIONS = {
         sprawl=[("Berlin", 4, ("Berlin",)), ("Warszawa", 3, ("Warszaw",)),
                 ("Wien", 3, ("Wien",)), ("Praha", 2, ("Praha",))],
         ruhr_min=10,
-        resources=dict(coal_min=10, steel_min=3, iron_min=1),
-        resource_points=[("Essen coal+steel", 51.45, 7.01, ("coal", "steel"))],
+        # Pre-Sprint 9.0: eastern deposits authored. Floors are deliberately
+        # well below the measured counts (coal 143 / steel 16 / iron 36 /
+        # oil 17) — they are absence tripwires, not balance bands.
+        resources=dict(coal_min=100, steel_min=12, iron_min=25, oil_min=8),
+        # Every type must be present SOMEWHERE, and each of these nations must
+        # hold >= 3 distinct types. This pair is the "contested scarcity
+        # exists" gate — it is what would have caught the 0-oil / iron-in-3-
+        # countries state the eastern artifact shipped with.
+        resource_types_required=("coal", "steel", "iron", "oil"),
+        resource_nations={"DEU": 3, "POL": 3, "CSK": 3, "AUT": 3},
+        resource_points=[("Essen coal+steel", 51.45, 7.01, ("coal", "steel")),
+                         ("Katowice coal", 50.26, 19.02, ("coal",)),
+                         ("Ostrava coal", 49.82, 18.29, ("coal",)),
+                         ("Borysław oil", 49.29, 23.36, ("oil",)),
+                         ("Erzberg iron", 47.54, 14.88, ("iron",)),
+                         ("Donawitz steel", 47.38, 15.07, ("steel",))],
         provinces_min=70,
         province_partial_countries=("FRA",),
         province_points=[
@@ -295,6 +309,9 @@ def main() -> int:
 
     def check(name: str, ok: bool, detail: str = ""):
         checks.append((name, ok, detail))
+
+    # Reported-not-asserted output, emitted after the summary (see below).
+    resource_matrix: list[str] = []
 
     def closest_hex(lat: float, lon: float) -> dict:
         return min(hexes, key=lambda h: math.hypot(
@@ -509,13 +526,58 @@ def main() -> int:
                and not h["settlement"].get("parent_city")]
     check("every suburb has a parent_city", not orphans, f"{len(orphans)}")
 
-    # --- Strategic resources (F-2; western coverage only) --------------------------
+    # --- Strategic resources (F-2; east coverage added Pre-Sprint 9.0) -------------
     if exp["resources"]:
         res = {r: sum(1 for h in hexes if h["resources"].get(r))
                for r in ("coal", "steel", "iron", "oil")}
-        for r in ("coal", "steel", "iron"):
-            need = exp["resources"][f"{r}_min"]
+        for r in ("coal", "steel", "iron", "oil"):
+            need = exp["resources"].get(f"{r}_min")
+            if need is None:      # config predates the eastern authoring pass
+                continue
             check(f"{r} hexes >= {need}", res[r] >= need, f"{res[r]}")
+
+        # A zero-count resource is a hard failure wherever the config declares
+        # the type list. Sprint 9 needs every resource to exist to be a pool.
+        for r in exp.get("resource_types_required", ()):
+            check(f"{r} present on at least one hex", res[r] > 0, f"{res[r]}")
+
+        # Per-nation coverage floor + the full matrix. The matrix is REPORTED,
+        # not asserted: the PM tunes base yields against these numbers, so
+        # they are a deliverable of this gate, not debug output.
+        by_country: dict[str, Counter] = defaultdict(Counter)
+        by_prov: dict[str, Counter] = defaultdict(Counter)
+        for h in hexes:
+            c = h["political"]["country_at_start"] or "(none)"
+            p = h["political"]["province_at_start"] or "(none)"
+            for r in ("coal", "steel", "iron", "oil"):
+                if h["resources"].get(r):
+                    by_country[c][r] += 1
+                    by_prov[p][r] += 1
+        for nation, floor in exp.get("resource_nations", {}).items():
+            have = [r for r in ("coal", "steel", "iron", "oil")
+                    if by_country[nation][r]]
+            check(f"{nation} holds >= {floor} distinct resource types",
+                  len(have) >= floor, f"{len(have)}: {have}")
+        # Buffered, not printed here: `check` defers all its output to the
+        # summary, so an inline print would land above every result and read
+        # as noise. Emitted after the summary instead.
+        resource_matrix.append("resource-hex matrix by nation "
+                               "(reported, not asserted — PM tunes yields "
+                               "against this):")
+        resource_matrix.append(
+            "  " + f"{'nation':<8}"
+            + " ".join(f"{r:>6}" for r in ("coal", "steel", "iron", "oil")))
+        for c in sorted(by_country, key=lambda k: -sum(by_country[k].values())):
+            resource_matrix.append(
+                f"  {c:<8}" + " ".join(f"{by_country[c][r]:>6}"
+                                       for r in ("coal", "steel", "iron", "oil")))
+        resource_matrix.append("resource-hex matrix by province (non-empty):")
+        for p in sorted(by_prov, key=lambda k: (-sum(by_prov[k].values()), k)):
+            row = "  ".join(f"{r}={by_prov[p][r]}"
+                            for r in ("coal", "steel", "iron", "oil")
+                            if by_prov[p][r])
+            resource_matrix.append(f"  {p:<30} {row}")
+
         for label, lat, lon, kinds in exp["resource_points"]:
             h = closest_hex(lat, lon)
             ok = all(h["resources"].get(k) for k in kinds)
@@ -627,6 +689,10 @@ def main() -> int:
             failed += 1
         print(f"  {'PASS' if ok else 'FAIL'}  {name}"
               + (f"  [{detail}]" if detail else ""))
+    if resource_matrix:
+        print("\n" + "-" * 50)
+        for line in resource_matrix:
+            print(line)
     print("\n" + "=" * 50)
     if failed:
         print(f"OVERALL: FAIL ({failed}/{len(checks)} checks failed)")

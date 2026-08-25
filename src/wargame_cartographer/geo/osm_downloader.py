@@ -43,6 +43,12 @@ console = Console()
 
 DEFAULT_CACHE_DIR = Path.home() / "wargame-cartographer" / "cache" / "osm_pb"
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+# NB (Pre-Sprint 9.0): this was temporarily raised to 45 for the eastern
+# resource regeneration. The cached east-bbox parts had just tipped past 30
+# days, and a cold Overpass refetch would have mixed a month of OSM churn into
+# a run whose only intended change was the resource layer — the field diff came
+# back resources-only precisely because the OSM snapshot was pinned. Reverted
+# to 30. Reproducing that artifact exactly needs the pin (or the cached parts).
 CACHE_MAX_AGE_DAYS = 30  # OSM data is stable enough for a month
 
 # --- Sub-bbox splitting (AD-008) -------------------------------------------

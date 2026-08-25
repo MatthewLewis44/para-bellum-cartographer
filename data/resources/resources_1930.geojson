@@ -1,14 +1,23 @@
 {
   "type": "FeatureCollection",
   "metadata": {
-    "description": "Hand-authored 1930-era strategic resource locations for the Para Bellum Sprint-2 bbox (Benelux + Western Germany). Coal/steel/iron basins and major works.",
-    "source": "Authored from public-domain historical knowledge (period industrial geography of the Ruhr, Saar, Sambre-Meuse/Borinage, Campine/Limburg, Liège, and Lorraine basins). Public-domain compatible per AD-018.",
+    "description": "Hand-authored 1930-era strategic resource locations for the Para Bellum map. Coal/lignite basins, iron-ore districts, oil fields (polygons) and major iron & steel works (points). Covers the western Sprint-2 region (Benelux + Western Germany, features 1-12, authored Sprint 3) AND the Sprint-6 eastward expansion — eastern Germany, Poland, Czechoslovakia and Austria (features 13-48, authored Pre-Sprint 9.0).",
+    "source": "Authored from public-domain period industrial geography (Ruhr, Saar, Sambre-Meuse/Borinage, Campine/Limburg, Liège, Lorraine; Upper Silesia, Dąbrowa, Lower Silesia, Ostrava-Karviná, North Bohemia, Sokolov, Central German and Lusatian lignite, Styrian lignite; Siegerland, Lahn-Dill, Peine-Salzgitter, Erzberg, Częstochowa, Nučice; Galician and Vienna-Basin oil). No licensed boundary or concession data was used. Public-domain compatible per AD-018.",
     "era": "1930",
-    "review_status": "DRAFT — pending Matthew historical review (F-2). Coordinates are approximate basin/works centroids; refine as needed.",
+    "review_status": "REVIEWED-EAST (Pre-Sprint 9.0) — western features 1-12 remain the Sprint-3 DRAFT, unchanged and still pending Matthew's historical review. Eastern features 13-48 were authored against the significance rule below and cross-checked feature-by-feature against data/boundaries/boundaries_1930.geojson (zero attribution disagreements). Coordinates are approximate basin/district/works centroids.",
     "notes": [
-      "Saar coalfield and most of the Lorraine (Briey/Thionville) iron basin lie at or just south of the bbox min_lat (49.4); features are included for completeness but only hexes inside the bbox will be tagged.",
-      "Polygons are coarse basin outlines, not licensed boundary data. Points are major works.",
-      "resource_type in {coal, steel, iron, oil}; oil has no 1930 in-bbox source (none authored)."
+      "OIL IS NOW PRESENT. The Sprint-3 file recorded 'oil has no 1930 in-bbox source (none authored)'. That is superseded: Galician oil (Borysław-Tustanowice-Drohobycz, Bitków-Nadwórna, Krosno-Jasło) is inside the east bbox and was Polish in 1930, and is now authored. Ploiești (~44.9°N) remains BELOW the bbox min_lat 46.3 and is deliberately not reachable.",
+      "SIGNIFICANCE RULE used for the eastern pass: include a field/works if its ~1930 output was materially significant at national scale (order 5 Mt/yr or more for coal), OR if it was a nation's only or principal source of that resource. The second clause is what admits Austrian Styrian lignite, Czechoslovak Nučice ore and Gbely oil, and the German Hannover oil points — small absolute producers that are nonetheless the whole of that nation's domestic supply.",
+      "OWNERSHIP: the `country` property is DOCUMENTATION ONLY. The owning nation of a tagged hex is decided by data/boundaries/boundaries_1930.geojson (point-in-polygon in the sampler), never by this property.",
+      "The Upper Silesian Coal Basin is authored as ONE feature spanning the 1922 partition because it is one geological and industrial district; its `country` is 'POL/DEU'. The partition line is irregular (Beuthen/Gleiwitz/Hindenburg German, Chorzów/Katowice/Rybnik Polish) and is NOT reproduced here — the boundaries file resolves each hex. Dąbrowa is a separate feature because it was a separate basin under the Russian partition, Polish since 1918.",
+      "EXCLUDED — Zistersdorf (Lower Austria) oil. First crude was raised in August 1930 at sub-commercial rates; the first profitable well (Gösting II) was drilled in 1934. At a 1 January 1930 scenario start it is anachronistic, so it is not authored. This is a deliberate exclusion, not an oversight.",
+      "CAVEAT — Peine-Salzgitter iron. The Peine (Ilsede) ore was worked continuously for the Ilseder Hütte and is correct for 1930. The large-scale Salzgitter development is 1937+ (Reichswerke 'Hermann Göring'); the field is authored at its 1930 working extent, not its wartime extent.",
+      "CAVEAT — German domestic iron ore was minor in 1930 (roughly a quarter of supply; Sweden and France covered the rest). Siegerland, Lahn-Dill and Peine are authored because they were genuinely producing, but a boolean resource model cannot express that Germany's ore was low-grade and insufficient. Treat German iron as present-but-thin when tuning yields.",
+      "Polygons are coarse basin/district outlines, not licensed boundary data. Points are single works or single small fields (one point tags exactly one hex).",
+      "Polygons tag a hex only when the HEX CENTRE falls inside. At 10 km hexes a district smaller than roughly 0.2° lon x 0.15° lat may tag nothing — small single-site fields are therefore authored as points.",
+      "resource_type in {coal, steel, iron, oil}. `agriculture` is NOT authored here; it is derived from OSM landuse in the sampler.",
+      "Saar coalfield and most of the Lorraine (Briey/Thionville) iron basin lie at or just south of the Sprint-2 bbox min_lat (49.4); those features are included for completeness but only hexes inside a given bbox are tagged.",
+      "Features 13-48 also fall inside the wceurope and (Siegerland/Lahn-Dill only) Benelux bboxes. Those artifacts are STALE with respect to this file until regenerated; only the east artifact was regenerated in Pre-Sprint 9.0."
     ]
   },
   "features": [
@@ -89,6 +98,253 @@
         "type": "Polygon",
         "coordinates": [[[5.65, 49.58], [6.05, 49.58], [6.05, 49.40], [5.65, 49.40], [5.65, 49.58]]]
       }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "coal", "name": "Upper Silesian Coal Basin (Katowice-Beuthen-Rybnik)", "country": "POL/DEU", "historical_era": "1930", "note": "One geological/industrial district spanning the 1922 partition; boundaries_1930.geojson resolves per-hex ownership. Europe's second basin after the Ruhr."},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[18.45, 50.42], [19.10, 50.42], [19.10, 50.02], [18.45, 50.02], [18.45, 50.42]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "coal", "name": "Dąbrowa Coal Basin (Sosnowiec-Dąbrowa Górnicza)", "country": "POL", "historical_era": "1930", "note": "Ex-Russian-partition basin, Polish since 1918; geologically continuous with Upper Silesia, kept separate for documentation."},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[19.05, 50.42], [19.40, 50.42], [19.40, 50.20], [19.05, 50.20], [19.05, 50.42]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "coal", "name": "Lower Silesian Coal Basin (Waldenburg-Neurode)", "country": "DEU", "historical_era": "1930"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[16.15, 50.82], [16.58, 50.82], [16.58, 50.58], [16.15, 50.58], [16.15, 50.82]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "coal", "name": "Ostrava-Karviná Coal Basin", "country": "CSK", "historical_era": "1930", "note": "Czechoslovakia's principal hard-coal field."},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[18.15, 49.95], [18.65, 49.95], [18.65, 49.72], [18.15, 49.72], [18.15, 49.95]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "coal", "name": "North Bohemian Brown Coal Basin (Most/Brüx-Teplice)", "country": "CSK", "historical_era": "1930", "note": "Major interwar lignite field."},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[13.30, 50.64], [13.95, 50.64], [13.95, 50.44], [13.30, 50.44], [13.30, 50.64]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "coal", "name": "Sokolov (Falkenau) Brown Coal Basin", "country": "CSK", "historical_era": "1930"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[12.58, 50.26], [12.88, 50.26], [12.88, 50.12], [12.58, 50.12], [12.58, 50.26]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "coal", "name": "Central German Lignite — Geiseltal (Merseburg-Mücheln)", "country": "DEU", "historical_era": "1930"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[11.68, 51.42], [12.10, 51.42], [12.10, 51.22], [11.68, 51.22], [11.68, 51.42]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "coal", "name": "Central German Lignite — Bitterfeld-Gräfenhainichen", "country": "DEU", "historical_era": "1930"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[12.15, 51.75], [12.55, 51.75], [12.55, 51.48], [12.15, 51.48], [12.15, 51.75]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "coal", "name": "Central German Lignite — Borna/Leipzig South", "country": "DEU", "historical_era": "1930"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[12.25, 51.25], [12.62, 51.25], [12.62, 50.98], [12.25, 50.98], [12.25, 51.25]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "coal", "name": "Lusatian Lignite (Niederlausitz: Senftenberg-Spremberg)", "country": "DEU", "historical_era": "1930"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[13.72, 51.66], [14.42, 51.66], [14.42, 51.44], [13.72, 51.44], [13.72, 51.66]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "coal", "name": "Köflach-Voitsberg Lignite (Styria)", "country": "AUT", "historical_era": "1930", "note": "Austria's principal coal district; small in absolute terms, admitted under the only/principal-source clause."},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[15.00, 47.13], [15.30, 47.13], [15.30, 46.97], [15.00, 46.97], [15.00, 47.13]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "coal", "name": "Fohnsdorf Lignite (Upper Styria)", "country": "AUT", "historical_era": "1930"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[14.60, 47.25], [14.80, 47.25], [14.80, 47.15], [14.60, 47.15], [14.60, 47.25]]]
+      }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "iron", "name": "Siegerland Iron Ore District", "country": "DEU", "historical_era": "1930"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[7.85, 50.97], [8.20, 50.97], [8.20, 50.75], [7.85, 50.75], [7.85, 50.97]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "iron", "name": "Lahn-Dill Iron Ore District (Dillenburg-Wetzlar)", "country": "DEU", "historical_era": "1930", "note": "Added Pre-Sprint 9.0, not on the candidate list: with Siegerland one of the two German ore districts actually producing in 1930."},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[8.25, 50.78], [8.58, 50.78], [8.58, 50.54], [8.25, 50.54], [8.25, 50.78]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "iron", "name": "Peine-Salzgitter Iron Ore Field", "country": "DEU", "historical_era": "1930", "note": "Peine/Ilsede ore worked for the Ilseder Hütte in 1930; the large-scale Salzgitter development is 1937+ (Reichswerke). Authored at 1930 working extent."},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[10.15, 52.34], [10.42, 52.34], [10.42, 52.12], [10.15, 52.12], [10.15, 52.34]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "iron", "name": "Erzberg-Vordernberg Iron Ore District (Eisenerz, Styria)", "country": "AUT", "historical_era": "1930", "note": "Austria's iron anchor; feeds Donawitz."},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[14.78, 47.62], [15.02, 47.62], [15.02, 47.46], [14.78, 47.46], [14.78, 47.62]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "iron", "name": "Częstochowa Iron Ore Basin", "country": "POL", "historical_era": "1930", "note": "Poland's principal domestic ore source; low-grade sideritic ore feeding Huta Częstochowa."},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[19.00, 50.95], [19.30, 50.95], [19.30, 50.70], [19.00, 50.70], [19.00, 50.95]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "iron", "name": "Nučice / Prague Basin Iron Ore (Barrandian)", "country": "CSK", "historical_era": "1930", "note": "Added Pre-Sprint 9.0, not on the candidate list: Czechoslovakia's only domestic ore district of note; the ore-to-works pair for Kladno."},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[14.00, 50.03], [14.30, 50.03], [14.30, 49.88], [14.00, 49.88], [14.00, 50.03]]]
+      }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "steel", "name": "Huta Królewska (Królewska Huta / Chorzów)", "country": "POL", "historical_era": "1930"},
+      "geometry": {"type": "Point", "coordinates": [18.95, 50.30]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "steel", "name": "Huta Pokój (Nowy Bytom)", "country": "POL", "historical_era": "1930"},
+      "geometry": {"type": "Point", "coordinates": [18.87, 50.27]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "steel", "name": "Huta Bankowa (Dąbrowa Górnicza)", "country": "POL", "historical_era": "1930"},
+      "geometry": {"type": "Point", "coordinates": [19.27, 50.33]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "steel", "name": "Huta Częstochowa (B. Hantke)", "country": "POL", "historical_era": "1930"},
+      "geometry": {"type": "Point", "coordinates": [19.09, 50.83]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "steel", "name": "Donnersmarckhütte (Hindenburg O.S. / Zabrze)", "country": "DEU", "historical_era": "1930", "note": "Added Pre-Sprint 9.0: works Germany retained in its share of Upper Silesia after the 1922 partition."},
+      "geometry": {"type": "Point", "coordinates": [18.79, 50.32]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "steel", "name": "Vítkovice Ironworks (Ostrava)", "country": "CSK", "historical_era": "1930"},
+      "geometry": {"type": "Point", "coordinates": [18.28, 49.81]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "steel", "name": "Třinec Ironworks", "country": "CSK", "historical_era": "1930"},
+      "geometry": {"type": "Point", "coordinates": [18.67, 49.68]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "steel", "name": "Poldi Works (Kladno)", "country": "CSK", "historical_era": "1930", "note": "The Kladno coal district itself is deliberately NOT authored (below the significance rule); the works are."},
+      "geometry": {"type": "Point", "coordinates": [14.10, 50.14]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "steel", "name": "Škoda Works (Plzeň)", "country": "CSK", "historical_era": "1930"},
+      "geometry": {"type": "Point", "coordinates": [13.38, 49.74]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "steel", "name": "Alpine Montan Donawitz (Leoben)", "country": "AUT", "historical_era": "1930"},
+      "geometry": {"type": "Point", "coordinates": [15.07, 47.38]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "steel", "name": "Böhler Works (Kapfenberg)", "country": "AUT", "historical_era": "1930"},
+      "geometry": {"type": "Point", "coordinates": [15.29, 47.44]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "steel", "name": "Ilseder Hütte (Peine)", "country": "DEU", "historical_era": "1930"},
+      "geometry": {"type": "Point", "coordinates": [10.23, 52.29]}
+    },
+
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "oil", "name": "Borysław-Tustanowice-Drohobycz Oil Field (Galicia)", "country": "POL", "historical_era": "1930", "note": "The dominant European oil field inside this bbox; Polish in 1930. Ploiești is below min_lat and unreachable by design."},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[23.25, 49.40], [23.60, 49.40], [23.60, 49.20], [23.25, 49.20], [23.25, 49.40]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "oil", "name": "Bitków-Nadwórna Oil Field (Eastern Carpathians)", "country": "POL", "historical_era": "1930"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[24.34, 48.69], [24.60, 48.69], [24.60, 48.58], [24.34, 48.58], [24.34, 48.69]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "oil", "name": "Krosno-Jasło Oil Field (Western Galicia)", "country": "POL", "historical_era": "1930", "note": "The oldest Galician field (Bóbrka); much declined by 1930 but still producing."},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[21.50, 49.76], [21.80, 49.76], [21.80, 49.63], [21.50, 49.63], [21.50, 49.76]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "oil", "name": "Gbely (Egbell) Oil Field", "country": "CSK", "historical_era": "1930", "note": "Industrial extraction from 1914; Czechoslovakia's only domestic oil. Authored as a point (one hex) to reflect its marginal scale."},
+      "geometry": {"type": "Point", "coordinates": [17.12, 48.72]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "oil", "name": "Wietze Oil Field (Hannover)", "country": "DEU", "historical_era": "1930", "note": "Added Pre-Sprint 9.0: Germany's oldest oil field, still producing in 1930 at a scale far below national need. Authored as a point so German oil reads as token, not absent."},
+      "geometry": {"type": "Point", "coordinates": [9.83, 52.65]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"resource_type": "oil", "name": "Nienhagen-Hänigsen Oil Field (Hannover)", "country": "DEU", "historical_era": "1930"},
+      "geometry": {"type": "Point", "coordinates": [10.06, 52.56]}
     }
   ]
 }
