@@ -18,15 +18,35 @@ add/remove/rename** and record the change in the changelog below and in
 > HexMap/HexData to the new schema (and the golden fixture) instead of loading
 > blind. Refusing to load."*
 >
-> Older-but-compatible files still load (the history is additive-only) and log
-> info. So the asymmetry is deliberate: shipping an OLD artifact to a NEW loader
-> is safe; shipping a NEW artifact to an OLD loader **refuses to boot the map.**
+> The failure is **asymmetric, and NEITHER DIRECTION IS "SAFE"** — one is loud
+> and one is quiet, and the quiet one is worse:
 >
-> Consequence for anyone bumping the version here: **an artifact at a new schema
-> version cannot be delivered by copying it into `StreamingAssets`.** It is a
-> migration in one commit on the Unity side — raise `SupportedSchemaVersion`,
-> extend `HexData`, update the golden fixture, then copy. That work is owned by
-> the seat that owns `Assets/Scripts/Map/*`, not by this pipeline.
+> | | Behaviour |
+> |---|---|
+> | **NEW artifact → OLD loader** | **Refuses to load.** Throws immediately, and the message names the remedy. **The LOUD failure — this is the one you want.** |
+> | **OLD artifact → NEW loader** | **Loads.** Does not crash. Every field the artifact lacks **takes its `HexData` default silently**, and the only trace is a `UnityEngine.Debug.Log` — the *lowest* severity available, not even `LogWarning`. **The QUIET failure.** |
+>
+> `HexData` uses `{ get; init; } = <default>` throughout, so a missing field is
+> indistinguishable at runtime from a field the pipeline genuinely emitted at its
+> default. **For the v1.0.6 bump the silently-defaulted field is
+> `settlement.population`, and a defaulted `0` is byte-identical to a legitimate
+> `0`** — which this schema explicitly allows and which occurs on roughly 5% of
+> named settlement hexes. The map boots, looks right, and reports no population
+> anywhere. Nothing in the console rises above `Debug`.
+>
+> **Consequences for anyone bumping the version here:**
+>
+> 1. **An artifact at a new schema version cannot be delivered by copying it into
+>    `StreamingAssets`.** It is a migration in **one commit** on the Unity side —
+>    raise `SupportedSchemaVersion`, extend `HexData`, update the golden fixture,
+>    then copy. Owned by the seat that owns `Assets/Scripts/Map/*`, not by this
+>    pipeline.
+> 2. **If it must be staged, do the ARTIFACT FIRST.** A partial landing then
+>    throws (new artifact, old loader) instead of defaulting in silence
+>    (new loader, old artifact). Loader-first is the dangerous order.
+> 3. **Verify by counting, not by looking.** A defaulted field cannot be seen. For
+>    v1.0.6 the check is that **1,157 hexes carry `population > 0`**; zero
+>    everywhere means the artifact never landed.
 
 ## Top-Level Document
 
