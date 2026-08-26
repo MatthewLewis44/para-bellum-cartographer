@@ -81,7 +81,7 @@ def _input_data_hash() -> str:
     h = hashlib.md5()
     for f in files:
         h.update(f.name.encode())
-        h.update(f.read_bytes() if f.exists() else b"<missing>")
+        h.update(_norm_bytes(f.read_bytes()) if f.exists() else b"<missing>")
     return h.hexdigest()[:8]
 
 
@@ -103,6 +103,22 @@ _SAMPLING_CODE_MODULES = (
 )
 
 
+def _norm_bytes(b: bytes) -> bytes:
+    """Line-ending normalization for the cache-key hashes (AD-039).
+
+    These hashes must depend on CONTENT, not on how a file happened to land on
+    disk. With `core.autocrlf=true` (the Windows default) a plain `git checkout`
+    of an UNCHANGED file can flip it between LF and CRLF and change the key —
+    observed in Pass A, where restoring one untouched file moved the sampling
+    hash from c5bc4980 to 4ee3935b and invalidated all 242 cached tiles. It also
+    means two clones of the same commit on different platforms compute different
+    keys and cannot share a tile cache. Normalizing costs one pass over a few
+    hundred KB and makes the key reproducible.
+    """
+    CRLF, CR, NL = bytes([13, 10]), bytes([13]), bytes([10])
+    return b.replace(CRLF, NL).replace(CR, NL)
+
+
 def _sampling_code_hash() -> str:
     """md5 of the sampling-critical source modules (see note above)."""
     import hashlib
@@ -111,7 +127,7 @@ def _sampling_code_hash() -> str:
     for rel in _SAMPLING_CODE_MODULES:
         p = pkg / rel
         h.update(rel.encode())
-        h.update(p.read_bytes() if p.exists() else b"<missing>")
+        h.update(_norm_bytes(p.read_bytes()) if p.exists() else b"<missing>")
     return h.hexdigest()[:8]
 
 

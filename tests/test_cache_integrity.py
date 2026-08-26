@@ -10,8 +10,11 @@ TTL. AD-030 fixed it; nothing pinned the fix. This is that pin.
 Checks:
   1. merge=True with a failed part: the merged full-bbox cache is NOT written
      (so the failed part is retried next run instead of being masked).
-  2. merge=True with a failed part still RETURNS the successful parts for the
-     current run — the fix must not silently empty the layer.
+  2. merge=True with a failed part RAISES (AD-030 amendment, Pass A). The
+     original AD-030 fix stopped the partial merge being CACHED but still
+     returned it for the current run, which exported a map with a hole in the
+     layer — silently wrong terrain, just not a cached one. Both paths now fail
+     loud; only the caller differed before.
   3. merge=False (the streaming path, ensure_parts) RAISES on a failed part
      rather than leaving an incomplete part set for the tile sampler to
      sample a hole out of.
@@ -109,16 +112,19 @@ def main() -> int:
     tmp = Path(tempfile.mkdtemp(prefix="pb_cache_fail_"))
     try:
         res, exc = run_case(fail_index=1, merge=True, cache_dir=tmp)
-        check("merge=True with a failed part does not raise", exc is None,
-              f"{type(exc).__name__ if exc else 'no exception'}")
+        check("merge=True RAISES on a failed part (AD-030 amendment)",
+              isinstance(exc, RuntimeError),
+              f"{type(exc).__name__ if exc else 'no exception raised'}")
+        check("the merge=True error names the layer, the count and AD-030",
+              exc is not None and LAYER in str(exc) and "AD-030" in str(exc)
+              and f"1 of {len(subs)}" in str(exc),
+              (str(exc)[:78] + "...") if exc else "")
+        check("no partial layer is returned to the caller", res is None,
+              "None" if res is None else f"{len(res)} features leaked out")
         check("merged full-bbox cache is NOT written after a failed part",
               not (tmp / merged_name).exists(),
               f"{merged_name} " + ("EXISTS" if (tmp / merged_name).exists()
                                    else "absent"))
-        check("the current run still gets the successful parts",
-              res is not None and len(res) == len(subs) - 1,
-              f"{0 if res is None else len(res)} features from "
-              f"{len(subs) - 1} good parts")
         parts = sorted(p.name for p in tmp.glob(f"{LAYER}_part_*.gpkg"))
         check("successful parts ARE cached individually (re-run resumes)",
               len(parts) == len(subs) - 1, f"{len(parts)} part gpkgs")

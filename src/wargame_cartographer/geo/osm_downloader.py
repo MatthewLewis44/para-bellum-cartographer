@@ -43,13 +43,55 @@ console = Console()
 
 DEFAULT_CACHE_DIR = Path.home() / "wargame-cartographer" / "cache" / "osm_pb"
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
-# NB (Pre-Sprint 9.0): this was temporarily raised to 45 for the eastern
-# resource regeneration. The cached east-bbox parts had just tipped past 30
-# days, and a cold Overpass refetch would have mixed a month of OSM churn into
-# a run whose only intended change was the resource layer — the field diff came
-# back resources-only precisely because the OSM snapshot was pinned. Reverted
-# to 30. Reproducing that artifact exactly needs the pin (or the cached parts).
-CACHE_MAX_AGE_DAYS = 30  # OSM data is stable enough for a month
+# OSM cache freshness. 30 days is right for "give me a current map"; it is
+# WRONG for "regenerate the shipped artifact and diff it", because an expired
+# part triggers a live refetch and mixes months of OSM churn into a run whose
+# only intended change was, say, the province layer. The field diff then cannot
+# separate the two and the negatives cannot be proven.
+#
+# This has now bitten twice. Pre-Sprint 9.0 hit it during the eastern resource
+# regeneration and pinned it by editing this constant to 45; Pass A hit it again
+# (parts had aged to 51 days) and lost the settlements snapshot the shipped
+# eastern artifact was built from before the refetch could be stopped.
+#
+# So the pin is a RUNTIME lever now, not a commit:
+#
+#     PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS=120 uv run python run_streaming.py ...
+#
+# Set it whenever the run's purpose is a controlled regeneration. Leave it unset
+# for a deliberate refresh. Editing the constant to pin a run is no longer
+# necessary and should not be done — it makes the pin invisible in the diff of
+# the run it applied to.
+#
+# NOTE this only protects parts that are still cached. Once a part is refetched
+# the previous snapshot is gone; there is no way back to it short of a pinned
+# archive of the cache, which we do not keep.
+_CACHE_MAX_AGE_DEFAULT_DAYS = 30  # OSM data is stable enough for a month
+
+
+def _cache_max_age_days() -> int:
+    import os
+    raw = os.environ.get("PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS", "")
+    if not raw.strip():
+        return _CACHE_MAX_AGE_DEFAULT_DAYS
+    try:
+        val = int(raw)
+    except ValueError:
+        raise RuntimeError(
+            f"PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS={raw!r} is not an integer. "
+            f"Unset it or give it a day count."
+        ) from None
+    if val < 1:
+        raise RuntimeError(
+            f"PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS={val} would treat every cached "
+            f"part as stale. Unset it instead of setting it to zero."
+        )
+    return val
+
+
+# Kept as a module attribute for callers that read it; the freshness check goes
+# through _cache_max_age_days() so the env override is honoured per run.
+CACHE_MAX_AGE_DAYS = _CACHE_MAX_AGE_DEFAULT_DAYS
 
 # --- Sub-bbox splitting (AD-008) -------------------------------------------
 # A query bbox with any edge longer than this is split into a grid of
@@ -69,9 +111,16 @@ def _bbox_hash(bbox: BoundingBox) -> str:
     return hashlib.md5(key.encode()).hexdigest()[:12]
 
 
-def _is_fresh(path: Path, max_age_days: int = CACHE_MAX_AGE_DAYS) -> bool:
+def _is_fresh(path: Path, max_age_days: int | None = None) -> bool:
+    """Is this cached part still within the freshness window?
+
+    The window is resolved PER CALL (not bound at import) so
+    PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS applies to the run that sets it.
+    """
     if not path.exists():
         return False
+    if max_age_days is None:
+        max_age_days = _cache_max_age_days()
     age_days = (time.time() - path.stat().st_mtime) / 86400
     return age_days < max_age_days
 
@@ -252,7 +301,7 @@ class OSMDownloader:
 
         frames: list[gpd.GeoDataFrame] = []
         live_fetches = 0
-        failed = False  # any sub-bbox fetch raised (AD-030 cache integrity)
+        failed = 0  # count of sub-bbox fetches that raised (AD-030 cache integrity)
         for i, sub in enumerate(subs):
             if len(subs) == 1:
                 part_path = cache_path
@@ -287,7 +336,7 @@ class OSMDownloader:
             except Exception as e:
                 console.print(f"  [yellow]{layer} fetch failed: {e}[/yellow]")
                 # Leave no cache for this part — next run retries it.
-                failed = True
+                failed += 1
                 continue
 
             records = []
@@ -332,14 +381,22 @@ class OSMDownloader:
             return empty
 
         if failed:
-            # A part failed: return what we have for THIS run but do NOT write the
-            # merged full-bbox cache — otherwise the missing part is never retried
-            # while the merged cache is fresh (the poisoning bug, AD-030).
-            console.print(
-                f"  [red]{layer}: sub-bbox fetch failed — NOT caching the merged "
-                f"result so the failed part(s) retry next run.[/red]"
+            # A part failed. AD-030 stopped the merged full-bbox cache from being
+            # written (so the missing part is retried instead of masked by a fresh
+            # merged cache), but still RETURNED the partial merge for the current
+            # run. That is the same defect one step later: the run continues and
+            # exports a map with a sub-bbox of the layer missing — silently wrong
+            # terrain, just not a cached one. The only difference from the
+            # streaming path was which caller happened to be asking.
+            #
+            # AD-030 amendment (Pass A): both paths fail loud. A partial fetch
+            # never becomes map content.
+            raise RuntimeError(
+                f"{layer}: {failed} of {len(subs)} sub-bbox fetches failed — "
+                f"refusing to build a layer with a hole in it (AD-030 fail-loud, "
+                f"both paths since Pass A). The successful parts stay cached, so "
+                f"a re-run retries only the failed one."
             )
-            return _build_merged()  # deliberately NOT persisted
 
         merged = _build_merged()
         if not merged.empty and len(subs) > 1:
