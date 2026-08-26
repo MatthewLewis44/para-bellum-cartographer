@@ -282,16 +282,22 @@ changes tracked here:
 - **Province-density audit** (`tools/province_density_audit.py`, measurement
   only). Reports hexes/province per nation over WHOLE in-frame provinces, which
   is the only comparable figure — a nation the bbox sliced understates badly.
-  **The distribution is BIMODAL, not one tier with outliers**, which is why the
-  tool reports the widest gap rather than a median (the median is unstable:
-  adding the eight frame nations moved it 154 -> 54 without any existing nation
-  changing). Two authoring tiers with an EMPTY 2.25x band between them:
-  FINE 12.9–54.2 (CHE, DZG, SAA, NLD, DNK, LTU, FRA, HUN — cantons,
-  départements, counties, provincie, landsdele) and COARSE 121.9–406.0 (AUT,
-  ROU, SOV, DEU, POL, CSK — Prussian provinces, voivodeships, CSK lands,
-  Bundesländer, historical provinces). Every per-province economic effect
-  inherits the split. Measurement only; normalisation is pass B's call, and
-  HUN's position in the fine tier is authored (see above), not drift.
+  **The result is DENOMINATOR-DEPENDENT and the tool reports both**, because
+  they disagree and a claim built on one must say which:
+  **A frame-referenced** (in-frame hexes / provinces the frame references —
+  what the GAME sees, i.e. building slots and capture units per unit area) gives
+  a CONTINUUM, 13.0–406.0, no break wider than 1.51x.
+  **B whole-province** (hexes in fully-framed provinces / count of those — the
+  AUTHORING TIER, undistorted by slicing) gives a BIMODAL split, an empty 2.25x
+  band between HUN 54.2 and AUT 121.9.
+  Both are true of the same data; under A the frame clipping smears the tiers
+  together. **What survives both: a ~31x spread, CHE at the dense extreme,
+  CSK at the coarse one.** The "two authoring tiers" reading is a claim about
+  AUTHORING, not about live economy — do not carry it into a yield argument
+  without naming the denominator. Medians are useless here (adding the eight
+  frame nations moved B's median 154 -> 54 with no existing nation changing).
+  Measurement only; normalisation is pass B's call, and HUN's position is
+  authored (see above), not drift.
 
 ### Sprint 7 (July 2026)
 

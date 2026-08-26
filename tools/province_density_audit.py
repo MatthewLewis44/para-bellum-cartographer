@@ -7,15 +7,27 @@ subdivision tier than its neighbours silently receives more of both.
 
 This tool MEASURES. It never re-authors anything.
 
-Two figures are reported per nation, and the second is the one to read:
+TWO DENOMINATORS ARE REPORTED, AND THEY DISAGREE. Neither is "the" answer, and
+a claim built on one must say which:
 
-  * hexes / province over ALL framed hexes — the raw figure, which a nation the
-    bbox cut in half will understate badly. Only a sliver of France and Italy is
-    framed, and their provinces are sliced with it.
-  * hexes / province over WHOLE provinces only — provinces whose authored
-    polygon lies (almost) entirely inside the frame. This is the comparable
-    number. A nation with no whole province in frame is reported as such rather
-    than given a misleading figure.
+  A  FRAME-REFERENCED — in-frame hexes / provinces referenced by in-frame hexes.
+     What the GAME sees: how many building-slot sets and capture units cover the
+     nation. Frame-clipped provinces count at whatever fraction the bbox left of
+     them. Use for "does this nation get more economy per km2".
+  B  WHOLE-PROVINCE — hexes in fully-framed provinces / count of those. What
+     TIER the nation was authored at, undistorted by slicing. Blind to any
+     nation the bbox cut up (n/a, never guessed). Use for "was this nation
+     authored at a finer tier".
+
+On the shipped eastern frame they give materially different readings: under B
+there is an empty 2.25x band between HUN 54.2 and AUT 121.9, so the map looks
+BIMODAL — two authoring tiers never reconciled. Under A the same data is a
+CONTINUUM with no break wider than 1.51x, because frame clipping smears the
+tiers together. What survives both is a ~31x spread with CHE at the dense
+extreme and CSK at the coarse one.
+
+The tool therefore prints the gap analysis for each denominator separately and
+labels which conclusion each supports. Do not lift one number out of it.
 
 Usage: uv run python tools/province_density_audit.py [artifact.json]
 """
@@ -117,68 +129,72 @@ def main() -> int:
         print(f"{c:<5}{n['hex']:>7}{n['land']:>7}{np_:>6}{raw:>10}"
               f"{nw:>7}{wstr:>11}{n['cap']:>6}{n['sub']:>6}{n['res']:>6}")
 
-    if comparable:
-        # The baseline excludes territories with fewer than three whole
-        # provinces in frame. Danzig and the Saar are single-province League
-        # territories — their "hexes per province" is just their size, and
-        # letting them into the median drags the map's characteristic density
-        # down by a factor of three and makes half the map look like an outlier.
-        MIN_WHOLE = 3
-        basis = {c: v for c, v in comparable.items()
-                 if len(nat[c]["whole_prov"]) >= MIN_WHOLE}
-        excluded = {c: v for c, v in comparable.items() if c not in basis}
-        vals = sorted(basis.values())
-        mid = vals[len(vals) // 2] if len(vals) % 2 else \
-            (vals[len(vals) // 2 - 1] + vals[len(vals) // 2]) / 2
+    # ---------------------------------------------------------------------
+    # TWO DENOMINATORS. They answer DIFFERENT questions and they DISAGREE, so
+    # this tool reports both and never prints one unlabelled.
+    #
+    #   A  FRAME-REFERENCED = in-frame hexes / provinces referenced by in-frame
+    #      hexes. What the GAME sees: how many building-slot sets and capture
+    #      units cover this nation. Frame-clipped provinces count at whatever
+    #      fraction the bbox left of them.
+    #
+    #   B  WHOLE-PROVINCE = hexes in fully-framed provinces / count of those.
+    #      What TIER the nation was authored at, undistorted by slicing. Blind
+    #      to any nation the bbox cut up (reported n/a, never guessed).
+    #
+    # A answers "does this nation get more economy per km2". B answers "was it
+    # authored at a finer tier". A normalisation pass needs both: B identifies
+    # the cause, A measures the live consequence.
+    # ---------------------------------------------------------------------
+    def gap_report(d, label, note):
+        o = sorted(d.items(), key=lambda kv: kv[1])
+        if len(o) < 2:
+            return
+        gi, gr = 0, 1.0
+        for i in range(len(o) - 1):
+            r = o[i + 1][1] / max(o[i][1], 1e-9)
+            if r > gr:
+                gi, gr = i, r
+        print("")
+        print(f"=== {label} ===")
+        print(f"  {note}")
+        print(f"  {len(o)} nations, range {o[0][1]:.1f}..{o[-1][1]:.1f}, "
+              f"{o[-1][1] / max(o[0][1], 1e-9):.1f}x spread")
+        print("  " + " | ".join(f"{c} {v:.1f}" for c, v in o))
+        print(f"  widest consecutive gap: x{gr:.2f} between {o[gi][0]} "
+              f"{o[gi][1]:.1f} and {o[gi + 1][0]} {o[gi + 1][1]:.1f}")
+        if gr >= 2.0:
+            print(f"  -> BIMODAL under this denominator: an empty band {gr:.2f}x "
+                  f"wide separates two clusters.")
+        else:
+            print(f"  -> CONTINUUM under this denominator: no break wider than "
+                  f"x{gr:.2f}. Do NOT describe this as two tiers.")
 
-        print(f"\ncomparable (whole-province) density across {len(comparable)} "
-              f"nations, range {min(comparable.values()):.1f}.."
-              f"{max(comparable.values()):.1f} "
-              f"({max(comparable.values()) / max(min(comparable.values()), 1e-9):.1f}x spread)")
-        print(f"baseline median {mid:.1f} hexes/province, over the "
-              f"{len(basis)} nations with >= {MIN_WHOLE} whole provinces in "
-              f"frame ({', '.join(sorted(basis))})")
-        if excluded:
-            print(f"excluded from the baseline (too few whole provinces to be a "
-                  f"density at all): "
-                  f"{', '.join(f'{c} {v:.1f}' for c, v in sorted(excluded.items()))}")
+    raw_density = {c: nat[c]["hex"] / len(nat[c]["prov"])
+                   for c in nat if nat[c]["prov"]}
+    gap_report(raw_density, "DENOMINATOR A - FRAME-REFERENCED (what the game sees)",
+               "in-frame hexes / provinces referenced by in-frame hexes")
+    gap_report(comparable, "DENOMINATOR B - WHOLE-PROVINCE (authoring tier)",
+               "hexes in fully-framed provinces / count of those provinces")
 
-        # The distribution is BIMODAL, and a median is the wrong summary for it:
-        # the map was authored at two different subdivision tiers, and the median
-        # just reports which cluster happens to hold more nations right now
-        # (adding the eight frame nations moved it from 154 to 54 without any
-        # existing nation changing). Find the widest multiplicative gap in the
-        # sorted sequence instead — that is the boundary between the tiers, and
-        # it is what a normalisation pass would have to close.
-        ordered = sorted(comparable.items(), key=lambda kv: kv[1])
-        gap_i, gap_ratio = None, 1.0
-        for i in range(len(ordered) - 1):
-            r = ordered[i + 1][1] / max(ordered[i][1], 1e-9)
-            if r > gap_ratio:
-                gap_i, gap_ratio = i, r
-        print("\nranked, densest first — a LOW number means many small provinces,")
-        print("i.e. more building slots and finer capture per unit area:")
-        for i, (c, v) in enumerate(ordered):
-            tag = "" if c in basis else " (not in baseline)"
-            print(f"  {c:<5}{v:>8.1f}   {v / mid:>5.2f}x median{tag}")
-            if i == gap_i:
-                print(f"  {'':<5}{'':>8}   ---- widest gap: x{gap_ratio:.2f}, "
-                      f"nothing authored between {v:.1f} and "
-                      f"{ordered[i + 1][1]:.1f} ----")
-        if gap_i is not None:
-            fine = [c for c, _ in ordered[:gap_i + 1]]
-            coarse = [c for c, _ in ordered[gap_i + 1:]]
-            print(f"\nTWO AUTHORING TIERS, not one tier with outliers:")
-            print(f"  FINE   ({len(fine)}): {', '.join(fine)}")
-            print(f"         cantons, departements, counties, provincie, "
-                  f"landsdele, ethnographic regions")
-            print(f"  COARSE ({len(coarse)}): {', '.join(coarse)}")
-            print(f"         Prussian provinces, voivodeships, CSK lands, "
-                  f"Bundeslaender, historical provinces")
-            print(f"  The gap is x{gap_ratio:.2f} wide and EMPTY. Any per-province")
-            print(f"  economic effect inherits this split; a nation in the fine")
-            print(f"  tier gets roughly {gap_ratio:.0f}x the building slots and")
-            print(f"  capture granularity per unit area of one in the coarse tier.")
+    print("")
+    print("=== WHAT SURVIVES BOTH DENOMINATORS ===")
+    if raw_density:
+        lo = min(raw_density, key=raw_density.get)
+        hi = max(raw_density, key=raw_density.get)
+        print(f"  * A ~{max(raw_density.values()) / min(raw_density.values()):.0f}x "
+              f"spread ({lo} densest, {hi} coarsest). Holds under both.")
+    print("  * CHE sits at or near the dense extreme under both, and its")
+    print("    provinces are cantons authored without reference to the map.")
+    print("  * CSK is the coarse extreme under both, and four historical lands")
+    print("    genuinely IS Czechoslovakia's top tier - coarse but defensible.")
+    print("  * HUN's position is AUTHORED (Matthew, 2026-08-26, county tier);")
+    print("    it is not drift and must not be normalised with the others.")
+    print("  The 'two authoring tiers' reading is visible ONLY under B. Under A")
+    print("  frame clipping smears it into a continuum. The bimodality is a")
+    print("  claim about AUTHORING, not about live economy - do not carry it")
+    print("  into a yield argument without saying which denominator it rests on.")
+
     print("\nNations with no whole province in frame are reported n/a rather than")
     print("given a raw figure: their provinces are sliced by the bbox, so the raw")
     print("hexes/province understates them and is not comparable.")
