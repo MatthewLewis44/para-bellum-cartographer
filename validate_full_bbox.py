@@ -35,7 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 from wargame_cartographer.config.map_spec import MapSpec           # noqa: E402
 from wargame_cartographer.hex.grid import OFFSET_NEIGHBOR_DELTAS   # noqa: E402
 
-EXPECTED_SCHEMA = "1.0.5"
+EXPECTED_SCHEMA = "1.0.6"
 
 # ---------------------------------------------------------------------------
 # Per-config expectations. Bands = measured at Sprint 6 fix bundle ± margin.
@@ -212,6 +212,20 @@ EXPECTATIONS = {
             ("Saarbrücken -> SAA_SAAR", 49.23, 7.00, "SAA_SAAR"),
             # Berlin merged into Brandenburg (Sprint 7 AD-035 addendum)
             ("Berlin -> DEU_BRANDENBURG", 52.52, 13.40, "DEU_BRANDENBURG"),
+            # The eight frame nations, provinced in Pass A (AD-037). Before
+            # this they carried a country but an EMPTY province on every hex,
+            # so ProvinceIndex skipped them and they produced nothing at all.
+            ("Budapest -> HUN_PEST", 47.50, 19.04, "HUN_PEST"),
+            ("Debrecen -> HUN_HAJDU_BIHAR", 47.53, 21.63, "HUN_HAJDU_BIHAR"),
+            ("Kaunas -> LTU_AUKSTAITIJA", 54.90, 23.90, "LTU_AUKSTAITIJA"),
+            ("Klaipeda -> LTU_KLAIPEDA", 55.71, 21.14, "LTU_KLAIPEDA"),
+            ("Kobenhavn -> DNK_SJAELLAND", 55.68, 12.57, "DNK_SJAELLAND"),
+            ("Cluj -> ROU_TRANSILVANIA", 46.77, 23.60, "ROU_TRANSILVANIA"),
+            ("Cernauti -> ROU_BUCOVINA", 48.29, 25.94, "ROU_BUCOVINA"),
+            ("Malmo -> SWE_SKANE", 55.60, 13.00, "SWE_SKANE"),
+            ("Maribor -> YUG_DRAVSKA", 46.56, 15.65, "YUG_DRAVSKA"),
+            ("Daugavpils -> LVA_LATGALE", 55.87, 26.53, "LVA_LATGALE"),
+            ("Kamianets -> SOV_PODOLIA", 48.68, 26.59, "SOV_PODOLIA"),
         ],
         land_slope_p90_band=(18, 30),   # full Alps + Tatra/Carpathians framed
         biome_bands={"hill": ("pct", 10, 30),
@@ -588,12 +602,14 @@ def main() -> int:
     provs = sorted({h["political"]["province_at_start"] for h in hexes
                     if h["political"]["province_at_start"]})
     cap_by_prov = Counter()
+    sub_by_prov = Counter()
     sub_total = 0
     for h in hexes:
         t = h["settlement"]["admin_tier"]
         if t == "capital":
             cap_by_prov[h["political"]["province_at_start"]] += 1
         elif t == "sub_capital":
+            sub_by_prov[h["political"]["province_at_start"]] += 1
             sub_total += 1
     check(f"{exp['provinces_min']}+ provinces framed",
           len(provs) >= exp["provinces_min"], f"{len(provs)}")
@@ -602,6 +618,20 @@ def main() -> int:
     framed = [p for p in provs if cap_by_prov[p]]
     check("every framed province has exactly one capital",
           all(cap_by_prov[p] == 1 for p in framed), f"{len(framed)} framed")
+    # The check above only inspects provinces that HAVE a capital, so a province
+    # with ZERO capital-tier hexes is invisible to it. That blind spot is how
+    # ITA (0 capitals across 5 provinces) and BEL (0 across 3) shipped in the
+    # eastern artifact producing no money or manpower at all: ProvinceSeatYield
+    # walks capital + sub-capitals, so a province with neither yields nothing.
+    # Report it — as info, not a failure, because a legitimately cropped frame
+    # province whose 1930 seat lies outside the bbox will never have one.
+    seatless = sorted(p for p in provs if not cap_by_prov[p] and not sub_by_prov[p])
+    no_cap = sorted(p for p in provs if not cap_by_prov[p])
+    check("[info] provinces with no capital-tier hex",
+          True, f"{len(no_cap)} of {len(provs)}: {no_cap[:8]}")
+    check("[info] provinces with NO seat at all (no capital, no sub-capital) "
+          "— these yield zero money and manpower",
+          True, f"{len(seatless)} of {len(provs)}: {seatless[:8]}")
     # Countries with an authored province layer — derived from the metadata,
     # not hardcoded (Sprint 6: DEU/POL/CSK/AUT/SAA/DZG joined; HUN etc. are
     # country-only per AD-035, CHE/ITA still pending per AD-028).
@@ -628,6 +658,47 @@ def main() -> int:
                    and not h["political"]["province_at_start"])
         check(f"[info] {c} partially authored — uncovered hexes reported",
               True, f"{n_un} uncovered (backfill pending)")
+
+    # --- Population (v1.0.6, AD-038) ----------------------------------------
+    if ver_t >= (1, 0, 6):
+        missing = [h["id"] for h in hexes if "population" not in h["settlement"]]
+        check("every hex carries settlement.population", not missing,
+              f"{len(missing)} missing")
+        bad = [h["id"] for h in hexes
+               if not isinstance(h["settlement"].get("population"), int)
+               or h["settlement"].get("population", 0) < 0]
+        check("settlement.population is a non-negative int", not bad,
+              f"{len(bad)}: {bad[:4]}")
+        # No settlement is counted twice. The invariant is NOT "suburb hexes
+        # carry 0" — a ring hex is often a distinct named town with its own OSM
+        # node (Lier, Herstal, Waterloo, Alsdorf), and zeroing those would
+        # delete real inhabitants from the map. The invariant is that
+        # population comes from the node that CLAIMED the hex, so a hex with
+        # population must have a name, and a ring hex with no node of its own
+        # must be 0.
+        orphan_pop = [h["id"] for h in hexes
+                      if h["settlement"].get("population", 0) != 0
+                      and not h["settlement"]["name"]]
+        check("population > 0 only on a hex with a settlement name "
+              "(no inherited/duplicated counts)",
+              not orphan_pop, f"{len(orphan_pop)}: {orphan_pop[:4]}")
+        dup = [h["id"] for h in hexes
+               if h["settlement"]["type"] == "suburb"
+               and h["settlement"].get("population", 0) != 0
+               and h["settlement"]["name"] == h["settlement"]["parent_city"]]
+        check("no ring hex repeats its parent city's population",
+              not dup, f"{len(dup)}: {dup[:4]}")
+        unsettled = [h["id"] for h in hexes
+                     if h["settlement"]["type"] == "none"
+                     and h["settlement"].get("population", 0) != 0]
+        check("unsettled hexes carry population 0", not unsettled,
+              f"{len(unsettled)}: {unsettled[:4]}")
+        pops = [h["settlement"].get("population", 0) for h in hexes]
+        settled_pop = [p for p in pops if p > 0]
+        check("population is populated on a meaningful share of settled hexes",
+              len(settled_pop) >= 0.25 * max(1, sum(
+                  1 for h in hexes if h["settlement"]["type"] != "none")),
+              f"{len(settled_pop)} hexes with pop > 0, total {sum(pops):,}")
 
     # Country/province consistency (Sprint 6 review fix): a hex's province
     # must belong to its country — the old unrestricted 0.2° snap violated
@@ -675,8 +746,12 @@ def main() -> int:
         subs = sum(len(p.get("sub_capitals", [])) for p in md["provinces"])
         # Sprint 6 (AD-035): 92 provinces / 92 capitals / 124 sub-capitals.
         check("authored layer has 80+ capitals", caps >= 80, f"{caps}")
-        check("authored layer sub-capitals sane (100-200)",
-              100 <= subs <= 200, f"{subs}")
+        # Widened in Pass A: the eight frame nations added 98 sub-capitals and
+        # the cropped-province seat rule added 2 more (AD-037), taking the layer
+        # from 138 to 238. The band is a "did the builder go haywire" guard, not
+        # a target.
+        check("authored layer sub-capitals sane (100-400)",
+              100 <= subs <= 400, f"{subs}")
 
     # --- Summary -----------------------------------------------------------------
     print(f"Validation — {spec.name}  ({output})")

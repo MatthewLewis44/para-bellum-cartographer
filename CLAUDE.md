@@ -195,6 +195,104 @@ the per-hex pass-1 body and the global coastal/sprawl passes are the SAME code
 Decision records live in `PARA_BELLUM_DECISIONS.md` (AD-NNN). Sprint-level
 changes tracked here:
 
+### Pass A (August 2026)
+
+- **Provinces for the eight frame nations (AD-037).** DNK/HUN/LTU/LVA/ROU/SOV/
+  SWE/YUG carried a `country_at_start` but an EMPTY `province_at_start` on all
+  3,105 of their land hexes, so `ProvinceIndex.Build` skipped them and they
+  produced nothing — no money, no manpower, and (because resource yield is a
+  per-PROVINCE walk, not a per-hex sweep) none of their 407 resource hexes
+  either. **138 → 189 provinces.** Builder:
+  `tools/build_provinces_1930_frames.py`, **append-only**, runs FOURTH in the
+  chain (west → east → backfill → frames).
+  - **Tier rule:** a province is the coarsest unit that is a genuine 1930 unit
+    or a genuine grouping of them, chosen to land in the density band the
+    shipped map uses. Never a cut-line. **HUNGARY IS A DELIBERATE EXCEPTION —
+    the genuine county tier, 19 provinces, directed by Matthew directly on
+    2026-08-26 against a recommendation to group it into the density band.
+    Density recorded as AUTHORED. Pass B must NOT normalise it, and must hold
+    it apart from CHE, whose density is drift rather than a decision.**
+  - **Provenance:** OHM has no 1930-valid relations for HUN/ROU/LTU/SWE/YUG/SOV
+    (probed). DNK comes from real OHM amt relations grouped into landsdele and
+    LTU_KLAIPEDA from the OHM Memelland Kreise (`era: 1930`); everything else is
+    a Natural Earth admin-1 union clipped to the 1930 country polygon
+    (`era: 1930-stopgap`, modern internal lines / 1930 external lines, the
+    AD-027 precedent). Recorded per feature in `notes`.
+  - **LVA/SWE/YUG/SOV are frame-scoped** — only the block inside the bbox is
+    authored. `validate_full_bbox.py` hard-fails if <98% of a metadata-listed
+    country's land hexes carry a province, so widening the bbox fails loudly.
+  - Watch out for two source traps if you extend this: Natural Earth punches
+    city-level units (Hungarian "Urban county", Croatian/Romanian "City")
+    OUT of their county as separate rows — union the counties alone and
+    sixteen Hungarian county capitals land outside their own province. And OHM
+    admin relations are land-only while the 1930 country polygons include
+    territorial waters, so "country minus the parts" must be intersected with
+    NE land first or it yields a blob of sea.
+- **Cropped-province seat rule (AD-037), applied to every nation.** A province
+  whose declared 1930 capital falls OUTSIDE the bbox gets the highest-weight
+  in-frame settlement as a **sub-capital** (never as a substitute capital — the
+  declared capital stays, and designates itself if the frame widens). Otherwise
+  a province like ITA_VENEZIA_TRIDENTINA holds Bolzano and 104 hexes and yields
+  nothing purely because Trento is south of the frame edge.
+  `tools/add_cropped_province_seats.py`, idempotent, reads the artifact.
+  Province metadata is deliberately NOT in `_input_data_hash` (it drives only
+  `admin_tier`, recomputed in the uncached merge pass), so re-running after it
+  reuses every cached tile.
+- **Schema v1.0.6 — `settlement.population` (AD-038).** The pipeline always read
+  a real population integer off each OSM node (it decides `settlement.type` and
+  the sprawl radius) and then discarded it at export. Now emitted **per hex**,
+  because the export format has no province-level record; the sim sums a
+  province's hexes. Population attaches to the settlement NODE: a city's count
+  sits on its own hex and its sprawl ring carries 0, EXCEPT where a ring hex is
+  a distinct named town with its own node (Lier, Herstal, Waterloo), which keeps
+  its own count. Every settlement is counted exactly once; `0` means "no node or
+  no population tag", so a province sum is a floor, not a census. **⚠ MODERN-DERIVED: 2020s OSM tags standing in for 1930
+  figures — materially wrong for the eastern territories, the Sudetenland,
+  Memel, Danzig and Bessarabia.** Labelled as such in `docs/hex-schema.md`.
+  `resources.industry_level` has identical provenance (it is just "2020s OSM
+  calls this hex an industrial estate", range {0,1}) and had NO documentation
+  at all — now labelled too, and flagged for retirement once Sprint 12 places
+  real facilities.
+- **AD-030 amendment: `merge=True` now fails loud too.** The monolithic fetch
+  path declined to CACHE a partial merge but still returned it, so the run
+  exported a map with a hole in a layer — silently wrong terrain that simply
+  was not cached. Both paths raise now. `tests/test_cache_integrity.py` is 12
+  checks.
+- **AD-039: the tile-cache key is normalized for line endings.** It hashed raw
+  file bytes, so with `core.autocrlf=true` a plain `git checkout` of an
+  UNCHANGED file flipped the key and invalidated all 242 cached tiles, and two
+  clones of the same commit computed different keys. Content-based now.
+- **The OSM cache TTL is a runtime lever, not a code edit.**
+
+  ```
+  PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS=120 uv run python run_streaming.py configs/...
+  ```
+
+  **Set this for ANY controlled regeneration.** The 30-day default is right for
+  "give me a current map" and wrong for "regenerate and diff", because an
+  expired part triggers a live refetch that mixes months of OSM churn into a run
+  whose only intended change was something else. This has bitten twice: Pre-
+  Sprint 9.0 worked around it by editing the constant, and **Pass A lost the
+  settlements snapshot the shipped eastern artifact was built from** before the
+  refetch could be stopped — the artifact is no longer byte-reproducible.
+  Measured consequence: 115 of 18,719 hexes (0.61%) differ in settlement
+  tagging, with landuse/roads/rail/bridges unaffected because those parts were
+  still cached. **There is no way back once a part is refetched; we do not
+  archive the cache.**
+- **Province-density audit** (`tools/province_density_audit.py`, measurement
+  only). Reports hexes/province per nation over WHOLE in-frame provinces, which
+  is the only comparable figure — a nation the bbox sliced understates badly.
+  **The distribution is BIMODAL, not one tier with outliers**, which is why the
+  tool reports the widest gap rather than a median (the median is unstable:
+  adding the eight frame nations moved it 154 -> 54 without any existing nation
+  changing). Two authoring tiers with an EMPTY 2.25x band between them:
+  FINE 12.9–54.2 (CHE, DZG, SAA, NLD, DNK, LTU, FRA, HUN — cantons,
+  départements, counties, provincie, landsdele) and COARSE 121.9–406.0 (AUT,
+  ROU, SOV, DEU, POL, CSK — Prussian provinces, voivodeships, CSK lands,
+  Bundesländer, historical provinces). Every per-province economic effect
+  inherits the split. Measurement only; normalisation is pass B's call, and
+  HUN's position in the fine tier is authored (see above), not drift.
+
 ### Sprint 7 (July 2026)
 
 - **Province layer complete (AD-035 addendum):** no city-provinces — Berlin

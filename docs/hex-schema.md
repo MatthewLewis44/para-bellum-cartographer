@@ -1,4 +1,4 @@
-# Para Bellum Hex JSON Schema — v1.0.5
+# Para Bellum Hex JSON Schema — v1.0.6
 
 The contract between the cartography pipeline (`output/game_data_exporter.py`)
 and the Unity 6 C# loader. The loader checks `schema_version` on load and
@@ -19,7 +19,7 @@ the changelog below and in `PARA_BELLUM_DECISIONS.md`.
 
 | Field | Type | Notes |
 |---|---|---|
-| `schema_version` | string | Semver. Currently `"1.0.5"`. |
+| `schema_version` | string | Semver. Currently `"1.0.6"`. |
 | `map_metadata` | object | See below. |
 | `hexes` | array | One object per hex, sorted **numerically by `(coords.col, coords.row)`** (v1.0.5, AD-031 — the pre-1.0.5 "sorted by `id` string" ordering broke once packed id widths mixed). |
 
@@ -150,6 +150,7 @@ added later without rework (AD-029).
 | `type` | enum string | `none`, `village` (<2k pop), `town` (2k–50k), `city` (50k–300k), `metropolis` (>300k), `suburb` (v1.0.2 — ring hex of a multi-hex city, AD-014). Type resolves from OSM population when known, from OSM place tag otherwise. At the 10 km hex scale only `town`+ (pop ≥ 20k) is tagged; villages stay `none`. |
 | `name` | string | Settlement name (UTF-8, native spelling). Empty when `type` = `none`. For a `suburb` hex, its own name if it had one, else empty (the city is in `parent_city`). |
 | `population_class` | int | 0–5: none 0, village 1, town 2, city 3, metropolis 5 (4 reserved). Suburb ring hexes: 3 (inner, <6 km) or 2 (outer). |
+| `population` | int | **v1.0.6 (AD-038). ⚠ MODERN-DERIVED — NOT AUTHORED 1930 DATA.** Raw inhabitant count of the OSM settlement node that claimed this hex, and `0` on every hex no node claimed. **Population belongs to the node, not to the footprint:** a city's count sits on its own hex only, and the ring hexes of its sprawl carry `0` UNLESS a ring hex is itself a distinct named town with its own node (Lier inside Antwerpen's footprint, Herstal inside Liège's), in which case it carries its own count — those are real separate inhabitants, not a duplicate. Summing a province's hexes therefore counts every settlement exactly once. **`0` means "no node, or a node with no `population` tag", not "nobody lives here"** — roughly 5% of named settlement hexes are untagged, so a province sum UNDERCOUNTS and is a floor, never a census. The value is a **2020s OpenStreetMap `population` tag**, used as a stand-in for a 1930 figure. It is roughly serviceable for cities inside their 1930 states (Berlin, Budapest, Copenhagen) and **materially wrong** wherever the twentieth century moved the people: the German eastern territories, the Sudetenland, Memel, Danzig and the Bessarabian and Bukovinan strips all read their post-expulsion, post-resettlement populations. Treat every figure as provisional and on the historical-review list. It is still preferable to deriving population from the `population_class` ordinal, which throws away a real measurement to invent a fake one. |
 | `anthrome` | enum string | `none`, `residential`, `industrial`, `metro`, `outskirts` (v1.0.2), `cropland`, `paddy`, `mining`, `mangrove`, `fortified`. Drives Unity tactical map pool selection. Within a city footprint (AD-014): `metro` <3 km from centroid, else `industrial`/`residential` by dominant landuse, else `outskirts`. |
 | `parent_city` | string | **v1.0.2 (AD-014).** Name of the city this hex belongs to, for hexes inside a multi-hex urban footprint (centroid + suburb ring). Empty `""` otherwise. |
 | `distance_from_centroid_km` | float \| null | **v1.0.2 (AD-014).** Distance from this hex's center to the parent city's centroid hex (0.0 at the centroid). `null` for hexes not in any city footprint. |
@@ -172,7 +173,7 @@ added later without rework (AD-029).
 |---|---|---|
 | `coal` / `steel` / `iron` / `oil` | bool | From the hand-authored `data/resources/resources_1930.geojson` layer (F-2): basins (polygons) tag hexes by center-in-polygon, works (points) tag the containing hex. `iron` **new in v1.0.2**. `oil` currently has no in-bbox 1930 source (always `false` here). |
 | `agriculture` | bool | True when hex landuse is farmland. |
-| `industry_level` | int | 0–N. Currently 1 when OSM industrial landuse present, else 0. |
+| `industry_level` | int | **⚠ MODERN-DERIVED, same caveat as `settlement.population`.** Range is `{0, 1}` in practice, never higher: the sampler sets `1` when the dominant landuse polygon at the hex centre is **2020s OSM `landuse=industrial`**, else `0` (`hex/sampler.py`). It is not authored, not a 1930 measurement, and not a per-hex industry rating — it is "modern OSM calls this an industrial estate". The sim multiplies non-agricultural resource yield by `(1 + industry_level)`, so on the shipped eastern artifact it doubles the output of exactly 8 hexes (4 DEU, 2 CSK, 2 POL) out of the 72 that carry the flag — the other 64 hold no resource for it to multiply. On the historical-review list, and a candidate for retirement once Sprint 12 places real facilities. |
 
 ### `movement`
 
@@ -190,6 +191,35 @@ added later without rework (AD-029).
 | `is_coastal` | bool | Duplicate of `terrain.is_coastal` for fast Unity filtering. |
 
 ## Changelog
+
+### v1.0.6 (2026-08-26, Pass A)
+
+- **`settlement.population` (additive, AD-038).** New int field carrying the raw
+  inhabitant count of the settlement node on the hex. The pipeline has always
+  read this integer — it is what decides `settlement.type` and the urban-sprawl
+  radius (`geo/osm_downloader.py`, `hex/sampler.py`) — and then discarded it at
+  export. Nothing else changed; every other field is bit-for-bit what v1.0.5
+  produced.
+
+  **Shape:** per-hex, because the export format has no province-level record to
+  put it on. The document is `{schema_version, map_metadata, hexes}` and there
+  is no `provinces` array, so a province-level population would have required a
+  new top-level section and a second place for the loader to keep province
+  state. The sim's contract (`ProvinceInfo.Population`) is satisfied by summing
+  the hexes of a province inside `ProvinceIndex.Build`, which already walks
+  every hex exactly once and already derives `ResourceHexes` the same way.
+  Population attaches to the settlement NODE, so each settlement is counted
+  exactly once and a sprawl footprint never multiplies its parent city — but a
+  ring hex that is a distinct named town keeps its own count. The sum is a
+  FLOOR: hexes whose node carries no `population` tag contribute 0.
+
+  **`population` is modern-derived and must not be mistaken for authored 1930
+  data** — see the field's row above for the full warning and the regions where
+  it is materially wrong. `resources.industry_level`, which had the same
+  provenance and no documentation at all, is now labelled too.
+
+- **v1.0.5 consumers keep working.** The field is additive; a loader that does
+  not know it ignores it. Unity writes `ProvinceInfo.Population` in Sprint 11.
 
 ### v1.0.5 (2026-07-02, Sprint 6)
 
