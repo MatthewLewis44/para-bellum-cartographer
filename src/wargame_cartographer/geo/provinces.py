@@ -166,6 +166,11 @@ def _designate(data: dict, tier: str, node_name: str, pop: int) -> None:
         data["settlement_type"] = "city" if pop >= 50_000 else "town"
         data["settlement_name"] = node_name
         data["population_class"] = 3 if pop >= 50_000 else 2
+        # The designated hex now IS a settlement, so it carries the matched
+        # node's population too (v1.0.6, AD-038). Only set here, where the
+        # settlement is being created: a hex the sampler already tagged keeps
+        # the population of the node that claimed it.
+        data["population"] = int(pop or 0)
         if data.get("anthrome", "none") == "none":
             data["anthrome"] = "residential"
     elif not data.get("settlement_name"):

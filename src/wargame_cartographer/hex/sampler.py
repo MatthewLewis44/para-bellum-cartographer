@@ -244,6 +244,7 @@ class HexSampler:
             settlement_name = ""
             settlement_type_str = "none"
             pop_class = 0
+            population = 0
 
             if not is_water and not is_lake:
                 match = settlement_by_hex.get((q, r))
@@ -253,6 +254,16 @@ class HexSampler:
                     settlement_name = match["name"]
                     settlement_type_str = match["settlement_type"]
                     pop_class = _pop_class(settlement_type_str)
+                    # Raw OSM population of the node that claimed this hex
+                    # (v1.0.6, AD-038). It has always been read here — it is
+                    # what decides settlement_type and the sprawl radius — and
+                    # was simply never exported. MODERN-DERIVED: see the
+                    # schema doc. This is the population of the node that
+                    # CLAIMED this hex, so a sprawl ring hex with no node of
+                    # its own stays 0 and a city is never counted once per
+                    # footprint hex — while a ring hex that IS a distinct town
+                    # keeps its own real count.
+                    population = int(match.get("population", 0) or 0)
 
             # -- Biome --
             biome = self.classifier.classify(
@@ -343,6 +354,7 @@ class HexSampler:
                 "settlement_type":  settlement_type_str,
                 "settlement_name":  settlement_name,
                 "population_class": pop_class,
+                "population":       population,
                 "anthrome":         anthrome,
                 "parent_city":      "",     # filled by urban-sprawl pass (AD-014)
                 "distance_from_centroid_km": None,

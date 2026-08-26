@@ -2,7 +2,7 @@
 
 Produces the canonical hex JSON consumed by Unity 6.6 LTS.
 This is the contract between the cartography pipeline and the game engine.
-Schema version: see SCHEMA_VERSION below (currently 1.0.5).
+Schema version: see SCHEMA_VERSION below (currently 1.0.6).
 
 OUT OF SCOPE (not written here, implemented in Unity or later pipeline stages):
     - Tactical battle map selection logic
@@ -44,7 +44,7 @@ from wargame_cartographer.infrastructure.types import (
 # Schema version — bump when any field is added/removed/renamed.
 # Unity C# loader checks this on load and rejects incompatible versions.
 # ---------------------------------------------------------------------------
-SCHEMA_VERSION = "1.0.5"
+SCHEMA_VERSION = "1.0.6"
 
 
 def _safe_enum_value(val, default: str) -> str:
@@ -170,6 +170,18 @@ def export_game_data(
         if pop_class is None:
             pop_class = _default_pop_class(settlement_type)
 
+        # Raw inhabitant count of the settlement node on this hex (v1.0.6,
+        # AD-038). Population attaches to the NODE, not to the footprint: a
+        # city's count sits on its own hex and its sprawl ring carries 0, so a
+        # province sum is never multiplied by the sprawl radius — except where
+        # a ring hex is itself a distinct named town with its own node (Lier,
+        # Herstal, Waterloo), which keeps its own count. Every settlement is
+        # counted exactly once. 0 also covers "node has no population tag", so
+        # a province sum is a FLOOR, not a census. MODERN-DERIVED (2020s OSM
+        # `population` tags standing in for 1930 figures): see
+        # docs/hex-schema.md, which carries the warning in full.
+        population = int(info.get("population", 0) or 0)
+
         # --- Infrastructure ---
         road = _safe_enum_value(info.get("road"), RoadLevel.NONE.value)
         rail = _safe_enum_value(info.get("rail"), RailLevel.NONE.value)
@@ -237,6 +249,7 @@ def export_game_data(
                 "type": settlement_type,
                 "name": settlement_name,
                 "population_class": pop_class,
+                "population": population,
                 "anthrome": anthrome,
                 "parent_city": parent_city,
                 "distance_from_centroid_km": distance_from_centroid_km,
