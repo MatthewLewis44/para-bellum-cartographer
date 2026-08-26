@@ -1,11 +1,32 @@
 # Para Bellum Hex JSON Schema — v1.0.6
 
 The contract between the cartography pipeline (`output/game_data_exporter.py`)
-and the Unity 6 C# loader. The loader checks `schema_version` on load and
-warns on mismatch (it does not hard-reject — see `unity-hex-loader.md`; a
-versioning policy with teeth is planned before save/load). **Bump
-`SCHEMA_VERSION` on any field add/remove/rename** and record the change in
-the changelog below and in `PARA_BELLUM_DECISIONS.md`.
+and the Unity 6 C# loader. **Bump `SCHEMA_VERSION` on any field
+add/remove/rename** and record the change in the changelog below and in
+`PARA_BELLUM_DECISIONS.md`.
+
+> **⚠ A SCHEMA BUMP DOES NOT SHIP ON ITS OWN.** This paragraph used to say the
+> loader "warns on mismatch (it does not hard-reject)" and that a versioning
+> policy with teeth was planned. **That is stale — the policy landed and it has
+> teeth.** `HexMap.ValidateSchemaVersion` pins
+> `SupportedSchemaVersion = "1.0.5"` and **throws `InvalidDataException`** on
+> any file whose version is NEWER, on a different major, or malformed. It does
+> not warn and it does not degrade:
+>
+> *"schema_version 1.0.6 is NEWER than this loader supports (1.0.5). It may
+> carry fields or semantics this loader would silently drop — update
+> HexMap/HexData to the new schema (and the golden fixture) instead of loading
+> blind. Refusing to load."*
+>
+> Older-but-compatible files still load (the history is additive-only) and log
+> info. So the asymmetry is deliberate: shipping an OLD artifact to a NEW loader
+> is safe; shipping a NEW artifact to an OLD loader **refuses to boot the map.**
+>
+> Consequence for anyone bumping the version here: **an artifact at a new schema
+> version cannot be delivered by copying it into `StreamingAssets`.** It is a
+> migration in one commit on the Unity side — raise `SupportedSchemaVersion`,
+> extend `HexData`, update the golden fixture, then copy. That work is owned by
+> the seat that owns `Assets/Scripts/Map/*`, not by this pipeline.
 
 ## Top-Level Document
 
