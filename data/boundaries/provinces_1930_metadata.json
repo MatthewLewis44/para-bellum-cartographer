@@ -1,7 +1,7 @@
 {
- "version": "0.3-sprint7-backfill",
+ "version": "0.3-passA-frames",
  "era": "1930",
- "source_note": "Hand-curated capitals/sub-capitals over NE-admin-1-derived 1930-stopgap province polygons (AD-023/AD-027, public domain). Review pending. | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 7: CHE/ITA/eastern-FRA backfill (NE admin-1 stopgap).",
+ "source_note": "Hand-curated capitals/sub-capitals over NE-admin-1-derived 1930-stopgap province polygons (AD-023/AD-027, public domain). Review pending. | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 6 (AD-035): DEU replaced with real 1930 boundaries + POL/CSK/AUT/SAA/DZG added from OpenHistoricalMap (CC0). | Sprint 7: CHE/ITA/eastern-FRA backfill (NE admin-1 stopgap). | Pass A (AD-037): DNK/HUN/LTU/LVA/ROU/SOV/SWE/YUG added. DNK from OpenHistoricalMap amt relations grouped into landsdele; LTU_KLAIPEDA from the OHM Memelland Kreise; the rest from Natural Earth admin-1 unions clipped to the 1930 country polygons (modern internal lines, 1930 external lines — AD-027 stopgap). HUN is authored at the COUNTY tier by Matthew's direct direction (2026-08-26, AD-037); every other frame nation is grouped to the density band the shipped map uses. LVA, SWE, YUG and SOV are FRAME-SCOPED: only the block inside the east-expansion bbox is authored. | Cropped-province seat rule (AD-037) applied to every nation: provinces whose declared 1930 capital falls outside the map frame carry an in-frame sub-capital so they are not silently zero-yield.",
  "provinces": [
   {
    "province_id": "BEL_ANTWERP",
@@ -295,6 +295,10 @@
     {
      "city_name": "Sneek",
      "rationale": "waterways"
+    },
+    {
+     "city_name": "Heerenveen",
+     "rationale": "cropped-frame seat (AD-037): the declared 1930 capital Leeuwarden lies outside the map frame, so this is the highest-weight settlement inside it and carries the seat yield. The capital entry is unchanged and designates itself if the frame ever widens to include Leeuwarden."
     }
    ]
   },
@@ -1855,7 +1859,12 @@
    "capital": {
     "city_name": "Annecy"
    },
-   "sub_capitals": []
+   "sub_capitals": [
+    {
+     "city_name": "Thonon-les-Bains",
+     "rationale": "cropped-frame seat (AD-037): the declared 1930 capital Annecy lies outside the map frame, so this is the highest-weight settlement inside it and carries the seat yield. The capital entry is unchanged and designates itself if the frame ever widens to include Annecy."
+    }
+   ]
   },
   {
    "province_id": "FRA_HAUT_RHIN",
@@ -2009,6 +2018,936 @@
     {
      "city_name": "Bolzano",
      "rationale": "Alto Adige centre"
+    }
+   ]
+  },
+  {
+   "province_id": "DNK_BORNHOLM",
+   "name": "Bornholm",
+   "country": "DNK",
+   "capital": {
+    "city_name": "Rønne"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Nexø",
+     "rationale": "eastern harbour"
+    }
+   ]
+  },
+  {
+   "province_id": "DNK_FYN",
+   "name": "Fyn",
+   "country": "DNK",
+   "capital": {
+    "city_name": "Odense"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Svendborg",
+     "rationale": "southern Funen port"
+    }
+   ]
+  },
+  {
+   "province_id": "DNK_LOLLAND_FALSTER",
+   "name": "Lolland-Falster",
+   "country": "DNK",
+   "capital": {
+    "city_name": "Nykøbing Falster"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Nakskov",
+     "rationale": "Lolland shipyard town"
+    }
+   ]
+  },
+  {
+   "province_id": "DNK_NORDJYLLAND",
+   "name": "Nordjylland",
+   "country": "DNK",
+   "capital": {
+    "city_name": "Aalborg"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Viborg",
+     "rationale": "stiftsstad and rail junction"
+    },
+    {
+     "city_name": "Hjørring",
+     "rationale": "northern amt seat"
+    }
+   ]
+  },
+  {
+   "province_id": "DNK_OSTJYLLAND",
+   "name": "Østjylland",
+   "country": "DNK",
+   "capital": {
+    "city_name": "Århus"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Randers",
+     "rationale": "amt seat, Gudenå crossing"
+    },
+    {
+     "city_name": "Horsens",
+     "rationale": "in-frame industrial town — carries the seat yield south of the 56°N frame edge"
+    }
+   ]
+  },
+  {
+   "province_id": "DNK_SJAELLAND",
+   "name": "Sjælland",
+   "country": "DNK",
+   "capital": {
+    "city_name": "København"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Roskilde",
+     "rationale": "cathedral city, rail junction"
+    },
+    {
+     "city_name": "Helsingør",
+     "rationale": "Øresund crossing"
+    },
+    {
+     "city_name": "Slagelse",
+     "rationale": "west Zealand market town"
+    },
+    {
+     "city_name": "Næstved",
+     "rationale": "south Zealand market town"
+    }
+   ]
+  },
+  {
+   "province_id": "DNK_SYDJYLLAND",
+   "name": "Sydjylland",
+   "country": "DNK",
+   "capital": {
+    "city_name": "Vejle"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Kolding",
+     "rationale": "Lillebælt rail crossing"
+    },
+    {
+     "city_name": "Haderslev",
+     "rationale": "principal town of the 1920 Sønderjylland amter"
+    }
+   ]
+  },
+  {
+   "province_id": "DNK_VESTJYLLAND",
+   "name": "Vestjylland",
+   "country": "DNK",
+   "capital": {
+    "city_name": "Ribe"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Esbjerg",
+     "rationale": "North Sea port, largest town of the group"
+    },
+    {
+     "city_name": "Varde",
+     "rationale": "amt market town"
+    },
+    {
+     "city_name": "Herning",
+     "rationale": "Jutland heath rail hub"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_BACS_KISKUN",
+   "name": "Bács-Kiskun",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Kecskemét"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Kiskunhalas",
+     "rationale": "Kiskunság market town"
+    },
+    {
+     "city_name": "Kiskunfélegyháza",
+     "rationale": "rail junction"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_BARANYA",
+   "name": "Baranya",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Pécs"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Mohács",
+     "rationale": "Danube crossing"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_BEKES",
+   "name": "Békés",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Békéscsaba"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Gyula",
+     "rationale": "county seat until 1950"
+    },
+    {
+     "city_name": "Orosháza",
+     "rationale": "Alföld market town"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_BORSOD",
+   "name": "Borsod-Abaúj-Zemplén",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Miskolc"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Ózd",
+     "rationale": "ironworks"
+    },
+    {
+     "city_name": "Sátoraljaújhely",
+     "rationale": "Zemplén seat"
+    },
+    {
+     "city_name": "Kazincbarcika",
+     "rationale": "Sajó valley coal"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_CSONGRAD",
+   "name": "Csongrád",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Szeged"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Hódmezővásárhely",
+     "rationale": "Alföld market town"
+    },
+    {
+     "city_name": "Szentes",
+     "rationale": "Tisza crossing"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_FEJER",
+   "name": "Fejér",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Székesfehérvár"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Dunaújváros",
+     "rationale": "Danube crossing",
+     "match_names": [
+      "Dunapentele"
+     ]
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_GYOR_MOSON_SOPRON",
+   "name": "Győr-Moson-Sopron",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Győr"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Sopron",
+     "rationale": "1930 county seat of Sopron"
+    },
+    {
+     "city_name": "Mosonmagyaróvár",
+     "rationale": "Moson seat"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_HAJDU_BIHAR",
+   "name": "Hajdú-Bihar",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Debrecen"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Hajdúböszörmény",
+     "rationale": "hajdú town"
+    },
+    {
+     "city_name": "Hajdúszoboszló",
+     "rationale": "rail junction"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_HEVES",
+   "name": "Heves",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Eger"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Gyöngyös",
+     "rationale": "Mátra market town"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_JASZ_NAGYKUN_SZOLNOK",
+   "name": "Jász-Nagykun-Szolnok",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Szolnok"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Jászberény",
+     "rationale": "Jászság seat"
+    },
+    {
+     "city_name": "Karcag",
+     "rationale": "Nagykunság seat"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_KOMAROM_ESZTERGOM",
+   "name": "Komárom-Esztergom",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Esztergom"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Tatabánya",
+     "rationale": "brown-coal basin"
+    },
+    {
+     "city_name": "Tata",
+     "rationale": "market town"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_NOGRAD",
+   "name": "Nógrád",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Balassagyarmat"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Salgótarján",
+     "rationale": "coal and steel — carries the seat yield if the county seat does not tag"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_PEST",
+   "name": "Pest-Pilis-Solt",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Budapest"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Vác",
+     "rationale": "Danube rail crossing"
+    },
+    {
+     "city_name": "Cegléd",
+     "rationale": "Alföld rail junction"
+    },
+    {
+     "city_name": "Gödöllő",
+     "rationale": "royal seat"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_SOMOGY",
+   "name": "Somogy",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Kaposvár"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Siófok",
+     "rationale": "Balaton rail head"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_SZABOLCS",
+   "name": "Szabolcs-Szatmár",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Nyíregyháza"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Mátészalka",
+     "rationale": "Szatmár rail junction"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_TOLNA",
+   "name": "Tolna",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Szekszárd"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Dombóvár",
+     "rationale": "rail junction"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_VAS",
+   "name": "Vas",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Szombathely"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Sárvár",
+     "rationale": "Rába crossing"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_VESZPREM",
+   "name": "Veszprém",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Veszprém"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Pápa",
+     "rationale": "market town"
+    },
+    {
+     "city_name": "Ajka",
+     "rationale": "Bakony coal"
+    }
+   ]
+  },
+  {
+   "province_id": "HUN_ZALA",
+   "name": "Zala",
+   "country": "HUN",
+   "capital": {
+    "city_name": "Zalaegerszeg"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Nagykanizsa",
+     "rationale": "southern rail junction"
+    }
+   ]
+  },
+  {
+   "province_id": "LTU_AUKSTAITIJA",
+   "name": "Aukštaitija",
+   "country": "LTU",
+   "capital": {
+    "city_name": "Kaunas"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Panevėžys",
+     "rationale": "northern rail junction"
+    },
+    {
+     "city_name": "Utena",
+     "rationale": "eastern market town"
+    },
+    {
+     "city_name": "Ukmergė",
+     "rationale": "Šventoji crossing"
+    }
+   ]
+  },
+  {
+   "province_id": "LTU_DZUKIJA",
+   "name": "Dzūkija",
+   "country": "LTU",
+   "capital": {
+    "city_name": "Alytus"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Druskininkai",
+     "rationale": "Nemunas spa town"
+    }
+   ]
+  },
+  {
+   "province_id": "LTU_KLAIPEDA",
+   "name": "Klaipėdos kraštas",
+   "country": "LTU",
+   "capital": {
+    "city_name": "Klaipėda",
+    "match_names": [
+     "Memel"
+    ]
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Šilutė",
+     "rationale": "Nemunas delta market town",
+     "match_names": [
+      "Heydekrug"
+     ]
+    },
+    {
+     "city_name": "Pagėgiai",
+     "rationale": "border rail crossing",
+     "match_names": [
+      "Pogegen"
+     ]
+    }
+   ]
+  },
+  {
+   "province_id": "LTU_SUVALKIJA",
+   "name": "Suvalkija",
+   "country": "LTU",
+   "capital": {
+    "city_name": "Marijampolė"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Vilkaviškis",
+     "rationale": "border market town"
+    }
+   ]
+  },
+  {
+   "province_id": "LTU_ZEMAITIJA",
+   "name": "Žemaitija",
+   "country": "LTU",
+   "capital": {
+    "city_name": "Telšiai"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Šiauliai",
+     "rationale": "rail junction and leather works"
+    },
+    {
+     "city_name": "Tauragė",
+     "rationale": "Prussian border town"
+    },
+    {
+     "city_name": "Plungė",
+     "rationale": "market town"
+    }
+   ]
+  },
+  {
+   "province_id": "LVA_LATGALE",
+   "name": "Latgale",
+   "country": "LVA",
+   "capital": {
+    "city_name": "Daugavpils"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Rēzekne",
+     "rationale": "Latgale rail junction"
+    },
+    {
+     "city_name": "Krāslava",
+     "rationale": "Daugava crossing"
+    }
+   ]
+  },
+  {
+   "province_id": "ROU_BANAT",
+   "name": "Banat",
+   "country": "ROU",
+   "capital": {
+    "city_name": "Timișoara"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Reșița",
+     "rationale": "ironworks and rolling mills"
+    }
+   ]
+  },
+  {
+   "province_id": "ROU_BASARABIA",
+   "name": "Basarabia",
+   "country": "ROU",
+   "capital": {
+    "city_name": "Chișinău"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Bălți",
+     "rationale": "northern seat"
+    },
+    {
+     "city_name": "Tighina",
+     "rationale": "Dniester crossing"
+    }
+   ]
+  },
+  {
+   "province_id": "ROU_BUCOVINA",
+   "name": "Bucovina",
+   "country": "ROU",
+   "capital": {
+    "city_name": "Cernăuți",
+    "match_names": [
+     "Чернівці",
+     "Chernivtsi"
+    ]
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Suceava",
+     "rationale": "southern Bucovina seat"
+    },
+    {
+     "city_name": "Rădăuți",
+     "rationale": "market town"
+    },
+    {
+     "city_name": "Câmpulung Moldovenesc",
+     "rationale": "Carpathian timber"
+    }
+   ]
+  },
+  {
+   "province_id": "ROU_CRISANA",
+   "name": "Crișana",
+   "country": "ROU",
+   "capital": {
+    "city_name": "Oradea"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Arad",
+     "rationale": "rail and machine works"
+    },
+    {
+     "city_name": "Salonta",
+     "rationale": "border market town"
+    }
+   ]
+  },
+  {
+   "province_id": "ROU_DOBROGEA",
+   "name": "Dobrogea",
+   "country": "ROU",
+   "capital": {
+    "city_name": "Constanța"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Tulcea",
+     "rationale": "Danube delta"
+    }
+   ]
+  },
+  {
+   "province_id": "ROU_MARAMURES",
+   "name": "Maramureș",
+   "country": "ROU",
+   "capital": {
+    "city_name": "Baia Mare"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Satu Mare",
+     "rationale": "Someș rail junction"
+    },
+    {
+     "city_name": "Sighetu Marmației",
+     "rationale": "Tisza crossing"
+    }
+   ]
+  },
+  {
+   "province_id": "ROU_MOLDOVA",
+   "name": "Moldova",
+   "country": "ROU",
+   "capital": {
+    "city_name": "Iași"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Botoșani",
+     "rationale": "in-frame northern seat — carries the seat yield west of the 26.9°E frame edge"
+    },
+    {
+     "city_name": "Piatra-Neamț",
+     "rationale": "Bistrița valley"
+    },
+    {
+     "city_name": "Bacău",
+     "rationale": "oil-field rail head"
+    }
+   ]
+  },
+  {
+   "province_id": "ROU_MUNTENIA",
+   "name": "Muntenia",
+   "country": "ROU",
+   "capital": {
+    "city_name": "București"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Ploiești",
+     "rationale": "the refineries"
+    },
+    {
+     "city_name": "Brăila",
+     "rationale": "Danube grain port"
+    }
+   ]
+  },
+  {
+   "province_id": "ROU_OLTENIA",
+   "name": "Oltenia",
+   "country": "ROU",
+   "capital": {
+    "city_name": "Craiova"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Turnu Severin",
+     "rationale": "Iron Gates"
+    }
+   ]
+  },
+  {
+   "province_id": "ROU_TRANSILVANIA",
+   "name": "Transilvania",
+   "country": "ROU",
+   "capital": {
+    "city_name": "Cluj",
+    "match_names": [
+     "Cluj-Napoca"
+    ]
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Târgu Mureș",
+     "rationale": "Székely Land seat"
+    },
+    {
+     "city_name": "Sibiu",
+     "rationale": "Saxon seat"
+    },
+    {
+     "city_name": "Brașov",
+     "rationale": "industry and Carpathian pass"
+    },
+    {
+     "city_name": "Alba Iulia",
+     "rationale": "1918 union seat"
+    },
+    {
+     "city_name": "Turda",
+     "rationale": "salt and chemicals"
+    }
+   ]
+  },
+  {
+   "province_id": "SOV_PODOLIA",
+   "name": "Podolia",
+   "country": "SOV",
+   "capital": {
+    "city_name": "Kam'ianets-Podilskyi",
+    "match_names": [
+     "Кам'янець-Подільський"
+    ]
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Slavuta",
+     "rationale": "northern rail town",
+     "match_names": [
+      "Славута"
+     ]
+    },
+    {
+     "city_name": "Shepetivka",
+     "rationale": "1930 okruha seat",
+     "match_names": [
+      "Шепетівка"
+     ]
+    }
+   ]
+  },
+  {
+   "province_id": "SWE_BLEKINGE",
+   "name": "Blekinge",
+   "country": "SWE",
+   "capital": {
+    "city_name": "Karlskrona"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Karlshamn",
+     "rationale": "Baltic port"
+    }
+   ]
+  },
+  {
+   "province_id": "SWE_HALLAND",
+   "name": "Halland",
+   "country": "SWE",
+   "capital": {
+    "city_name": "Halmstad"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Varberg",
+     "rationale": "Kattegat port"
+    }
+   ]
+  },
+  {
+   "province_id": "SWE_SKANE",
+   "name": "Skåne",
+   "country": "SWE",
+   "capital": {
+    "city_name": "Malmö"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Lund",
+     "rationale": "university and rail junction"
+    },
+    {
+     "city_name": "Helsingborg",
+     "rationale": "Øresund crossing"
+    },
+    {
+     "city_name": "Kristianstad",
+     "rationale": "eastern län seat"
+    }
+   ]
+  },
+  {
+   "province_id": "SWE_SMALAND",
+   "name": "Småland",
+   "country": "SWE",
+   "capital": {
+    "city_name": "Jönköping"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Växjö",
+     "rationale": "Kronoberg seat"
+    },
+    {
+     "city_name": "Kalmar",
+     "rationale": "Baltic port"
+    }
+   ]
+  },
+  {
+   "province_id": "YUG_DRAVSKA",
+   "name": "Dravska banovina",
+   "country": "YUG",
+   "capital": {
+    "city_name": "Ljubljana"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Maribor",
+     "rationale": "Drava industry — carries the seat yield south of the 46.3°N frame edge"
+    },
+    {
+     "city_name": "Celje",
+     "rationale": "Savinja valley"
+    },
+    {
+     "city_name": "Ptuj",
+     "rationale": "Drava crossing"
+    }
+   ]
+  },
+  {
+   "province_id": "YUG_PRIMORSKA",
+   "name": "Primorska banovina",
+   "country": "YUG",
+   "capital": {
+    "city_name": "Split"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Sušak",
+     "rationale": "Rijeka's Yugoslav half"
+    },
+    {
+     "city_name": "Dubrovnik",
+     "rationale": "southern port"
+    }
+   ]
+  },
+  {
+   "province_id": "YUG_SAVSKA",
+   "name": "Savska banovina",
+   "country": "YUG",
+   "capital": {
+    "city_name": "Zagreb"
+   },
+   "sub_capitals": [
+    {
+     "city_name": "Varaždin",
+     "rationale": "in-frame Drava town — carries the seat yield"
+    },
+    {
+     "city_name": "Karlovac",
+     "rationale": "Kupa crossing"
+    },
+    {
+     "city_name": "Bjelovar",
+     "rationale": "Podravina market town"
     }
    ]
   }
