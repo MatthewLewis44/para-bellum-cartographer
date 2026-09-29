@@ -1,506 +1,67 @@
 # Para Bellum Cartography Pipeline
 
-Python pipeline producing hex JSON for **Para Bellum**, a WW2 grand strategy game
-(Unity 6). Forked from the upstream "wargame-cartographer" map renderer — the
-renderer (PNG/PDF/HTML) is kept for debug/QA; the **JSON output is the product**.
+Python pipeline producing hex JSON for **Para Bellum**, a WW2 grand strategy game (Unity 6). Forked
+from the upstream "wargame-cartographer" map renderer — the renderer (PNG/PDF/HTML) is kept for
+debug and QA; **the JSON output is the product**.
 
-## Quick Start
+**This repository is public.** Technical documentation belongs here. Planning, commercial and
+process material does not, and never has.
+
+Keep this file short: area-specific conventions live in the `CLAUDE.md` of the directory they
+govern, which loads only when Claude works there.
+
+| Working on | Read |
+|---|---|
+| The sampler, the passes, streaming, module layout | `src/wargame_cartographer/CLAUDE.md` |
+| Which config to run and what each costs | `configs/CLAUDE.md` |
+| Decision records (AD-NNN) | `PARA_BELLUM_DECISIONS.md` |
+| The schema the Unity loader consumes | `docs/hex-schema.md` |
+| Sprint-by-sprint history | `docs/pipeline-change-log.md` |
+| Streaming design and as-built | `docs/streaming-pipeline-design.md` |
+
+## Quick start
 
 ```bash
-uv run wargame-map generate configs/para_bellum_belgium_test.yaml   # run pipeline
+uv run wargame-map generate configs/para_bellum_belgium_test.yaml   # run the pipeline
 uv run python inspect_output.py                                     # general inspection
 uv run python check_settlements.py                                  # settlement validation
 ```
 
 - **All Python execution uses `uv run`** — never plain `python`.
-- **Windows console**: set `PYTHONIOENCODING=utf-8` before running, or rich's
-  spinner glyphs crash on the legacy cp1252 console at the end of the run.
+- **Windows console**: set `PYTHONIOENCODING=utf-8` first, or rich's spinner glyphs crash on the
+  legacy cp1252 console at the end of a run.
 
-## Pipeline-to-Unity Contract
+## The contract with Unity
 
-`output/<name>_hex_terrain.json` is a **versioned schema** consumed by the Unity 6
-C# loader (separate repo). Current version: see `SCHEMA_VERSION` in
-`output/game_data_exporter.py`. Bump it on ANY field add/remove/rename and
-coordinate with the Unity loader. Full schema doc: `docs/hex-schema.md`.
+`output/<name>_hex_terrain.json` is a **versioned schema** consumed by the Unity 6 C# loader in a
+separate repository. The version constant is `SCHEMA_VERSION` in `output/game_data_exporter.py`.
 
-## Hex Grid Convention
+**Bump it on any field add, remove or rename, and coordinate with the Unity loader in the same
+change.** The loader's guard is directional: an artifact **newer** than the loader is rejected
+loudly, while an **older** one loads with silent defaults. That asymmetry is why a schema change
+ships as one coordinated pair, artifact first when the artifact is already staged. The `schema-bump`
+skill has the procedure.
 
-- **Flat-top** hexes (changed from pointy-top in Sprint 1.5); JSON
-  `grid.offset = "odd_q"` (AD-012). **Exact since Sprint 6 (AD-034):** the
-  grid normalizes `q_min` to odd, so **odd JSON `col` ⇔ column shifted +half
-  a row north** on every artifact (pre-Sprint-6 the shifted parity varied per
-  bbox; Benelux cols renumbered +1 when this landed). ONE neighbor
-  implementation exists: `grid.HexGrid.neighbors` backed by
-  `OFFSET_NEIGHBOR_DELTAS` (import that — never re-derive deltas); gate:
+Changes are **additive only**. The schema's history has no removals or renames after the fact.
+
+## Hex grid convention
+
+- **Flat-top** hexes, JSON `grid.offset = "odd_q"` (AD-012). Since Sprint 6 (AD-034) the grid
+  normalises `q_min` to odd, so an **odd JSON `col` is shifted half a row north** on every artifact.
+- **One neighbour implementation exists**: `grid.HexGrid.neighbors`, backed by
+  `OFFSET_NEIGHBOR_DELTAS`. Import it; never re-derive the deltas. Gate:
   `uv run python tests/test_neighbor_consistency.py`.
-- Offset coords `(col, row)`, 1-based; axial `(q, r)` used internally only
-- **`hex_size_km: 10` = FLAT-TO-FLAT distance** (edge-to-edge, AD-013).
-  `HexGrid.hex_flat_to_flat_m = size·1000`; `hex_radius_m` (circumradius) =
-  `flat_to_flat / √3 ≈ 5773.5 m`; area ≈ 86.6 km². (Pre-Sprint 3 this was
-  misread as circumradius → ~3× too few hexes. Corrected in AD-013.)
-  Belgium bbox → 775 hexes, Benelux+DE bbox → 2,479. Unit tests:
-  `uv run python tests/test_hex_geometry.py`. The grid generator samples all
-  four bbox edges for its projected extent (not just two corners) so wide
-  bboxes are fully tiled — a 2-corner extent left an uncovered SE wedge that
-  dropped Frankfurt once AD-013 shrank the padding.
-- Hex ID = delimited `{col}_{row}` (`"17_103"`; v1.0.5, AD-031 — the packed
-  CCCRR format overflowed at rows ≥ 100). Display/debug only; consumers key
-  on `coords`. Export order: numeric by (col, row).
-- Grid layout: col spacing `1.5·r`, row spacing `√3·r` (r = circumradius),
-  odd columns shifted north half a row — a proper tessellation, so
-  *containing hex = nearest center* (`sampler._point_to_hex`, O(1) lookup)
+- Offset coords `(col, row)`, 1-based; axial `(q, r)` internal only.
+- **`hex_size_km: 10` is the flat-to-flat distance** (AD-013), so the circumradius is
+  `10/√3 ≈ 5.7735 km` and a hex covers ≈ 86.6 km². Belgium bbox → 775 hexes, Benelux + DE → 2,479.
+  Gate: `uv run python tests/test_hex_geometry.py`.
+- Hex id is the delimited `"{col}_{row}"` form (v1.0.5, AD-031). **Display and debug only —
+  consumers key on `coords`.** Export order is numeric by `(col, row)`.
+- **`col`/`row` start at their bbox-dependent minimum**, not at 1. Unity keys off
+  `grid.col_min` / `grid.row_min` and must never assume 1.
 
-## Architecture
+## Scale and discipline
 
-```
-src/wargame_cartographer/
-├── pipeline.py            — orchestrator: spec → data → grid → sample → render → export
-├── cli.py                 — Click CLI (generate, quick, ...)
-├── config/map_spec.py     — Pydantic MapSpec + BoundingBox (YAML loader)
-├── geo/
-│   ├── downloader.py      — Natural Earth + ports (upstream; ports Overpass query
-│   │                        currently failing with HTTP 406 — known issue)
-│   ├── osm_downloader.py  — Para Bellum OSM layers: landuse/settlements/roads/
-│   │                        rail/waterways/bridges. Cached as .gpkg keyed by
-│   │                        bbox hash at ~/wargame-cartographer/cache/osm_pb/
-│   │                        (30-day TTL). NOTE: cache key ignores query content —
-│   │                        clear cache manually after changing a query.
-│   ├── elevation.py       — SRTM download + hillshade + slope
-│   └── projection.py      — UTM CRS auto-selection from bbox
-├── hex/
-│   ├── grid.py            — HexGrid (flat-top, axial coords, projected CRS)
-│   │                        + OFFSET_NEIGHBOR_DELTAS, THE single adjacency
-│   │                        convention (AD-034; coords.py deleted Sprint 6)
-│   └── sampler.py         — ★ ALL per-hex tagging happens here (HexSampler)
-├── terrain/
-│   ├── types.py           — Biome enum (24), ElevationTier, Vegetation, Moisture
-│   └── classifier.py      — BiomeClassifier (elevation+slope+landuse+settlement)
-├── infrastructure/types.py — RoadLevel, RailLevel, SettlementType, Anthrome,
-│                             FortificationLevel enums + population bands
-├── rendering/             — upstream debug renderer (biomes mapped to 8 legacy
-│                             terrain types via shim in pipeline.py — visual only)
-└── output/
-    ├── game_data_exporter.py — ★ the Unity JSON contract (SCHEMA_VERSION here)
-    ├── html_exporter.py      — Folium debug viewer
-    └── static_exporter.py    — PNG/PDF
-```
-
-Validation scripts live in the project root: `inspect_output.py`,
-`check_settlements.py`.
-
-## Sampling Flow (sampler.build_hex_terrain)
-
-1. Water detection (Natural Earth land polygons)
-2. Elevation + slope (SRTM, 90th-percentile slope per hex)
-3. Landuse (OSM polygons, point-in-polygon at hex center)
-4. Settlement (precomputed settlement→hex assignment, see below)
-5. Biome classification, vegetation, moisture
-6. Road/rail level (best class intersecting WGS84 hex polygon)
-7. Rivers (AD-026 node model): `has_river` + `river_name` (a selected river
-   ∩ the hex polygon) from the **AD-029 selected set** — Natural Earth
-   `scalerank` rivers (`river_scalerank_max`, default 8) + OSM major canals
-   (`geo/rivers_global.py`); `river_edges` retained as a render-direction hint;
-   bridges, ports
-8. Country + province at start (1930 boundaries / provinces, point-in-polygon)
-9. Global reconcile passes: coastal flag (water-hex adjacency), urban sprawl
-   (AD-014), `admin_tier` capital/sub_capital (AD-023/027)
-
-### Settlement assignment rules (Sprint 2)
-
-One pass over settlement nodes (`_assign_settlements_to_hexes`), each assigned
-to its containing hex, **most significant wins** per hex. Type resolved from
-population bands when population is known (OSM place tags are noisy), from the
-place tag otherwise: >300k metropolis, ≥50k city, ≥2k town. Significance floor
-at 10 km hexes: city+ always tags, towns only at pop ≥ 20k, villages never tag
-(they remain visible via landuse/anthrome). Belgium test: 114 tagged / 775 hexes
-(post-AD-013).
-
-### Multi-hex urban sprawl (Sprint 3, AD-014)
-
-`_assign_urban_sprawl` (third sampler pass) grows a footprint around each
-city/metropolis **node** (no OSM boundary relations — empirically `place=city`
-relations are too sparse and `admin_level=8` fragments Brussels into 19
-communes). Footprint = contiguous BFS through hexes within a population-scaled
-radius (metropolis 14 km / large city 11 km / city 8 km) that are either
-built-up (urban biome or residential/industrial landuse) **or** open
-developable land (plains/steppe) within 11 km of the centroid — the latter
-captures a major city's peri-urban fringe whose 10 km hex centers fall on green
-belt, while forest/water/wetland are never absorbed. Nearest centroid wins on
-overlap (so the Ruhr cities tile their gap). Ring hexes become `settlement.type
-= suburb` with `parent_city`; anthrome per the AD-014 distance+landuse table,
-resolved in order: **industrial landuse → `industrial` at any distance** (a
-port/factory core like Antwerp/Duisburg is an industrial map per AD-015, not a
-city-centre map), else <3 km → `metro`, else residential → `residential`, else
-`outskirts`. Reuses settlements + landuse already sampled; O(seeds × footprint).
-Validation: `uv run python check_urban_sprawl.py`.
-
-## Performance Discipline
-
-Target scale is **~100,000 hexes** (full Europe). Anything O(hexes × features)
-is a bug — precompute feature→hex assignments or use spatial indexes. The
-settlement scan was rewritten for exactly this reason (was 280×5,243 distance
-calls; now one O(settlements) pass).
-
-## Streaming / tiled pipeline (Sprint 4, AD-024/025)
-
-`streaming.run_streaming_pipeline(spec)` processes any bbox at **< 4 GB/tile,
-< 6 GB global** (monolithic Benelux peaked 30.4 GB). Run it via
-`uv run python run_streaming.py configs/<spec>.yaml`. Output is **hex-for-hex
-identical** to the monolithic pipeline (verified by `compare_hex_outputs.py`) —
-the per-hex pass-1 body and the global coastal/sprawl passes are the SAME code
-(`hex/sampler.py`); only the *data feeding* pass-1 is tiled.
-
-- **GLOBAL once**: grid, boundaries, resources, settlement→hex, AD-029 river
-  selection (`geo/rivers_global.py`: Natural Earth `scalerank` rivers + OSM
-  major canals, the canals streamed two-pass over parts).
-- **PER ~1° TILE**: landuse/roads/rails/bridges read from the cached sub-bbox
-  **part** gpkgs with a `bbox(+0.2° margin)` pyogrio filter (never merging the
-  full layer — `OSMDownloader.ensure_parts`/`part_descriptors`/`merge=False`);
-  NE land/lakes clipped to tile+margin; elevation a **windowed read of the full
-  DEM** (`ElevationProcessor.get_elevation_window`) for identical pixels (or a
-  per-tile merge for Europe-scale bboxes). Sample only the tile's hexes
-  (`build_hex_terrain(hex_keys=…, precomputed=…, run_global_passes=False)`),
-  pickle the tile, discard.
-- **MERGE**: assemble tiles in `grid.cells` order, run coastal + sprawl
-  globally (`geo/urban_global.apply_global_passes`), export.
-- Tiles cached/resumable (`STREAMING_VERSION`-stamped pickles); per-tile and
-  global RAM enforced (`memory.working_set_mb`, fail-loud over budget).
-- Design + as-built: `docs/streaming-pipeline-design.md`. Why elevation isn't
-  cleanly tile-local (and the windowed-DEM fix) is the key subtlety.
-- **Monolithic path is unchanged** and kept for fast Belgium iteration; both
-  share the pass code, which is what makes the streaming output identical.
-
-## Configs
-
-- `configs/para_bellum_belgium_test.yaml` — 775 hexes (post-AD-013),
-  fully cached, ~75 s warm. Use for fast iteration.
-- `configs/para_bellum_benelux_germany_test.yaml` — Sprint 2 target region
-  (Benelux + Western Germany, 2.5–8.8°E / 49.4–53.6°N), 2,479 hexes.
-  First run fetches OSM via 6 sub-bbox queries (AD-008) + 35 SRTM tiles
-  (~30 min cold, ~3.3 min warm; monolithic peak RAM ~30 GB, streaming
-  657 MB/tile). Gate: `uv run python validate_full_bbox.py`.
-- `configs/para_bellum_wceurope_test.yaml` — Sprint 4 streaming scale test
-  (W+C Europe, 5–15°E / 45–54°N), 8,607 hexes / 130 tiles. **Streaming only**
-  (`uv run python run_streaming.py …`) — monolithic can't run it. Validated
-  742 MB/tile, 492 MB global; ~4 h cold (Overpass-fetch-bound), ~13 min warm
-  re-tile. Since Sprint 6 (AD-035) the full 1930 boundary set applies
-  (CSK/SAA/YUG etc. now framed; the eastern strip is 1930-DEU).
-- `configs/para_bellum_east_expansion.yaml` — Sprint 6 eastward expansion
-  (5.8–26.9°E / 46.3–56°N, ~19k hexes / ~205 tiles): Germany in full 1930
-  extent + Poland + Czechoslovakia + Austria (AD-035). **Streaming only.**
-  Gate: `uv run python validate_full_bbox.py configs/para_bellum_east_expansion.yaml`.
-
-## Architecture Decisions & Change Log
-
-Decision records live in `PARA_BELLUM_DECISIONS.md` (AD-NNN). Sprint-level
-changes tracked here:
-
-### Pass A (August 2026)
-
-- **Provinces for the eight frame nations (AD-037).** DNK/HUN/LTU/LVA/ROU/SOV/
-  SWE/YUG carried a `country_at_start` but an EMPTY `province_at_start` on all
-  3,105 of their land hexes, so `ProvinceIndex.Build` skipped them and they
-  produced nothing — no money, no manpower, and (because resource yield is a
-  per-PROVINCE walk, not a per-hex sweep) none of their 407 resource hexes
-  either. **138 → 189 provinces.** Builder:
-  `tools/build_provinces_1930_frames.py`, **append-only**, runs FOURTH in the
-  chain (west → east → backfill → frames).
-  - **Tier rule:** a province is the coarsest unit that is a genuine 1930 unit
-    or a genuine grouping of them, chosen to land in the density band the
-    shipped map uses. Never a cut-line. **HUNGARY IS A DELIBERATE EXCEPTION —
-    the genuine county tier, 19 provinces, directed by Matthew directly on
-    2026-08-26 against a recommendation to group it into the density band.
-    Density recorded as AUTHORED. Pass B must NOT normalise it, and must hold
-    it apart from CHE, whose density is drift rather than a decision.**
-  - **Provenance:** OHM has no 1930-valid relations for HUN/ROU/LTU/SWE/YUG/SOV
-    (probed). DNK comes from real OHM amt relations grouped into landsdele and
-    LTU_KLAIPEDA from the OHM Memelland Kreise (`era: 1930`); everything else is
-    a Natural Earth admin-1 union clipped to the 1930 country polygon
-    (`era: 1930-stopgap`, modern internal lines / 1930 external lines, the
-    AD-027 precedent). Recorded per feature in `notes`.
-  - **LVA/SWE/YUG/SOV are frame-scoped** — only the block inside the bbox is
-    authored. `validate_full_bbox.py` hard-fails if <98% of a metadata-listed
-    country's land hexes carry a province, so widening the bbox fails loudly.
-  - Watch out for two source traps if you extend this: Natural Earth punches
-    city-level units (Hungarian "Urban county", Croatian/Romanian "City")
-    OUT of their county as separate rows — union the counties alone and
-    sixteen Hungarian county capitals land outside their own province. And OHM
-    admin relations are land-only while the 1930 country polygons include
-    territorial waters, so "country minus the parts" must be intersected with
-    NE land first or it yields a blob of sea.
-- **Cropped-province seat rule (AD-037), applied to every nation.** A province
-  whose declared 1930 capital falls OUTSIDE the bbox gets the highest-weight
-  in-frame settlement as a **sub-capital** (never as a substitute capital — the
-  declared capital stays, and designates itself if the frame widens). Otherwise
-  a province like ITA_VENEZIA_TRIDENTINA holds Bolzano and 104 hexes and yields
-  nothing purely because Trento is south of the frame edge.
-  `tools/add_cropped_province_seats.py`, idempotent, reads the artifact.
-  Province metadata is deliberately NOT in `_input_data_hash` (it drives only
-  `admin_tier`, recomputed in the uncached merge pass), so re-running after it
-  reuses every cached tile.
-- **Schema v1.0.6 — `settlement.population` (AD-038).** The pipeline always read
-  a real population integer off each OSM node (it decides `settlement.type` and
-  the sprawl radius) and then discarded it at export. Now emitted **per hex**,
-  because the export format has no province-level record; the sim sums a
-  province's hexes. Population attaches to the settlement NODE: a city's count
-  sits on its own hex and its sprawl ring carries 0, EXCEPT where a ring hex is
-  a distinct named town with its own node (Lier, Herstal, Waterloo), which keeps
-  its own count. Every settlement is counted exactly once; `0` means "no node or
-  no population tag", so a province sum is a floor, not a census. **⚠ MODERN-DERIVED: 2020s OSM tags standing in for 1930
-  figures — materially wrong for the eastern territories, the Sudetenland,
-  Memel, Danzig and Bessarabia.** Labelled as such in `docs/hex-schema.md`.
-  `resources.industry_level` has identical provenance (it is just "2020s OSM
-  calls this hex an industrial estate", range {0,1}) and had NO documentation
-  at all — now labelled too, and flagged for retirement once Sprint 12 places
-  real facilities.
-- **AD-030 amendment: `merge=True` now fails loud too.** The monolithic fetch
-  path declined to CACHE a partial merge but still returned it, so the run
-  exported a map with a hole in a layer — silently wrong terrain that simply
-  was not cached. Both paths raise now. `tests/test_cache_integrity.py` is 12
-  checks.
-- **AD-039: the tile-cache key is normalized for line endings.** It hashed raw
-  file bytes, so with `core.autocrlf=true` a plain `git checkout` of an
-  UNCHANGED file flipped the key and invalidated all 242 cached tiles, and two
-  clones of the same commit computed different keys. Content-based now.
-- **The OSM cache TTL is a runtime lever, not a code edit.**
-
-  ```
-  PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS=120 uv run python run_streaming.py configs/...
-  ```
-
-  **Set this for ANY controlled regeneration.** The 30-day default is right for
-  "give me a current map" and wrong for "regenerate and diff", because an
-  expired part triggers a live refetch that mixes months of OSM churn into a run
-  whose only intended change was something else. This has bitten twice: Pre-
-  Sprint 9.0 worked around it by editing the constant, and **Pass A lost the
-  settlements snapshot the shipped eastern artifact was built from** before the
-  refetch could be stopped — the artifact is no longer byte-reproducible.
-  Measured consequence: 115 of 18,719 hexes (0.61%) differ in settlement
-  tagging, with landuse/roads/rail/bridges unaffected because those parts were
-  still cached. **There is no way back once a part is refetched; we do not
-  archive the cache.**
-- **Province-density audit** (`tools/province_density_audit.py`, measurement
-  only). Reports hexes/province per nation over WHOLE in-frame provinces, which
-  is the only comparable figure — a nation the bbox sliced understates badly.
-  **The result is DENOMINATOR-DEPENDENT and the tool reports both**, because
-  they disagree and a claim built on one must say which:
-  **A frame-referenced** (in-frame hexes / provinces the frame references —
-  what the GAME sees, i.e. building slots and capture units per unit area) gives
-  a CONTINUUM, 13.0–406.0, no break wider than 1.51x.
-  **B whole-province** (hexes in fully-framed provinces / count of those — the
-  AUTHORING TIER, undistorted by slicing) gives a BIMODAL split, an empty 2.25x
-  band between HUN 54.2 and AUT 121.9.
-  Both are true of the same data; under A the frame clipping smears the tiers
-  together. **What survives both: a ~31x spread, CHE at the dense extreme,
-  CSK at the coarse one.** The "two authoring tiers" reading is a claim about
-  AUTHORING, not about live economy — do not carry it into a yield argument
-  without naming the denominator. Medians are useless here (adding the eight
-  frame nations moved B's median 154 -> 54 with no existing nation changing).
-  Measurement only; normalisation is pass B's call, and HUN's position is
-  authored (see above), not drift.
-
-### Sprint 7 (July 2026)
-
-- **Province layer complete (AD-035 addendum):** no city-provinces — Berlin
-  merged into `DEU_BRANDENBURG` (its provincial capital; Potsdam → sub),
-  Wien-into-Niederösterreich ratified. `DEU_BERLIN` **removed**. Backfill
-  (`tools/build_provinces_1930_backfill.py`, runs third: west → east →
-  backfill) added 25 CHE cantons, 6 ITA compartimenti, 16 eastern-FRA
-  départements (NE admin-1 stopgap, `era:1930-stopgap`). **92 → 138
-  provinces / 138 capitals / 138 sub-capitals.** Countries still country-only:
-  HUN/LTU/LVA/DNK/SWE/ROU/YUG/SOV.
-- **Infrastructure deferral (AD-036) — policy:** `infrastructure.port` /
-  `airfield` / `fortification` are **authored construction-system scenario
-  data, NOT pipeline-detected.** They stay inert (`false`/`false`/`"none"`) —
-  those empty values are intentional, not defects. A mid-sprint attempt to
-  detect ports/airfields from OSM/OHM was retired as the wrong model (modern
-  facilities ≠ the 1930 starting network). The OSM port-detection path
-  (`get_ports`, `_overpass_to_gdf`, the vector/streaming fetch, the sampler
-  sniff) is **deleted**. Rule: pipeline work needs a consuming system that
-  exists or is in the current sprint. `anthrome="fortified"` is descriptive
-  land character (AD-015), independent of the (inert) fortification field.
-- **Gates:** an AD-036 inertness guard (port/airfield/fortification all inert)
-  added; Berlin→Brandenburg + CHE/ITA province spot-checks. Schema v1.0.5
-  UNCHANGED. `STREAMING_VERSION` s6.3 → s7.0 (province layer + port retirement;
-  province content-hash invalidates tiles). Unity handoff:
-  `docs/sprint7-unity-handoff.md` (DEU_BERLIN removed + 47 province ids added).
-
-### Sprint 6 (July 2026)
-
-- **P0-A fix bundle (one regeneration):** (1) neighbor-math reconciliation +
-  grid parity normalization (AD-034) — coords.py deleted, single
-  `grid.neighbors`/`OFFSET_NEIGHBOR_DELTAS` implementation, permanent gate
-  test; (2) slope computation corrected (AD-033) — the DEM is 1-arcsec, not
-  the assumed 90 m, so slopes were ~3–4.5× underread; now metric per-axis
-  with cos(lat), SRTM voids masked, wide-stencil 90 m terrain scale,
-  `SLOPE_HILL` restored 4°→8°. Belgium hill 66→146 hexes (Condroz/Ardennes),
-  Benelux +167 hill/+41 mountain (Eifel/Rhine gorge); (3) bridge/port radius
-  cos(lat)-corrected (+1 bridge Benelux; latent port unit bug fixed).
-- **Schema v1.0.5** (AD-031/032): hex id → delimited `{col}_{row}`; hexes
-  sorted numerically by (col,row); signed `elevation_m` (polders to −8 m,
-  IJsselmeer bed, Hambach pit −83 m; classifications unchanged).
-- **1930 eastern boundaries + provinces from OpenHistoricalMap, CC0
-  (AD-035):** boundaries_1930.geojson rebuilt — OHM Deutsches Reich
-  1922–1935 (full eastern extent), POL (Riga line), DZG, CSK, AUT-kept, HUN,
-  LTU, LVA, DNK, SWE, ROU, YUG, SOV-strip, **SAA** (Saar as separate League
-  territory — Benelux hexes flipped DEU→SAA). Provinces: DEU set replaced
-  with real 1930 lines (meridian-cut approximations retired), + 16 Polish
-  voivodeships, 4 CSK lands, 8 AUT Bundesländer (Wien merged into NÖ — no
-  OHM hole), DEU_BERLIN (from the Brandenburg hole), SAA_SAAR, DZG_DANZIG.
-  92 provinces / 92 capitals / 124 sub-capitals; `match_names` aliases for
-  renamed/Cyrillic places (Königsberg→Калининград). Builders:
-  `tools/build_boundaries_1930_east.py`, `tools/build_provinces_1930_east.py`
-  (fail-loud town-allegiance + area/coverage self-checks).
-- **Validation gates parameterized:** `validate_full_bbox.py` takes a config;
-  per-config expectation tables (Belgium/Benelux/wceurope/east) + shared
-  structural gates; elevation-plausibility gate; river connectivity via
-  `OFFSET_NEIGHBOR_DELTAS` (parity guessing removed).
-- **New config:** `configs/para_bellum_east_expansion.yaml` (5.8–26.9°E,
-  46.3–56°N, ~19k hexes, streaming only).
-- `STREAMING_VERSION` s6.0→s6.2. Unity coordination: v1.0.5 + Benelux col
-  renumbering + new country codes (SAA/DZG/POL/CSK/HUN/LTU/LVA/DNK/SWE/ROU/
-  YUG/SOV) must be accepted before this data ships.
-
-### Sprint 5 (June 2026)
-
-- **Schema v1.0.4 (PT-1, additive)**: new `rivers` block — `rivers.has_river`
-  (bool) + `rivers.river_name` (string). `terrain.river_edges` retained as a
-  rendering-direction hint only (AD-026).
-- **River node migration (P0-A, AD-026)**: rivers are now the hexes a river
-  *passes through* (`has_river` = a selected AD-029 river ∩ the hex polygon),
-  not edges. `river_name` = the river with the longest in-hex run. Computed in
-  the per-hex pass (`sampler._river_for_hex`) — the whole filtered set already
-  feeds every tile (AD-025), so it's seam-identical and consistent with
-  `river_edges`. Collapsed the old duplicate `_river_edges_for_hex`. Gate:
-  `check_rivers.py` (connectivity, majors, share). Belgium 130 river-hexes
-  (17.6 % land), 0 isolated.
-- **Provinces (P0-B, AD-023/AD-027)**: `data/boundaries/provinces_1930.geojson`
-  + `provinces_1930_metadata.json` (38 provinces, capitals + sub-capitals),
-  generated by `tools/build_provinces_1930.py` from NE admin-1 (public domain,
-  1930 stopgap): Belgian Brabant merged, NL Flevoland folded, German Prussian
-  provinces reconstructed (NRW/Hessen cut-lines), Saar separate. `geo/provinces.py`
-  — `load_provinces`/`assign_province` (per-hex PIP, AD-010 snap) +
-  `assign_admin_tiers` (global reconcile: capital/sub_capital matched to OSM
-  nodes by normalised whole-token name). `political.province_at_start` and
-  `settlement.admin_tier` now populated. Gate: `check_provinces.py` (in
-  `validate_full_bbox.py`). **Stopgap pending Matthew's historical review.**
-- **Boundary coverage (P0-C, AD-028)**: `boundaries_1930.geojson` extended with
-  CHE/AUT/ITA (`tools/extend_boundaries_1930.py`, append-only — existing 5
-  unchanged) so the Europe run no longer leaves Swiss/Austrian/N-Italian land
-  hexes country-less. No provinces for those three this sprint.
-- **River source swap (cleanup, AD-029)**: river SELECTION moved from the OSM
-  AD-011 geodesic-length heuristic to **Natural Earth `scalerank`** rivers
-  (`river_scalerank_max` config, default 8 — captures Meuse/Scheldt which NE
-  ranks 8, plus Danube/Rhône at Europe scale) **+ OSM major canals** (NE has no
-  canals, but the Albert Canal is required — `geo/rivers_global.py`; AD-011's
-  geodesic-length utility retained for canals only). The AD-026 node model is
-  unchanged. Eliminates the Mühlgraben generic-name false positives; rivers are
-  fewer, cleaner, globally consistent. Belgium 130→87 river-hexes, 0 isolated.
-  `STREAMING_VERSION` s5.1→s6.0. The old `geo/waterways_global.py` (AD-011
-  streaming river filter) is removed as superseded.
-
-### Sprint 3 (June 2026)
-
-- **PT-1 boundary license fix** (AD-018): dropped CC BY-NC-SA
-  historical-basemaps data; now loads repo-committed public-domain Natural
-  Earth `data/boundaries/boundaries_1930.geojson`. Ship rule: all bundled
-  geo/historical data must be public-domain or commercially licensable.
-- **PT-2 hex size = 10 km flat-to-flat** (AD-013, supersedes AD-009): see
-  Hex Grid Convention. ~3× more hexes (Belgium 280→775, Benelux 840→2,479).
-  Includes a grid-coverage fix (sample all 4 bbox edges) that closed the SE
-  wedge and restored Frankfurt. Gates recalibrated; unit tests added.
-- **PT-3 metadata**: `grid.offset` `"odd_row_east"`→`"odd_q"`; scenario date
-  1939→1930 in configs (output `scenario_date` was already 1930-01-01).
-- **F-1 multi-hex urban sprawl** (AD-014): see Multi-hex urban sprawl above.
-  **Schema v1.0.2** (additive): `settlement.parent_city`,
-  `settlement.distance_from_centroid_km`; `type` gains `suburb`, `anthrome`
-  gains `outskirts`. v1.0.1 consumers keep working. **Unity must update
-  HexData.cs Settlement** for the two new optional fields.
-- **F-2 strategic resources** (`data/resources/resources_1930.geojson`,
-  hand-authored public-domain): coal/steel/iron points+polygons for Ruhr,
-  Saar, Sambre-Meuse, Campine/Limburg, Liège, Lorraine. Sampler ingest →
-  `resources.{coal,steel,iron,oil}` lands in the F-2 commit (`iron` new in
-  v1.0.2). Pending Matthew historical review of the data file.
-
-### Sprint 2 (June 2026)
-
-- **Settlement matching rewritten** (`hex/sampler.py`): replaced per-hex
-  nearest-node scan (let villages outcompete cities → 0 cities in output) with
-  one-pass containing-hex assignment + importance priority + significance
-  floors. Brussels/Antwerp/Gent/Liège/Namur now present; tagged hexes 243→86.
-- Settlement types now follow `SettlementType` population bands when OSM
-  population is known; `town` nodes ≥50k upgrade to `city`, etc.
-- (pre-session) Waterways restricted to river|canal; settlements query
-  restricted to city|town|village with village pop≥500 filter (note: villages
-  with *unknown* population pass that filter — superseded by sampler floors).
-- **Schema v1.0.1** (AD-007): `country_1939` → `country_at_start`, `province`
-  → `province_at_start` everywhere (sampler, exporter, debug geojson);
-  `SCHEMA_VERSION` bumped. Breaking for Unity loader (coordinated). Schema
-  documented in `docs/hex-schema.md`; decisions in `PARA_BELLUM_DECISIONS.md`.
-- **1930 political boundaries** (`geo/boundaries.py`): loads the
-  repo-committed `data/boundaries/boundaries_1930.geojson` — hand-authored
-  from Natural Earth admin_0 (public domain, AD-018), modern borders as a
-  1930 stopgap valid for this western bbox. (The Sprint 2 source,
-  historical-basemaps world_1930, was CC BY-NC-SA — non-commercial — and
-  was removed; never use NC-licensed data.) `assign_country()` does sindex
-  + prepared-geometry point-in-polygon; coastal hexes outside all polygons
-  snap to the nearest country within 0.2° (AD-010). Validation:
-  `uv run python check_boundaries.py`.
-- **Sprint 2 done gate**: `uv run python validate_sprint2.py` — 21 checks over
-  schema, settlements, rivers, boundaries, biomes; exits non-zero on failure.
-- **Stage logging**: `run_pipeline` returns `stage_log` (stage name, elapsed
-  seconds, input/output counts per stage) and echoes `[stage ...]` lines via
-  the status callback. Belgium test full run ≈ 65 s.
-- **Sprint 2 target bbox shipped** (840 hexes, Benelux + W. Germany):
-  OSM fetched via 6 sub-bbox queries with retry/backoff (AD-008) — cold run
-  28.6 min (85% Overpass), warm-cache run 3.1 min. Layer sizes: landuse
-  2.24M polygons, roads 640k, rail 162k, bridges 241k, settlements 13k.
-  **Peak RAM 30.4 GB** — landuse GeoDataFrame + 343M-cell SRTM rasters all
-  in memory; this is THE scale-spike blocker for 100k hexes (needs
-  streaming/tiled sampling, not all-in-RAM). Gate: `validate_full_bbox.py`
-  28/28 PASS. Coastal snap added to assign_country (AD-010).
-- **River significance filter** (`get_waterways()`): fetches all named
-  river+canal ways, then keeps only names whose per-name total *geodesic*
-  length in the fetch area exceeds `MIN_WATERWAY_TOTAL_M` (110 km). OSM tags
-  2 m brooks as `waterway=river`, and width tags are too sparse to use
-  (measured brooks, unmeasured Meuse) — accumulated named length is the
-  scalable significance proxy. Belgium test: 244 → 71 river hexes (25%),
-  zero isolated hexes, one connected network (Meuse+Maas, Schelde, Sambre,
-  Ourthe, Albertkanaal, Oise, Semois, Chiers). Validation:
-  `uv run python check_rivers.py`. Caveats: rivers renamed across language
-  borders fragment per-name totals (Escaut|Schelde count separately); very
-  small bboxes can clip majors below the threshold.
-
-### Known Issues / Quirks
-
-- Upstream ports fetch (geo/downloader.py) fails with Overpass HTTP 406 →
-  `port: false` everywhere. Pre-existing; not Sprint 2 scope. NB the port
-  radius check had a latent metres-passed-as-degrees bug, fixed in Sprint 6 —
-  when the fetch is repaired, ports will use the corrected metric radius.
-- **RESOLVED (Sprint 6, AD-034):** the `coords.offset_neighbors` /
-  `grid.neighbors` disagreement was a grid-parity artifact (bbox-dependent
-  `q_min` parity). `hex/coords.py` is deleted; parity is normalized; the
-  neighbor gate test prevents recurrence. `is_coastal` was regenerated
-  against correct neighbours (9 Belgian hexes flipped; Benelux had been
-  accidentally correct).
-- **Bridge ≈ river in W. Europe:** ~100 % of river hexes carry `bridge: true`
-  at 10 km scale (OSM bridge density). The field currently has ~no
-  discriminating power there; revisit with river-crossing gameplay.
-- The Veluwe sand-drift hexes (NL) classify as `desert` via OSM
-  `natural=sand` (1 hex in Benelux). Cosmetic; noted Sprint 6.
-- Debug-renderer-only drift (accepted, Sprint 6 review): `grid.wargame_number`
-  still labels the PNG/NATO layers with packed `CCRR` ids (≠ the v1.0.5 JSON
-  id format), and `compute_hillshade` does not mask SRTM voids (a void would
-  wreck debug-PNG contrast only). Neither touches the JSON contract.
-- Exported `col`/`row` start at their bbox-dependent minimum (2–3 on shipped
-  artifacts), not 1 — Unity must key off `grid.col_min/row_min`, never
-  assume 1-based-from-1.
-- **Deliberate deferral (do not re-flag):** the pipeline does NOT export
-  `rivers.scalerank` / `rivers.waterway_type` (so Unity currently infers
-  canal-vs-river from name substrings). This is a KNOWN, intentional deferral
-  bundled with future river-crossing gameplay + the river-class visual weight
-  (AD-029 "Future: river class"); scalerank is retained per-feature so it can be
-  added additively when that lands.
-  (The AD-011 generic-name over-aggregation caveat — Mühlgraben/Mühlbach
-  isolated hexes — is **resolved by AD-029**: river selection is now Natural
-  Earth `scalerank`, which has no such generic features.)
+The target is **~100,000 hexes** (full Europe). Anything O(hexes × features) is a bug: precompute a
+feature-to-hex assignment or use a spatial index. Bboxes past Benelux scale run through the
+**streaming** path, not the monolithic one.
