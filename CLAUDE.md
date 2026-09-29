@@ -25,11 +25,25 @@ govern, which loads only when Claude works there.
 uv run wargame-map generate configs/para_bellum_belgium_test.yaml   # run the pipeline
 uv run python inspect_output.py                                     # general inspection
 uv run python check_settlements.py                                  # settlement validation
+# check what an artifact was built from, part by part (AD-040)
+uv run python -m wargame_cartographer.manifest verify output/para_bellum_belgium_test_hex_terrain.json
 ```
 
 - **All Python execution uses `uv run`** — never plain `python`.
 - **Windows console**: set `PYTHONIOENCODING=utf-8` first, or rich's spinner glyphs crash on the
   legacy cp1252 console at the end of a run.
+
+## Provenance
+
+Every export writes `output/<name>_hex_terrain_manifest.json` beside the artifact: the content
+hash of every cache part the run consumed, the config and its hash, the resolved bbox, the schema
+and streaming versions, and the artifact's own hashes (AD-040). **Manifests are committed;
+artifacts are not.** Verify one with the `manifest verify` command above — it reports every part as
+`match`, `changed` or `missing` and exits non-zero if anything moved.
+
+It detects loss; it does not prevent or recover it. Read the "does NOT protect against" list in
+AD-040 before treating a clean verify as a guarantee, and read the `osm-cache` skill before any run
+that could expire a part.
 
 ## The contract with Unity
 

@@ -35,6 +35,23 @@ refetch — so before a large run:
 4. If a refetch did happen, **measure the churn** against the previous artifact with
    `compare_hex_outputs.py` and report the figure rather than claiming the output is unchanged.
 
+## What the manifest gives you (AD-040)
+
+Every export now writes `output/<name>_hex_terrain_manifest.json` recording the content sha256 of
+every cache part the run consumed. Before and after any run that matters:
+
+```bash
+uv run python -m wargame_cartographer.manifest verify output/<name>_hex_terrain.json
+```
+
+Every part should read `match`. A `changed` or `missing` part means the snapshot behind that
+artifact moved — that is the signal this skill's whole warning is about, and it is now detectable
+instead of invisible.
+
+It does **not** prevent a refetch: the manifest is written at the end of a run, so a run that
+expires a part still destroys it and the manifest only reports it afterwards. Steps 1-3 above are
+still the discipline; the manifest is what tells you whether they held.
+
 ## The other cache trap
 
 The cache key is the **bbox hash only — it ignores the query content**. Change an Overpass query and

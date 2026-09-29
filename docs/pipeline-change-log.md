@@ -8,6 +8,28 @@ context on every turn. The decision records themselves are in `PARA_BELLUM_DECIS
 Decision records live in `PARA_BELLUM_DECISIONS.md` (AD-NNN). Sprint-level
 changes tracked here:
 
+### Sprint 11 (September 2026)
+
+- **Cache snapshot manifest (AD-040).** Every export now writes
+  `<artifact-stem>_manifest.json` beside the artifact: every cache part the run
+  consumed with its content sha256, size and fetch time, plus the pipeline
+  version and commit, the config and its hash, the resolved bbox,
+  `SCHEMA_VERSION`, `STREAMING_VERSION`, the sampling-code and input-data
+  hashes, and the artifact's own hashes. Verify one with
+  `uv run python -m wargame_cartographer.manifest verify <artifact>` — every
+  part reads `match`, `changed` or `missing`, exit non-zero if any moved.
+  Manifests are committed (`!output/*_manifest.json`); artifacts are not.
+  Gate: `tests/test_manifest.py`. It is provenance, **not** recovery — see the
+  "does NOT protect against" list in AD-040 before relying on it.
+  - The hook lives in `run_streaming_pipeline`, so the tile-cache key moved
+    `dd2b5bdc → decd1dee` once. Re-tile with
+    `PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS=120` pinned.
+  - Found by the manifest on its first run: the **Natural Earth cache
+    re-downloads on every run** once its layer directory ages past the TTL,
+    because the freshness check stats the directory and overwriting the files
+    inside does not move its mtime. 30 downloads on a 15-tile Belgium streaming
+    run. Not fixed here (fetch-path change); recorded in AD-040.
+
 ### Pass A (August 2026)
 
 - **Provinces for the eight frame nations (AD-037).** DNK/HUN/LTU/LVA/ROU/SOV/

@@ -1442,3 +1442,120 @@ The same normalization is applied to `_input_data_hash`, which hashes the
 boundaries / provinces / resources GeoJSON and has the same exposure.
 
 ---
+
+## AD-040 — Cache snapshot manifest: every artifact records, and can prove, what built it
+
+**Date:** 2026-09-29 (Sprint 11)
+**Status:** Accepted
+
+The OSM cache is a one-way door. A part that ages past the TTL is refetched and
+**overwritten in place**; there is no archive. AD-030 made a partial fetch fail
+loud and the TTL a runtime lever (`PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS`), but
+neither records what an artifact was built from, so the provenance of everything
+already shipped from a part dies with that part. That has now cost this project
+a snapshot twice — most recently 50 settlement parts and 11 of 50 waterways
+parts behind the shipped eastern artifact, which permanently removed byte
+identity as a definition of done and forced churn to be measured instead.
+
+**The decision: a receipt that can be checked.** After a successful export, both
+paths write `<artifact-stem>_manifest.json` beside the artifact recording every
+cache part the run consumed — content sha256, size, fetch time, and whether the
+part was served from cache or fetched by this run — plus the pipeline version
+and commit, the config file and its hash, the resolved bbox, `SCHEMA_VERSION`,
+`STREAMING_VERSION`, the sampling-code and input-data hashes, the exporter's own
+source hash, and the artifact's raw and content sha256 (from
+`tools/artifact_hash.py` — there is still exactly one artifact hasher).
+
+And a verb, because a manifest nobody can check is a receipt, not evidence:
+
+```bash
+uv run python -m wargame_cartographer.manifest verify \
+    output/para_bellum_belgium_test_hex_terrain.json
+```
+
+reports every part as `match`, `changed` or `missing` and exits non-zero if any
+is not `match`. `--root osm=<dir>` points it at a copy of the cache.
+
+### What the design turns on
+
+- **Content, not modification time.** A refetch that produced identical bytes is
+  not a change; a rewrite that preserved size and mtime is.
+- **The run may reuse a hash; the verifier never may.** Hashing ~760 MB of parts
+  on every run would be a third of a 75-second Belgium run, so `write_manifest`
+  memoizes hashes in `~/wargame-cartographer/cache/content_hashes.json` keyed by
+  path + size + mtime, and records `hash_reused` per part and in
+  `hash_summary`. `verify` ignores that memo and rehashes from disk: a
+  mtime-keyed shortcut is precisely the assumption the verifier exists to test.
+  Measured: 13 parts / 759 MB, 0.54 s to write warm, 2.4 s to verify cold.
+- **After a successful export only.** A failed run leaves no receipt. If the
+  manifest itself cannot be written the run raises — the artifact is already on
+  disk by then, and a silently missing receipt is the failure class this exists
+  to end.
+- **No archiving.** Copying tens of GB per run is a different decision with a
+  different cost and it is not signed. The manifest makes the loss *detectable*,
+  which is what was missing.
+- **One module, one entry point.** `src/wargame_cartographer/manifest.py`. The
+  fetch sites call one function, `record_part`, which never raises: bookkeeping
+  must not take down a run.
+- Manifests are **un-ignored in `.gitignore`** (`output/*_manifest.json`) while
+  artifacts stay ignored. Commit the receipt, never the data.
+
+### What it protects against
+
+A cache part that was refetched, truncated, corrupted or deleted after an
+artifact shipped — detected part by part, against the artifact's own hash, with
+the fetch time and the TTL pin that were in force recorded alongside.
+
+### What it does NOT protect against
+
+- **It does not recover anything.** Once a part is overwritten the previous
+  bytes are gone. This converts a silent loss into a detected one; it is not a
+  backup.
+- **It does not stop a refetch.** The manifest is written at the *end* of a run.
+  A run that expires a part still destroys it, and the manifest only shows it
+  afterwards. The guard that fails loud *before* sampling — compare the cache
+  against a blessed manifest and refuse to start — is the natural next step and
+  is deliberately not in this change.
+- **Natural Earth and SRTM are recorded but not governed.** Their caches have
+  their own freshness rules and are not covered by
+  `PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS`. In particular the NE freshness check
+  stats the unpacked shapefile *directory*, whose mtime does not move when the
+  files inside are overwritten, so once a layer ages past its TTL **every run
+  re-downloads it, on every tile** (15 tiles → 30 downloads on a Belgium
+  streaming run). The manifest makes that visible — it is how it was found —
+  and marks those parts `role: fetched`. Fixing the check is a fetch-path change
+  and is not in this decision.
+- **It does not describe the Overpass query.** The cache key is the bbox hash
+  only (AD-008 and the `osm-cache` skill's second trap). Two parts with the same
+  hash may have been fetched under different query text, and the manifest
+  cannot tell them apart.
+- **It is not a signature.** Anyone who can rewrite a cache part can rewrite the
+  manifest beside it. It answers "did this move?", not "who moved it?".
+- **The repo-committed inputs** (boundaries / provinces / resources GeoJSON) are
+  covered only by the existing `input_data_hash` digest, not listed part by
+  part. They are in git, which is the stronger guarantee.
+
+### Cost paid once
+
+The hook in `run_streaming_pipeline` edits `streaming.py`, which is in
+`_SAMPLING_CODE_MODULES`, so the tile-cache key moves `dd2b5bdc → decd1dee` and
+every cached tile is invalidated once. That is the accepted trade in AD-030 rule
+2 (correctness over cache-hit rate). **The re-tile must be run with
+`PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS=120` pinned**, and note that the oldest
+parts in the cache are at 110 days — the 120-day pin has about ten days of
+headroom left before it stops protecting anything.
+
+### Verification
+
+Belgium (775 hexes, monolithic, TTL pinned at 120, no part refetched): 13 parts
+/ 759 MB recorded, manifest written in 0.54 s, verifier reports **13 match, 0
+changed, 0 missing**, exit 0. The same config through the streaming path records
+**15 parts** (the sub-bbox part gpkgs rather than the merged full-bbox caches,
+plus the tile count and tile-cache dir) and verifies clean — and its artifact
+`content_sha256` is **identical** to the monolithic run's, which re-confirms the
+AD-025 streaming-equals-monolithic invariant from a direction that had not been
+used before. One byte flipped in a **copy** of one part, with the file's size
+unchanged: that part reports `changed`, the other twelve report `match`, exit 1.
+Gate: `tests/test_manifest.py`.
+
+---

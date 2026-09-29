@@ -1,0 +1,211 @@
+{
+  "manifest_version": "1",
+  "generated_at": "2026-09-29T17:01:47Z",
+  "artifact": {
+    "file": "para_bellum_belgium_test_hex_terrain.json",
+    "bytes": 1188298,
+    "hex_count": 775,
+    "schema_version": "1.0.6",
+    "raw_sha256": "612dca7347d388d2ecb002b44598c1411661c8bfa85779f13d0ab467533aa827",
+    "content_sha256": "6a51ce2439ae95e56de71e470aef10bc789ff957311b98c130e38a128c68a486"
+  },
+  "run": {
+    "path": "monolithic",
+    "pipeline_version": "0.1.0",
+    "schema_version": "1.0.6",
+    "exporter_source_sha256": "a32a75df5c69aa8417014e9f1ec4c8efe976ff297a7f1a12ab5d3649bd7e139e",
+    "python": "3.12.0",
+    "osm_cache_max_age_days": "120",
+    "commit": "92f7cfca13352c52274e787cfe0e826c819de710",
+    "dirty": true,
+    "streaming_version": "s7.0",
+    "sampling_code_hash": "decd1dee",
+    "input_data_hash": "e6baaaa1"
+  },
+  "config": {
+    "path": "~/para-bellum-cartographer/para-bellum-cartographer/configs/para_bellum_belgium_test.yaml",
+    "sha256": "7615544f5400ffd7f869ee338cbd05d65e19e790862dd0a59666d9e5a8e0c251",
+    "hash_algo": "sha256-lf",
+    "name": "para_bellum_belgium_test",
+    "resolved_bbox": {
+      "min_lon": 2.5,
+      "min_lat": 49.5,
+      "max_lon": 6.4,
+      "max_lat": 51.5
+    },
+    "hex_size_km": 10.0,
+    "river_scalerank_max": 8
+  },
+  "cache_roots": {
+    "osm": "~/wargame-cartographer/cache/osm_pb",
+    "elevation": "~/wargame-cartographer/cache/elevation",
+    "vector": "~/wargame-cartographer/cache/vector",
+    "osm_upstream": "~/wargame-cartographer/cache/osm",
+    "boundaries": "~/wargame-cartographer/cache/boundaries"
+  },
+  "cache_parts": [
+    {
+      "root": "vector",
+      "path": "ne_10m_coastline",
+      "layer": "natural_earth:coastline",
+      "role": "fetched",
+      "kind": "dir",
+      "bytes": 7269989,
+      "sha256": "a4cb9251762e317e1603d02a802e58a5ee7bb52fd6a82a047ff17af60fe637e4",
+      "hash_algo": "sha256-dir",
+      "fetched_at": "2026-09-29T17:00:39Z",
+      "hash_reused": false
+    },
+    {
+      "root": "vector",
+      "path": "ne_10m_land",
+      "layer": "natural_earth:land",
+      "role": "fetched",
+      "kind": "dir",
+      "bytes": 7204615,
+      "sha256": "2b4e97832f9a82ab287b2b68debf0ed9ebfe211dc86dcf633cef40540609c3cb",
+      "hash_algo": "sha256-dir",
+      "fetched_at": "2026-09-29T17:00:41Z",
+      "hash_reused": false
+    },
+    {
+      "root": "vector",
+      "path": "ne_10m_rivers",
+      "layer": "natural_earth:rivers",
+      "role": "fetched",
+      "kind": "dir",
+      "bytes": 6260002,
+      "sha256": "7f057302361e54c67d4c8d55fd2bd6e9e9901b0842872bb95ad971208c756722",
+      "hash_algo": "sha256-dir",
+      "fetched_at": "2026-09-29T17:00:52Z",
+      "hash_reused": false
+    },
+    {
+      "root": "vector",
+      "path": "ne_10m_lakes",
+      "layer": "natural_earth:lakes",
+      "role": "fetched",
+      "kind": "dir",
+      "bytes": 12732546,
+      "sha256": "076ef20fa6e1fb4710966a66aa9f2691904f2883e25cd38571d72f52c651e71b",
+      "hash_algo": "sha256-dir",
+      "fetched_at": "2026-09-29T17:00:43Z",
+      "hash_reused": false
+    },
+    {
+      "root": "vector",
+      "path": "ne_10m_countries",
+      "layer": "natural_earth:countries",
+      "role": "fetched",
+      "kind": "dir",
+      "bytes": 9726410,
+      "sha256": "1aabb8114ddf7471af68afa373eb4248601773b7c77a5d76ac79f1029ab9846e",
+      "hash_algo": "sha256-dir",
+      "fetched_at": "2026-09-29T17:00:45Z",
+      "hash_reused": false
+    },
+    {
+      "root": "osm",
+      "path": "landuse_6dcb602a063c.gpkg",
+      "layer": "osm:landuse",
+      "role": "cache_hit",
+      "kind": "file",
+      "bytes": 432533504,
+      "sha256": "13bb72caecd4f945709417cbc0dd7198c725cb43eb49f50640d2eacaf968300c",
+      "hash_algo": "sha256",
+      "fetched_at": "2026-06-12T21:10:11Z",
+      "hash_reused": true
+    },
+    {
+      "root": "osm",
+      "path": "settlements_6dcb602a063c.gpkg",
+      "layer": "osm:settlements",
+      "role": "cache_hit",
+      "kind": "file",
+      "bytes": 778240,
+      "sha256": "bcd40f3a4bd19d651ce58768e6e12ee7cfd96ae35d1b59ba4fd21f5810a9cdef",
+      "hash_algo": "sha256",
+      "fetched_at": "2026-07-06T18:06:34Z",
+      "hash_reused": true
+    },
+    {
+      "root": "osm",
+      "path": "roads_6dcb602a063c.gpkg",
+      "layer": "osm:roads",
+      "role": "cache_hit",
+      "kind": "file",
+      "bytes": 52727808,
+      "sha256": "6f39d33536c5b0f8129d4d76463e4085f1b310e3d013c695dc7fb5c23b45b24a",
+      "hash_algo": "sha256",
+      "fetched_at": "2026-06-12T21:12:48Z",
+      "hash_reused": true
+    },
+    {
+      "root": "osm",
+      "path": "railways_6dcb602a063c.gpkg",
+      "layer": "osm:railways",
+      "role": "cache_hit",
+      "kind": "file",
+      "bytes": 16097280,
+      "sha256": "07cfc3ffb5289853dea7cc78e613bb539615ffa4c63375a3e5e895e5b641c7e6",
+      "hash_algo": "sha256",
+      "fetched_at": "2026-06-12T21:14:14Z",
+      "hash_reused": true
+    },
+    {
+      "root": "osm",
+      "path": "waterways_part_0c2827917ee9.gpkg",
+      "layer": "osm:waterways",
+      "role": "cache_hit",
+      "kind": "file",
+      "bytes": 3219456,
+      "sha256": "5fab25cb9236316fa6d2d97fd124f9a737fba14c6842488f1922dc09d6d2923d",
+      "hash_algo": "sha256",
+      "fetched_at": "2026-06-14T04:18:00Z",
+      "hash_reused": true
+    },
+    {
+      "root": "osm",
+      "path": "waterways_part_76c557a2b0c4.gpkg",
+      "layer": "osm:waterways",
+      "role": "cache_hit",
+      "kind": "file",
+      "bytes": 3051520,
+      "sha256": "76f38a5319fec4a6c3a853741cc888fc4a40eac19815a35d4b8ffa4baeda02da",
+      "hash_algo": "sha256",
+      "fetched_at": "2026-06-14T04:18:39Z",
+      "hash_reused": true
+    },
+    {
+      "root": "osm",
+      "path": "bridges_6dcb602a063c.gpkg",
+      "layer": "osm:bridges",
+      "role": "cache_hit",
+      "kind": "file",
+      "bytes": 5677056,
+      "sha256": "4ca6a1baecc26e4fc35eeda1b806f9c04fb3db4128e538173355acc27ce20943",
+      "hash_algo": "sha256",
+      "fetched_at": "2026-06-11T18:03:30Z",
+      "hash_reused": true
+    },
+    {
+      "root": "elevation",
+      "path": "dem_6dcb602a063c.tif",
+      "layer": "elevation:dem",
+      "role": "cache_hit",
+      "kind": "file",
+      "bytes": 202219566,
+      "sha256": "395af1927219db08dd07c205885591ba61b349973d3fd43ffed4477b0d58d0a1",
+      "hash_algo": "sha256",
+      "fetched_at": "2026-05-12T21:44:32Z",
+      "hash_reused": true
+    }
+  ],
+  "hash_summary": {
+    "parts": 13,
+    "bytes": 759497992,
+    "hashed_this_run": 5,
+    "reused_from_hash_cache": 8,
+    "seconds": 0.54
+  }
+}

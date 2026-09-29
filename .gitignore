@@ -11,4 +11,7 @@ output/*.png
 output/*.pdf
 output/*.html
 output/*.json
+# ...but the cache snapshot manifests ARE committed (AD-040): the receipt
+# is a few KB and is what makes a shipped artifact's provenance checkable.
+!output/*_manifest.json
 .env

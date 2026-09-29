@@ -4,6 +4,7 @@
 pipeline.py            — orchestrator: spec → data → grid → sample → render → export
 cli.py                 — Click CLI (generate, quick, …)
 streaming.py           — the tiled path (AD-024/025)
+manifest.py            — cache snapshot manifest + its verifier (AD-040)
 memory.py              — working-set accounting, fail-loud over budget
 config/map_spec.py     — Pydantic MapSpec + BoundingBox (YAML loader)
 geo/
@@ -55,6 +56,18 @@ then metro under 3 km, then residential, then outskirts.
 
 Target ~100,000 hexes. **Anything O(hexes × features) is a bug.** The settlement scan was rewritten
 for exactly that reason: 280 × 5,243 distance calls became one O(settlements) pass.
+
+## Provenance (AD-040)
+
+Both paths call `manifest.write_manifest` after a successful export, writing
+`<artifact-stem>_manifest.json` beside the artifact. What goes in it comes from `manifest.reset()`
+at the start of a run plus `manifest.record_part(path, layer=..., role=...)` at each place a cached
+input is consumed — `geo/osm_downloader.py` (`_fetch_layer`, `part_descriptors`),
+`geo/elevation.py` and `geo/downloader.py`. **A new cached input needs a `record_part` call at the
+point it is read**, or it silently leaves the receipt. `record_part` never raises.
+
+Check one with `uv run python -m wargame_cartographer.manifest verify <artifact>`. The verifier
+rehashes from disk and deliberately ignores the run-time hash memo; do not "optimise" that away.
 
 ## Streaming
 
