@@ -4,7 +4,8 @@
 pipeline.py            — orchestrator: spec → data → grid → sample → render → export
 cli.py                 — Click CLI (generate, quick, …)
 streaming.py           — the tiled path (AD-024/025)
-manifest.py            — cache snapshot manifest + its verifier (AD-040)
+manifest.py            — cache snapshot manifest, its verifier (AD-040) and the
+                         pre-run cache guard (AD-042)
 memory.py              — working-set accounting, fail-loud over budget
 config/map_spec.py     — Pydantic MapSpec + BoundingBox (YAML loader)
 geo/
@@ -68,6 +69,14 @@ point it is read**, or it silently leaves the receipt. `record_part` never raise
 
 Check one with `uv run python -m wargame_cartographer.manifest verify <artifact>`. The verifier
 rehashes from disk and deliberately ignores the run-time hash memo; do not "optimise" that away.
+
+**The guard (AD-042)** runs first, from `check_cache_before_run(spec)` at the top of both paths,
+before anything is fetched or sampled. It compares the cache against the manifest committed at git
+HEAD for that config and raises `CacheGuardError` on a part that changed, vanished, or is within a
+day of the TTL in force for its root. Keep it before the first fetch; after it is worthless. The
+CLI catches the exception and prints the message alone — the message is the guard, and a traceback
+on top of it is how a guard gets deleted. `PARA_BELLUM_ALLOW_CACHE_REFETCH=1` downgrades a refusal
+to a loud warning.
 
 ## Streaming
 

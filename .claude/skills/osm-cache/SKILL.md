@@ -35,6 +35,22 @@ refetch — so before a large run:
 4. If a refetch did happen, **measure the churn** against the previous artifact with
    `compare_hex_outputs.py` and report the figure rather than claiming the output is unchanged.
 
+## The guard runs first (AD-042)
+
+A run now **refuses to start** if a part it depends on has moved from the committed manifest, or
+would expire during the run and be overwritten in place. Ask before you run:
+
+```bash
+PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS=120 uv run python -m wargame_cartographer.manifest check configs/<spec>.yaml
+```
+
+Without the pin, Belgium's parts (85-110 days old) trip it and every path refuses, which is the
+Sprint 10 disaster caught before a byte moved. If the refetch is genuinely what you want, say so
+with `PARA_BELLUM_ALLOW_CACHE_REFETCH=1` — do not remove the guard, because an overridden run still
+leaves a manifest and a deleted guard leaves nothing.
+
+Configs with no committed manifest are unguarded; the run says so in one line.
+
 ## What the manifest gives you (AD-040)
 
 Every export now writes `output/<name>_hex_terrain_manifest.json` recording the content sha256 of

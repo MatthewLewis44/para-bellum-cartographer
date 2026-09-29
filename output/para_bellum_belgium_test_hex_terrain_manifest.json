@@ -1,12 +1,12 @@
 {
   "manifest_version": "1",
-  "generated_at": "2026-09-29T18:42:54Z",
+  "generated_at": "2026-09-29T18:53:40Z",
   "artifact": {
     "file": "para_bellum_belgium_test_hex_terrain.json",
     "bytes": 1188298,
     "hex_count": 775,
     "schema_version": "1.0.6",
-    "raw_sha256": "df013aa896af00d688ae1a4cdc9bc919b0663acbee8b7a5d76f63ff081d6f934",
+    "raw_sha256": "ca822d8472005dd112b64bc0d5ec7de6c9dbd6c316405e92fa5a920277ee8a15",
     "content_sha256": "6a51ce2439ae95e56de71e470aef10bc789ff957311b98c130e38a128c68a486"
   },
   "run": {
@@ -16,10 +16,10 @@
     "exporter_source_sha256": "a32a75df5c69aa8417014e9f1ec4c8efe976ff297a7f1a12ab5d3649bd7e139e",
     "python": "3.12.0",
     "osm_cache_max_age_days": "120",
-    "commit": "2f6f071115255c0ceaff5f6cefe7ab0ec036afc2",
+    "commit": "8c75d277832916a97576ecf3ea525e9607ae206c",
     "dirty": true,
     "streaming_version": "s7.0",
-    "sampling_code_hash": "decd1dee",
+    "sampling_code_hash": "d68b36c2",
     "input_data_hash": "e6baaaa1"
   },
   "config": {
@@ -206,6 +206,6 @@
     "bytes": 759497992,
     "hashed_this_run": 0,
     "reused_from_hash_cache": 13,
-    "seconds": 0.19
+    "seconds": 0.2
   }
 }

@@ -45,7 +45,11 @@ from wargame_cartographer.hex.sampler import (
     _assign_settlements_to_hexes,
     _assign_resources_to_hexes,
 )
-from wargame_cartographer.manifest import reset as reset_manifest_recorder, write_manifest
+from wargame_cartographer.manifest import (
+    check_cache_before_run,
+    reset as reset_manifest_recorder,
+    write_manifest,
+)
 from wargame_cartographer.memory import working_set_mb
 
 # Bump when the per-tile sampling logic changes, to invalidate stale tile caches.
@@ -208,6 +212,11 @@ def run_streaming_pipeline(
     spec = MapSpec.from_yaml(spec_path)
     if scalerank_override is not None:
         spec.river_scalerank_max = scalerank_override
+
+    # AD-042: refuse to start if a part the blessed manifest records has moved,
+    # or would expire (and so be overwritten in place) during this run. Before
+    # any fetching or sampling, because afterwards is too late.
+    check_cache_before_run(spec)
     crs = select_crs(spec.bbox) if spec.crs is None else None
     grid = HexGrid(bbox=spec.bbox, hex_size_km=spec.hex_size_km, crs=crs)
     status(f"Grid ready: {grid.hex_count} hexes")

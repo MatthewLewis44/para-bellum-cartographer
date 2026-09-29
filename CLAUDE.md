@@ -27,6 +27,8 @@ uv run python inspect_output.py                                     # general in
 uv run python check_settlements.py                                  # settlement validation
 # check what an artifact was built from, part by part (AD-040)
 uv run python -m wargame_cartographer.manifest verify output/para_bellum_belgium_test_hex_terrain.json
+# ask whether a config is safe to run, without running it (AD-042)
+uv run python -m wargame_cartographer.manifest check configs/para_bellum_belgium_test.yaml
 ```
 
 - **All Python execution uses `uv run`** — never plain `python`.
@@ -41,9 +43,20 @@ and streaming versions, and the artifact's own hashes (AD-040). **Manifests are 
 artifacts are not.** Verify one with the `manifest verify` command above — it reports every part as
 `match`, `changed` or `missing` and exits non-zero if anything moved.
 
-It detects loss; it does not prevent or recover it. Read the "does NOT protect against" list in
-AD-040 before treating a clean verify as a guarantee, and read the `osm-cache` skill before any run
-that could expire a part.
+**Before** it fetches or samples anything, a run compares the cache against the manifest committed
+for that config and **refuses to start** if a part has moved, is gone, or would expire during the
+run and be overwritten in place (AD-042). Pin the TTL and it proceeds:
+
+```bash
+PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS=120 uv run wargame-map generate configs/<spec>.yaml
+```
+
+If a refetch really is intended, say so — `PARA_BELLUM_ALLOW_CACHE_REFETCH=1` — rather than
+removing the guard. A config with no committed manifest is unguarded and says so.
+
+None of this recovers anything. Read the "does NOT protect against" lists in AD-040 and AD-042
+before treating a clean run as a guarantee, and read the `osm-cache` skill before any run that
+could expire a part.
 
 ## The contract with Unity
 

@@ -437,6 +437,228 @@ def write_manifest(
 
 
 # ---------------------------------------------------------------------------
+# The pre-run guard (AD-042)
+# ---------------------------------------------------------------------------
+#
+# The manifest is written at the END of a run, so on its own it reports a loss
+# after the loss. This refuses to START a run that is about to cause one, or
+# that is already standing on a cache that moved.
+
+GUARD_OVERRIDE_ENV = "PARA_BELLUM_ALLOW_CACHE_REFETCH"
+
+#: A part this close to its TTL is treated as expiring, because a run that
+#: starts now can still cross the line before it reads that part. A day is
+#: generous for every config in this repo (the longest cold run is ~4 h) and
+#: gives an operator a full day of warning rather than a race.
+EXPIRY_MARGIN_DAYS = 1.0
+
+
+class CacheGuardError(RuntimeError):
+    """Raised instead of starting a run that would destroy or has lost a part."""
+
+
+def _ttl_days_for_root(root: str) -> float | None:
+    """The freshness window in force for a cache root, or None if it has none.
+
+    Resolved per call, so `PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS` applies to the
+    run being guarded rather than to import time.
+    """
+    if root == "osm":
+        from wargame_cartographer.geo.osm_downloader import _cache_max_age_days
+        return float(_cache_max_age_days())
+    if root == "vector":
+        from wargame_cartographer.config.defaults import CACHE_MAX_AGE_DAYS
+        return float(CACHE_MAX_AGE_DAYS)
+    # elevation: get_elevation keeps a cached DEM until someone deletes it.
+    return None
+
+
+def evaluate_cache(
+    doc: dict,
+    *,
+    root_overrides: dict[str, Path] | None = None,
+    ttl_days: dict[str, float | None] | None = None,
+    now: float | None = None,
+) -> list[dict]:
+    """Problems with the cache, judged against a blessed manifest ``doc``.
+
+    Pure apart from reading the cache: takes the baseline, returns a list of
+    {kind, layer, root, path, ...} where kind is ``changed``, ``missing`` or
+    ``expiring``. An empty list means the run is safe to start.
+    """
+    overrides = {k: Path(v) for k, v in (root_overrides or {}).items()}
+    now = time.time() if now is None else now
+    problems: list[dict] = []
+
+    for entry in doc.get("cache_parts", []):
+        root, rel = entry.get("root"), entry.get("path")
+        base = {"layer": entry.get("layer"), "root": root, "path": rel}
+        try:
+            p = _resolve(root, rel, overrides)
+        except Exception as e:
+            problems.append({**base, "kind": "missing", "detail": str(e)})
+            continue
+        if not p.exists():
+            problems.append({**base, "kind": "missing"})
+            continue
+
+        actual = content_sha256(p)
+        if actual != entry.get("sha256"):
+            problems.append({**base, "kind": "changed",
+                             "blessed_sha256": entry.get("sha256"),
+                             "actual_sha256": actual})
+            continue  # already moved; its age is beside the point
+
+        if ttl_days is not None and root in ttl_days:
+            ttl = ttl_days[root]
+        else:
+            ttl = _ttl_days_for_root(root)
+        if ttl is None:
+            continue
+        age_days = (now - _stat(p)[1] / 1e9) / 86400
+        if age_days >= ttl - EXPIRY_MARGIN_DAYS:
+            problems.append({**base, "kind": "expiring",
+                             "age_days": round(age_days, 1), "ttl_days": ttl})
+
+    return problems
+
+
+def blessed_manifest(manifest_path) -> tuple[dict | None, str]:
+    """The COMMITTED manifest for an artifact, read from git HEAD.
+
+    Deliberately not the working-tree copy: every run overwrites that, so using
+    it would make each run its own baseline and a part that moved would be
+    flagged once and then quietly become the new normal. A baseline has to be
+    something a person blessed. Returns (None, why) when there is none.
+    """
+    manifest_path = Path(manifest_path)
+    root = _repo_root()
+    try:
+        rel = manifest_path.resolve().relative_to(root).as_posix()
+    except ValueError:
+        return None, f"{manifest_path} is outside the repository"
+    try:
+        r = subprocess.run(["git", "show", f"HEAD:{rel}"], cwd=root,
+                           capture_output=True, timeout=30)
+    except Exception as e:
+        return None, f"git unavailable ({e})"
+    if r.returncode != 0:
+        return None, f"no manifest committed at {rel}"
+    try:
+        return json.loads(r.stdout.decode("utf-8")), f"HEAD:{rel}"
+    except Exception as e:
+        return None, f"the manifest committed at {rel} is unreadable: {e}"
+
+
+def artifact_path_for_spec(spec) -> Path:
+    """Where a run of ``spec`` writes its artifact (mirrors both export paths)."""
+    safe = "".join(c if c.isalnum() or c in "_-" else "_" for c in spec.name)[:40].lower()
+    return Path(spec.output_dir) / f"{safe}_hex_terrain.json"
+
+
+def _guard_message(problems: list[dict], source: str, doc: dict,
+                   overridden: bool = False) -> str:
+    lines = [
+        "",
+        f"OVERRIDDEN ({GUARD_OVERRIDE_ENV}=1) — proceeding although the cache this"
+        if overridden else
+        "Refusing to start: the cache this run depends on has moved, or is about",
+        "run depends on has moved, or is about to be overwritten by this run."
+        if overridden else
+        "to be overwritten by this run.",
+        "",
+        f"  baseline: {source}",
+        f"            written {doc.get('generated_at')} for "
+        f"{doc.get('artifact', {}).get('file')}",
+        "",
+    ]
+    for p in problems:
+        if p["kind"] == "changed":
+            lines += [
+                f"  CHANGED   {p['layer']}  {p['path']}",
+                f"            blessed {p['blessed_sha256']}",
+                f"            on disk {p['actual_sha256']}",
+                "            The snapshot that produced the shipped artifact is not what",
+                "            is on disk now. Do not regenerate against it silently:",
+                "            measure the churn (compare_hex_outputs.py) and report the",
+                "            number, or commit a new manifest if the change was intended.",
+            ]
+        elif p["kind"] == "missing":
+            lines += [
+                f"  MISSING   {p['layer']}  {p['path']}",
+                "            This run would refetch it from scratch. Whatever produced",
+                "            the blessed artifact is gone; the new data is not the same",
+                "            data, and no diff after the fact can separate them.",
+            ]
+        else:
+            lines += [
+                f"  EXPIRING  {p['layer']}  {p['path']}",
+                f"            {p['age_days']} days old against a {p['ttl_days']:.0f}-day TTL"
+                f" (margin {EXPIRY_MARGIN_DAYS:.0f} d).",
+                "            This run WILL refetch it and overwrite it IN PLACE. There is",
+                "            no archive and no way back.",
+            ]
+            if p["root"] == "osm":
+                lines.append("            Widen the window: "
+                             "PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS=120")
+        lines.append("")
+    if overridden:
+        lines += [
+            "The manifest this run writes will record what it actually used.",
+            "",
+        ]
+    else:
+        lines += [
+            "If the refetch is intentional, say so and re-run:",
+            "",
+            f"    {GUARD_OVERRIDE_ENV}=1 <your command>",
+            "",
+            "The run then proceeds and its manifest records what it actually used.",
+            "",
+        ]
+    return "\n".join(lines)
+
+
+def check_cache_before_run(spec, *, status=None) -> dict:
+    """Guard a run before it fetches or samples anything.
+
+    Raises `CacheGuardError` when a part the blessed manifest records has moved,
+    is gone, or would expire during this run. A config with no committed
+    manifest has nothing to check against: that is said out loud and the run
+    proceeds. `PARA_BELLUM_ALLOW_CACHE_REFETCH=1` downgrades a refusal to a
+    warning.
+
+    ``status`` redirects the guard's own lines (tests use it). It defaults to
+    print rather than to the caller's status callback on purpose: in the
+    monolithic CLI that callback is a progress-spinner label, which overwrites
+    itself, and a provenance statement nobody can read is not one.
+    """
+    def say(msg: str) -> None:
+        (status or print)(msg)
+
+    manifest_path = manifest_path_for(artifact_path_for_spec(spec))
+    doc, source = blessed_manifest(manifest_path)
+    if doc is None:
+        say(f"[cache guard] no blessed manifest to check against ({source}) — "
+            f"proceeding. This run will write the first one.")
+        return {"checked": False, "reason": source, "problems": []}
+
+    problems = evaluate_cache(doc)
+    n = len(doc.get("cache_parts", []))
+    if not problems:
+        say(f"[cache guard] {n} parts match {source} and none expire during "
+            f"this run — proceeding.")
+        return {"checked": True, "source": source, "problems": []}
+
+    if os.environ.get(GUARD_OVERRIDE_ENV) == "1":
+        say(_guard_message(problems, source, doc, overridden=True).rstrip())
+        say(f"[cache guard] proceeding anyway on {len(problems)} problem(s).")
+        return {"checked": True, "source": source, "problems": problems,
+                "overridden": True}
+    raise CacheGuardError(_guard_message(problems, source, doc))
+
+
+# ---------------------------------------------------------------------------
 # Verifying
 # ---------------------------------------------------------------------------
 
@@ -584,7 +806,21 @@ def main(argv: list[str] | None = None) -> int:
                         "(repeatable)")
     v.add_argument("--json", action="store_true", help="emit the report as JSON")
     v.add_argument("--verbose", action="store_true", help="show hashes for matches")
+
+    c = sub.add_parser("check", help="ask the pre-run guard whether a config is "
+                                     "safe to run, without running it")
+    c.add_argument("config", help="the map spec YAML")
     args = ap.parse_args(argv)
+
+    if args.cmd == "check":
+        from wargame_cartographer.config.map_spec import MapSpec
+        spec = MapSpec.from_yaml(args.config)
+        try:
+            check_cache_before_run(spec)
+        except CacheGuardError as e:
+            print(str(e), file=sys.stderr)
+            return 1
+        return 0
 
     overrides: dict[str, Path] = {}
     for spec in args.root:

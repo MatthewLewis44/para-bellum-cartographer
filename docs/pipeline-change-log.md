@@ -30,6 +30,27 @@ changes tracked here:
     inside does not move its mtime. 30 downloads on a 15-tile Belgium streaming
     run. Not fixed here (fetch-path change); recorded in AD-040.
 
+#### Also Sprint 11, after review
+
+- **Natural Earth freshness (AD-041).** An NE layer unpacks into a directory and
+  a directory's mtime does not move when the files inside are overwritten, so
+  `_is_fresh` on it reported the age of the FIRST extraction forever and the
+  layer re-downloaded on every run. `ne_10m_rivers` is the AD-029 river
+  selection source, so this was map content silently re-fetched every run.
+  Freshness now comes from an `ne_10m_<layer>.fetched` stamp written beside the
+  directory after a COMPLETED extraction; existing caches adopt the newest file
+  inside and are stamped backdated, so landing it downloads nothing. Found by
+  the AD-040 manifest. Gate: `tests/test_ne_freshness.py`.
+- **The pre-run cache guard (AD-042).** A run now compares the cache against the
+  manifest committed at git HEAD for that config, BEFORE fetching or sampling,
+  and refuses to start when a part changed, vanished, or is within a day of the
+  TTL in force for its root. Chosen over raising the pin, deliberately: a wider
+  pin still ends in a run that destroys a snapshot and reports it afterwards.
+  Override with `PARA_BELLUM_ALLOW_CACHE_REFETCH=1` when the refetch is meant.
+  A config with no committed manifest is unguarded and says so — no baseline is
+  invented. Gate: `tests/test_cache_guard.py`. Tile-cache key moved again, to
+  `d68b36c2`; read AD-042's "cannot catch" list before trusting a clean start.
+
 ### Pass A (August 2026)
 
 - **Provinces for the eight frame nations (AD-037).** DNK/HUN/LTU/LVA/ROU/SOV/

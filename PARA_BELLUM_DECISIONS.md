@@ -1559,3 +1559,160 @@ unchanged: that part reports `changed`, the other twelve report `match`, exit 1.
 Gate: `tests/test_manifest.py`.
 
 ---
+
+## AD-041 — Natural Earth freshness is read from a stamp, not from the folder's mtime
+
+**Date:** 2026-09-29 (Sprint 11)
+**Status:** Accepted
+
+A Natural Earth layer unpacks into a **directory**, and a directory's mtime does
+not move when the files inside it are overwritten. `get_natural_earth` asked
+`_is_fresh(cache_path)` about the directory, so the check reported the age of the
+**first** extraction forever. Once a layer aged past the 30-day TTL it
+re-downloaded on every run and never returned to fresh. Measured before the fix:
+`ne_10m_land`'s directory mtime was 103.8 days old while every file inside it had
+been rewritten that morning; a 15-tile Belgium streaming run pulled `land` and
+`lakes` **30 times**.
+
+It was not only wasted bandwidth. `ne_10m_rivers` is the AD-029 river
+**selection** source, so map content was being silently re-fetched on every run
+with nothing comparing before against after. It happened to be byte-benign on the
+runs measured here — the artifact's `content_sha256` was identical across a
+re-download — but that is a statement nobody could have made before AD-040, and
+it was the AD-040 manifest that surfaced this at all, by marking those layers
+`role: fetched` on a run that should have had no fetches.
+
+Freshness now comes from an explicit stamp, `ne_10m_<layer>.fetched`, written
+after a **completed** extraction.
+
+**A stamp rather than stat-ing a file inside**, because a stamp means "a complete
+extraction finished at time T". Stat-ing the `.shp` cannot tell a finished
+extraction from an interrupted one, so a half-unpacked directory would keep
+passing as a good cache; it also depends on per-layer file naming, which varies
+(`ne_10m_land.shp` against `ne_10m_rivers_lake_centerlines.shp`).
+
+**Beside the directory rather than inside it**, because the layer directory's
+bytes are a manifest part (AD-040) and a stamp inside would change that part's
+content hash every time the layer refreshed — `manifest verify` would report
+`changed` for a file the pipeline itself had just written.
+
+**Landing it downloads nothing.** A cache with no stamp adopts the newest file
+inside as its fetch time and is stamped backdated to that. Verified on the real
+cache: all six layers the pipeline calls adopted an age of 0.1 days and read
+fresh. `ne_10m_states` adopted 104.0 days and reads stale, which is correct — it
+is genuinely that old and nothing in the pipeline calls it.
+
+**Not fixed here:** the NE cache keeps its own TTL constant and is **not**
+governed by `PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS`. Unlike an Overpass part, an NE
+layer is re-downloadable from a stable published URL, so its refresh is not a
+one-way door — but it is still map content changing under a run, which is why
+AD-042's guard checks NE parts against their own TTL alongside the OSM ones.
+
+Evidence: zero "Downloading Natural Earth" lines on the next Belgium run against
+five on the run before; all 13 manifest parts reading `role: cache_hit`; manifest
+written in 0.19 s with every hash reused; `manifest verify` 13 match / 0 changed
+/ 0 missing. Gate: `tests/test_ne_freshness.py` (15 checks, no network), which
+pins the mechanism, the fix, the stamp's location, the backdating migration, and
+that the TTL still bites a genuinely old layer.
+
+---
+
+## AD-042 — The cache guard: a run that would destroy a snapshot refuses to start
+
+**Date:** 2026-09-29 (Sprint 11)
+**Status:** Accepted
+
+AD-040 made a lost cache part **detectable**, but only after the run that lost
+it: the manifest is written at the end. AD-040's own "does NOT protect against"
+list named the gap and left it deliberately open. This closes it, and it was
+chosen over simply raising the TTL pin, because a wider pin still ends in a run
+that destroys a snapshot and reports it afterwards.
+
+**Before any fetching or sampling**, both paths call `check_cache_before_run`,
+which compares the cache the run is about to depend on against the **blessed**
+manifest and raises `CacheGuardError` when a part:
+
+- **changed** — its bytes differ from the blessed hash;
+- **missing** — it is not there at all;
+- **expiring** — it is within `EXPIRY_MARGIN_DAYS` (1 day) of the TTL **in force
+  for its cache root**, so this run would refetch it and overwrite it in place.
+
+The TTL is resolved per root and per run: `osm` reads
+`PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS` (so the pin is what turns a refusal into a
+pass), `vector` reads the Natural Earth constant, and `elevation` has none — a
+cached DEM is kept until someone deletes it, so an ancient DEM is not a problem.
+
+### Blessed means committed
+
+The baseline is read from **git HEAD**, not from the working tree. Every run
+overwrites the working-tree manifest, so using that would make each run its own
+baseline: a part that moved would be flagged once and then quietly become the new
+normal, which is the failure this is supposed to prevent. A baseline has to be
+something a person blessed.
+
+**A config with no committed manifest has nothing to check against.** The guard
+says so in one line and the run proceeds; it does not derive a baseline from the
+bbox. Inventing one would create a second source of truth about part naming
+beside the downloader's, and a baseline nobody blessed is not evidence of
+anything.
+
+### The refusal is the feature
+
+The message names the part, says what is wrong, says that an overwrite is
+unrecoverable, gives the TTL pin for an OSM part, and gives the override:
+
+    PARA_BELLUM_ALLOW_CACHE_REFETCH=1 <your command>
+
+Only the exact value `1` overrides, and an overridden run says loudly what it
+proceeded on. The override exists because **a guard with no findable escape gets
+deleted rather than heeded** — and a deletion leaves nothing, while an override
+leaves a manifest recording what the run actually used.
+
+For the same reason the CLI catches `CacheGuardError` and prints the message on
+its own. The first version let it propagate, and forty lines of click traceback
+buried the one paragraph the operator needed. The library still raises.
+
+### What the guard cannot catch
+
+- **A config that has never shipped a manifest** — the first run of anything is
+  unguarded, by design.
+- **A part the blessed manifest does not list.** The guard checks the blessed
+  part list, so a run whose bbox, config or code path pulls in a part the blessed
+  artifact never used will fetch it unguarded.
+- **A streaming threshold-comparison run** (`scalerank_override`), whose artifact
+  name is suffixed `_sr<N>` and therefore matches no committed manifest. It
+  proceeds unguarded, correctly — it is not a shipped artifact.
+- **Anything outside the recorded roots**, including the repo-committed
+  boundaries / provinces / resources GeoJSON (git covers those) and the Overpass
+  query text, which the bbox-hash cache key ignores entirely (AD-008).
+- **A part that expires mid-run beyond the margin.** The margin is one day; a run
+  longer than that against a part within a day of its TTL is not covered.
+- **Deliberate sabotage.** Anyone who can rewrite a part can commit a new
+  manifest. This answers "did this move since someone blessed it?", not "who
+  moved it?".
+- It still **recovers nothing**. Every caveat in AD-040 stands; this only moves
+  the moment of discovery from after the loss to before it.
+
+### Cost
+
+The hook edits `streaming.py`, which is in `_SAMPLING_CODE_MODULES`, so the tile
+cache key moves again, to `d68b36c2`. No re-tile had happened since AD-040 moved
+it, so the marginal cost is zero — but the next streaming run re-tiles and **must
+be made with `PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS=120` pinned**. The guard will
+now refuse it if it is not.
+
+### Verification
+
+With the pin, Belgium passes the guard and reports it in one line: *13 parts
+match `HEAD:output/para_bellum_belgium_test_hex_terrain_manifest.json` and none
+expire during this run*; the run completes in 61.6 s and `manifest verify` reads
+13 match / 0 changed / 0 missing.
+
+**Without** the pin — the 30-day TTL against parts 85 to 110 days old, which is
+exactly the Sprint 10 disaster — both `wargame-map generate` and
+`run_streaming.py` refuse, exit 1, and name all **seven** OSM parts they would
+have overwritten. Zero cache parts were touched by either attempt (509 gpkg
+parts, none younger than a day, before and after). Gate:
+`tests/test_cache_guard.py`, 25 checks, no network and no real cache.
+
+---

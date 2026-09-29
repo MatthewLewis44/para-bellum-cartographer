@@ -8,6 +8,7 @@ Usage: uv run python run_streaming.py configs/<spec>.yaml [river_scalerank_max]
 import sys
 import time
 
+from wargame_cartographer.manifest import CacheGuardError
 from wargame_cartographer.streaming import run_streaming_pipeline
 from wargame_cartographer.memory import working_set_mb
 
@@ -16,10 +17,15 @@ def main():
     spec = sys.argv[1] if len(sys.argv) > 1 else "configs/para_bellum_belgium_test.yaml"
     sr = int(sys.argv[2]) if len(sys.argv) > 2 else None  # AD-029 threshold override
     t0 = time.perf_counter()
-    result = run_streaming_pipeline(
-        spec, status_callback=lambda m: print(f"  {m}", flush=True),
-        scalerank_override=sr,
-    )
+    try:
+        result = run_streaming_pipeline(
+            spec, status_callback=lambda m: print(f"  {m}", flush=True),
+            scalerank_override=sr,
+        )
+    except CacheGuardError as e:
+        # AD-042: the refusal text is the guard. Print it, not a traceback.
+        print(str(e), file=sys.stderr)
+        raise SystemExit(1) from None
     total = time.perf_counter() - t0
     print("\n=== Streaming performance ===")
     print(f"spec: {spec}")

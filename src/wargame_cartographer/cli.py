@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import click
@@ -9,6 +10,23 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 console = Console()
+
+
+def _guarded(fn, *args, **kwargs):
+    """Run a pipeline entry point, printing the cache guard's refusal plainly.
+
+    The refusal text IS the guard (AD-042): it names the part, says what is
+    wrong and gives the override. Forty lines of click traceback on top of it
+    is how a guard gets deleted instead of heeded, so the exception is caught
+    here and the message printed on its own. Library callers still get the
+    exception.
+    """
+    from wargame_cartographer.manifest import CacheGuardError
+    try:
+        return fn(*args, **kwargs)
+    except CacheGuardError as e:
+        print(str(e), file=sys.stderr)
+        raise SystemExit(1) from None
 
 
 @click.group()
@@ -37,7 +55,8 @@ def generate(spec_file: str, verbose: bool):
         def status_callback(msg: str):
             progress.update(task, description=msg)
 
-        results = run_pipeline(spec_path, status_callback=status_callback)
+        results = _guarded(run_pipeline, spec_path,
+                           status_callback=status_callback)
 
     console.print(f"\n[bold green]Map generated successfully![/bold green]")
     console.print(f"  Hex count: {results['hex_count']}")
@@ -99,7 +118,8 @@ def quick(name: str, bbox: str, hex_size: float, style: str, output: str, format
         def status_callback(msg: str):
             progress.update(task, description=msg)
 
-        results = run_pipeline(temp_path, status_callback=status_callback)
+        results = _guarded(run_pipeline, temp_path,
+                           status_callback=status_callback)
 
     console.print(f"\n[bold green]Map generated![/bold green]")
     console.print(f"  Hex count: {results['hex_count']}")
@@ -222,7 +242,8 @@ def scenario(analysis_file: str, style: str | None, scale: str | None, hex_size:
             def status_callback(msg: str):
                 progress.update(task, description=msg)
 
-            results = run_pipeline(spec_path, status_callback=status_callback)
+            results = _guarded(run_pipeline, spec_path,
+                               status_callback=status_callback)
 
         console.print(f"[bold green]Map generated![/bold green]")
         console.print(f"  Hex count: {results['hex_count']}")
