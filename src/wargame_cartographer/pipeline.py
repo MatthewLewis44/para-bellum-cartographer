@@ -26,6 +26,7 @@ from wargame_cartographer.geo.projection import select_crs
 from wargame_cartographer.geo.vector import load_vector_data, load_osm_layers
 from wargame_cartographer.hex.grid import HexGrid
 from wargame_cartographer.hex.sampler import HexSampler
+from wargame_cartographer.manifest import reset as reset_manifest_recorder, write_manifest
 from wargame_cartographer.rendering.renderer import MapRenderer, RenderContext
 from wargame_cartographer.rendering.styles import get_style
 from wargame_cartographer.terrain.types import Biome
@@ -60,6 +61,9 @@ def run_pipeline(
 
     # 1. Load spec
     status("Loading map specification...")
+    # Start recording which cache parts this run consumes (AD-040). The
+    # manifest is written from this at the end, after a successful export.
+    reset_manifest_recorder()
     spec = MapSpec.from_yaml(spec_path)
     style = get_style(spec.designer_style, font_scale=spec.font_scale)
     stage_done("load_spec", bbox=f"{spec.bbox.min_lon},{spec.bbox.min_lat},{spec.bbox.max_lon},{spec.bbox.max_lat}")
@@ -255,6 +259,12 @@ def run_pipeline(
             output_dir / f"{safe_name}_hex_terrain.json"
         )
         output_files["json"] = str(json_path.resolve())
+        # AD-040: the receipt is written only now, after a successful export.
+        status("Writing cache snapshot manifest...")
+        manifest_path = write_manifest(
+            json_path, spec, spec_path, run_path="monolithic"
+        )
+        output_files["manifest"] = str(manifest_path.resolve())
 
     plt.close(fig)
     stage_done("export", formats=",".join(output_files.keys()))

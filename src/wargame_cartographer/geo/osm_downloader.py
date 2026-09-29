@@ -38,6 +38,7 @@ from shapely.geometry import LineString, Point, Polygon, MultiPolygon
 from shapely.ops import unary_union
 
 from wargame_cartographer.config.map_spec import BoundingBox
+from wargame_cartographer.manifest import record_part
 
 console = Console()
 
@@ -253,11 +254,15 @@ class OSMDownloader:
             p = self.cache_dir / f"{layer}_{_bbox_hash(bbox)}.gpkg"
             if p.exists():
                 out.append((bbox, p))
-            return out
-        for sub in subs:
-            p = self.cache_dir / f"{layer}_part_{_bbox_hash(sub)}.gpkg"
-            if p.exists():
-                out.append((sub, p))
+        else:
+            for sub in subs:
+                p = self.cache_dir / f"{layer}_part_{_bbox_hash(sub)}.gpkg"
+                if p.exists():
+                    out.append((sub, p))
+        # Everything returned here is read by the caller (streaming tile slices,
+        # AD-029 canal selection), so this is the consumption point (AD-040).
+        for _sub, p in out:
+            record_part(p, layer=f"osm:{layer}")
         return out
 
     def _fetch_layer(
@@ -290,6 +295,7 @@ class OSMDownloader:
 
         cache_path = self.cache_dir / f"{layer}_{_bbox_hash(bbox)}.gpkg"
         if merge and _is_fresh(cache_path):
+            record_part(cache_path, layer=f"osm:{layer}")
             return gpd.read_file(cache_path)
 
         subs = _split_bbox(bbox)
@@ -311,10 +317,14 @@ class OSMDownloader:
                 marker = self.cache_dir / f"{layer}_part_{_bbox_hash(sub)}.empty"
 
             if _is_fresh(part_path):
+                record_part(part_path, layer=f"osm:{layer}")
                 if merge:
                     frames.append(gpd.read_file(part_path))
                 continue
             if _is_fresh(marker):
+                # An .empty marker is consumed input too: it asserts this
+                # sub-bbox holds no features. If it goes, the run refetches.
+                record_part(marker, layer=f"osm:{layer}")
                 continue
 
             if live_fetches > 0:
@@ -349,10 +359,12 @@ class OSMDownloader:
 
             if not records:
                 marker.touch()
+                record_part(marker, layer=f"osm:{layer}", role="fetched")
                 continue
 
             part_gdf = gpd.GeoDataFrame(records, crs="EPSG:4326")
             part_gdf.to_file(part_path, driver="GPKG")
+            record_part(part_path, layer=f"osm:{layer}", role="fetched")
             if merge:
                 frames.append(part_gdf)
             else:
@@ -401,6 +413,7 @@ class OSMDownloader:
         merged = _build_merged()
         if not merged.empty and len(subs) > 1:
             merged.to_file(cache_path, driver="GPKG")
+            record_part(cache_path, layer=f"osm:{layer}", role="fetched")
             console.print(
                 f"  {layer}: {len(merged)} features merged from {len(subs)} sub-bboxes",
                 style="dim",

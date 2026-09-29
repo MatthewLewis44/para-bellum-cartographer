@@ -45,6 +45,7 @@ from wargame_cartographer.hex.sampler import (
     _assign_settlements_to_hexes,
     _assign_resources_to_hexes,
 )
+from wargame_cartographer.manifest import reset as reset_manifest_recorder, write_manifest
 from wargame_cartographer.memory import working_set_mb
 
 # Bump when the per-tile sampling logic changes, to invalidate stale tile caches.
@@ -202,6 +203,8 @@ def run_streaming_pipeline(
         if status_callback:
             status_callback(msg)
 
+    # Start recording which cache parts this run consumes (AD-040).
+    reset_manifest_recorder()
     spec = MapSpec.from_yaml(spec_path)
     if scalerank_override is not None:
         spec.river_scalerank_max = scalerank_override
@@ -393,6 +396,11 @@ def run_streaming_pipeline(
     json_path = export_game_data(
         grid, result, spec, output_dir / f"{safe_name}_hex_terrain.json"
     )
+    # AD-040: the receipt is written only now, after a successful export.
+    manifest_path = write_manifest(
+        json_path, spec, spec_path, run_path="streaming",
+        extra={"streaming": {"tiles": n_tiles, "tile_cache_dir": tile_dir.name}},
+    )
     status("Done (streaming)!")
 
     return {
@@ -401,4 +409,5 @@ def run_streaming_pipeline(
         "tile_peak_mb": round(tile_peak_mb, 0),
         "global_peak_mb": round(global_peak_mb, 0),
         "output_json": str(json_path),
+        "output_manifest": str(manifest_path),
     }

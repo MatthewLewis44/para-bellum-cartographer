@@ -18,6 +18,7 @@ from wargame_cartographer.config.defaults import (
     NATURAL_EARTH_LAYERS,
 )
 from wargame_cartographer.config.map_spec import BoundingBox
+from wargame_cartographer.manifest import record_part
 
 console = Console()
 
@@ -63,10 +64,14 @@ class DataDownloader:
             with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
                 cache_path.mkdir(parents=True, exist_ok=True)
                 zf.extractall(cache_path)
+            record_part(cache_path, layer=f"natural_earth:{layer}", role="fetched")
 
         shp_files = list(cache_path.glob("*.shp"))
         if not shp_files:
             raise FileNotFoundError(f"No .shp file found in {cache_path}")
+        # The whole unpacked shapefile directory is the consumed part: .shp
+        # alone would miss the .dbf attributes the pipeline reads (scalerank).
+        record_part(cache_path, layer=f"natural_earth:{layer}")
 
         gdf = gpd.read_file(shp_files[0])
         if bbox is not None:

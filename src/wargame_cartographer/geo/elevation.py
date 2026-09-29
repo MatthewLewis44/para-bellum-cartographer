@@ -11,6 +11,7 @@ from matplotlib.colors import LightSource
 from rich.console import Console
 
 from wargame_cartographer.config.map_spec import BoundingBox
+from wargame_cartographer.manifest import record_part
 
 console = Console()
 
@@ -54,11 +55,14 @@ class ElevationProcessor:
 
         # Try to load cached GeoTIFF
         if cache_path.exists():
+            record_part(cache_path, layer="elevation:dem")
             return self._load_geotiff(cache_path)
 
         # Try downloading SRTM via rasterio/SRTM
         try:
-            return self._download_srtm(bbox, cache_path)
+            out = self._download_srtm(bbox, cache_path)
+            record_part(cache_path, layer="elevation:dem", role="fetched")
+            return out
         except Exception as e:
             if not allow_synthetic:
                 raise RuntimeError(
@@ -196,6 +200,7 @@ class ElevationProcessor:
         path = self.dem_cache_path(full_bbox)
         if not path.exists():
             raise FileNotFoundError(f"full DEM not cached: {path}")
+        record_part(path, layer="elevation:dem")
         with rasterio.open(path) as src:
             win = from_bounds(
                 window_bbox.min_lon, window_bbox.min_lat,
