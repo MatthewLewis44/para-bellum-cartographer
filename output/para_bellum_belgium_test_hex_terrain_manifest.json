@@ -1,12 +1,12 @@
 {
   "manifest_version": "1",
-  "generated_at": "2026-09-29T17:01:47Z",
+  "generated_at": "2026-09-29T18:42:54Z",
   "artifact": {
     "file": "para_bellum_belgium_test_hex_terrain.json",
     "bytes": 1188298,
     "hex_count": 775,
     "schema_version": "1.0.6",
-    "raw_sha256": "612dca7347d388d2ecb002b44598c1411661c8bfa85779f13d0ab467533aa827",
+    "raw_sha256": "df013aa896af00d688ae1a4cdc9bc919b0663acbee8b7a5d76f63ff081d6f934",
     "content_sha256": "6a51ce2439ae95e56de71e470aef10bc789ff957311b98c130e38a128c68a486"
   },
   "run": {
@@ -16,7 +16,7 @@
     "exporter_source_sha256": "a32a75df5c69aa8417014e9f1ec4c8efe976ff297a7f1a12ab5d3649bd7e139e",
     "python": "3.12.0",
     "osm_cache_max_age_days": "120",
-    "commit": "92f7cfca13352c52274e787cfe0e826c819de710",
+    "commit": "2f6f071115255c0ceaff5f6cefe7ab0ec036afc2",
     "dirty": true,
     "streaming_version": "s7.0",
     "sampling_code_hash": "decd1dee",
@@ -48,61 +48,61 @@
       "root": "vector",
       "path": "ne_10m_coastline",
       "layer": "natural_earth:coastline",
-      "role": "fetched",
+      "role": "cache_hit",
       "kind": "dir",
       "bytes": 7269989,
       "sha256": "a4cb9251762e317e1603d02a802e58a5ee7bb52fd6a82a047ff17af60fe637e4",
       "hash_algo": "sha256-dir",
       "fetched_at": "2026-09-29T17:00:39Z",
-      "hash_reused": false
+      "hash_reused": true
     },
     {
       "root": "vector",
       "path": "ne_10m_land",
       "layer": "natural_earth:land",
-      "role": "fetched",
+      "role": "cache_hit",
       "kind": "dir",
       "bytes": 7204615,
       "sha256": "2b4e97832f9a82ab287b2b68debf0ed9ebfe211dc86dcf633cef40540609c3cb",
       "hash_algo": "sha256-dir",
-      "fetched_at": "2026-09-29T17:00:41Z",
-      "hash_reused": false
+      "fetched_at": "2026-09-29T17:05:45Z",
+      "hash_reused": true
     },
     {
       "root": "vector",
       "path": "ne_10m_rivers",
       "layer": "natural_earth:rivers",
-      "role": "fetched",
+      "role": "cache_hit",
       "kind": "dir",
       "bytes": 6260002,
       "sha256": "7f057302361e54c67d4c8d55fd2bd6e9e9901b0842872bb95ad971208c756722",
       "hash_algo": "sha256-dir",
-      "fetched_at": "2026-09-29T17:00:52Z",
-      "hash_reused": false
+      "fetched_at": "2026-09-29T17:03:49Z",
+      "hash_reused": true
     },
     {
       "root": "vector",
       "path": "ne_10m_lakes",
       "layer": "natural_earth:lakes",
-      "role": "fetched",
+      "role": "cache_hit",
       "kind": "dir",
       "bytes": 12732546,
       "sha256": "076ef20fa6e1fb4710966a66aa9f2691904f2883e25cd38571d72f52c651e71b",
       "hash_algo": "sha256-dir",
-      "fetched_at": "2026-09-29T17:00:43Z",
-      "hash_reused": false
+      "fetched_at": "2026-09-29T17:05:46Z",
+      "hash_reused": true
     },
     {
       "root": "vector",
       "path": "ne_10m_countries",
       "layer": "natural_earth:countries",
-      "role": "fetched",
+      "role": "cache_hit",
       "kind": "dir",
       "bytes": 9726410,
       "sha256": "1aabb8114ddf7471af68afa373eb4248601773b7c77a5d76ac79f1029ab9846e",
       "hash_algo": "sha256-dir",
       "fetched_at": "2026-09-29T17:00:45Z",
-      "hash_reused": false
+      "hash_reused": true
     },
     {
       "root": "osm",
@@ -204,8 +204,8 @@
   "hash_summary": {
     "parts": 13,
     "bytes": 759497992,
-    "hashed_this_run": 5,
-    "reused_from_hash_cache": 8,
-    "seconds": 0.54
+    "hashed_this_run": 0,
+    "reused_from_hash_cache": 13,
+    "seconds": 0.19
   }
 }

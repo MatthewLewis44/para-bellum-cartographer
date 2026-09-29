@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import os
 import time
 import zipfile
 from pathlib import Path
@@ -37,6 +38,68 @@ def _is_fresh(path: Path, max_age_days: int = CACHE_MAX_AGE_DAYS) -> bool:
     return age_days < max_age_days
 
 
+# --- Natural Earth layer freshness (AD-041) --------------------------------
+#
+# NE layers unpack into a DIRECTORY, and a directory's mtime does not move when
+# the files inside it are overwritten. `_is_fresh(cache_path)` on the directory
+# therefore reported the age of the FIRST extraction forever: once a layer aged
+# past the TTL it re-downloaded on EVERY run and never came back. A 15-tile
+# Belgium streaming run pulled land and lakes 30 times, and ne_10m_rivers — the
+# AD-029 river SELECTION source, i.e. map content — came down on every run.
+# Found by the AD-040 manifest, which marked those layers `role: fetched`.
+#
+# Freshness now comes from an explicit stamp written after a COMPLETED
+# extraction, which also fixes the quieter half of the bug: a half-extracted
+# directory used to look like a good cache.
+_NE_STAMP_SUFFIX = ".fetched"
+
+
+def _ne_stamp_path(layer_dir: Path) -> Path:
+    """Stamp for an unpacked NE layer, kept BESIDE the directory, not inside.
+
+    Inside would change the directory's content hash on every refresh, and that
+    hash is what an artifact manifest records for this part (AD-040).
+    """
+    return layer_dir.with_name(layer_dir.name + _NE_STAMP_SUFFIX)
+
+
+def _write_ne_stamp(layer_dir: Path, when: float | None = None) -> None:
+    """Record that ``layer_dir`` holds a complete extraction as of ``when``."""
+    stamp = _ne_stamp_path(layer_dir)
+    try:
+        stamp.touch()
+        if when is not None:
+            os.utime(stamp, (when, when))
+    except OSError:
+        pass  # a lost stamp costs one re-download, never correctness
+
+
+def ne_fetch_time(layer_dir: Path) -> float | None:
+    """Epoch seconds when this NE layer was last extracted, or None if never.
+
+    A cache written before the stamp existed adopts the newest file inside it
+    as its fetch time and is stamped with that, backdated — so landing this fix
+    re-dates existing caches instead of re-downloading them.
+    """
+    if not layer_dir.is_dir():
+        return None
+    stamp = _ne_stamp_path(layer_dir)
+    if stamp.exists():
+        return stamp.stat().st_mtime
+    files = [f for f in layer_dir.glob("*") if f.is_file()]
+    if not files:
+        return None
+    newest = max(f.stat().st_mtime for f in files)
+    _write_ne_stamp(layer_dir, newest)
+    return newest
+
+
+def ne_layer_is_fresh(layer_dir: Path,
+                      max_age_days: int = CACHE_MAX_AGE_DAYS) -> bool:
+    fetched = ne_fetch_time(layer_dir)
+    return fetched is not None and (time.time() - fetched) / 86400 < max_age_days
+
+
 class DataDownloader:
     """Fetch and cache geographic data."""
 
@@ -56,7 +119,7 @@ class DataDownloader:
 
         cache_path = self.cache_dir / "vector" / f"ne_10m_{layer}"
 
-        if not cache_path.exists() or not _is_fresh(cache_path):
+        if not ne_layer_is_fresh(cache_path):
             url = NATURAL_EARTH_LAYERS[layer]
             console.print(f"  Downloading Natural Earth {layer}...", style="dim")
             resp = requests.get(url, timeout=120)
@@ -64,6 +127,7 @@ class DataDownloader:
             with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
                 cache_path.mkdir(parents=True, exist_ok=True)
                 zf.extractall(cache_path)
+            _write_ne_stamp(cache_path)   # only after a COMPLETE extraction
             record_part(cache_path, layer=f"natural_earth:{layer}", role="fetched")
 
         shp_files = list(cache_path.glob("*.shp"))
