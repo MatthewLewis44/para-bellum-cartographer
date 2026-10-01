@@ -35,6 +35,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 from wargame_cartographer.config.map_spec import MapSpec           # noqa: E402
 from wargame_cartographer.hex.grid import OFFSET_NEIGHBOR_DELTAS   # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "tools"))
+from build_facilities_1930 import check_artifact as check_facilities  # noqa: E402
+
 EXPECTED_SCHEMA = "1.0.7"
 
 # ---------------------------------------------------------------------------
@@ -125,6 +128,10 @@ EXPECTATIONS = {
                      "urban": ("pct", 15, 28), "forest": ("pct", 4, 12)},
     ),
     "para_bellum_east_expansion": dict(
+        # The shipped game map: its authored starting industrial base must be
+        # a valid start state (AD-043), so the facility checks hard-fail here
+        # and at least this many facilities must be present.
+        start_state_min_facilities=60,
         # Bands calibrated to the first Sprint 6 artifact (18,719 hexes,
         # 2026-07-04); initial geometry-derived guesses corrected for DNK
         # (bbox cuts Denmark at 56°N) and the Alpine/Carpathian slope share.
@@ -736,6 +743,29 @@ def main() -> int:
         h = closest_hex(lat, lon)
         check(label, h["political"]["province_at_start"] == want,
               f"hex {h['id']} -> {h['political']['province_at_start'] or '(none)'}")
+
+    # --- Starting industrial base (v1.0.7, AD-043) -----------------------------
+    # One implementation of the checks, in tools/build_facilities_1930.py. They
+    # HARD-FAIL only on the shipped map (start_state_min_facilities set): a test
+    # frame crops provinces and leaves them seatless (AD-M19), so the same
+    # authored layer legitimately lands a mill in a 0-slot province or loses a
+    # plant past the bbox edge. Test frames report, and are not start states.
+    if ver_t >= (1, 0, 7):
+        missing = [h["id"] for h in hexes if not isinstance(h.get("facilities"), list)]
+        check("every hex carries a facilities array", not missing, f"{len(missing)} missing")
+        fac_checks, fac_report = check_facilities(data)
+        n_fac = sum(len(h.get("facilities") or []) for h in hexes)
+        min_fac = exp.get("start_state_min_facilities")
+        if min_fac is not None:
+            check(f"starting industrial base present (>= {min_fac} facilities)",
+                  n_fac >= min_fac, f"{n_fac}")
+            for name, ok, detail in fac_checks:
+                check(name, ok, detail)
+        else:
+            for name, ok, detail in fac_checks:
+                check(f"[info] test frame, not a start state: {name}"
+                      + ("" if ok else " (cropped)"), True, "" if ok else detail)
+        resource_matrix.extend(fac_report)
 
     # Authored-layer totals (global facts, not per-bbox)
     mdp = Path("data/boundaries/provinces_1930_metadata.json")

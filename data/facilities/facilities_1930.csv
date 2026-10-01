@@ -1,0 +1,75 @@
+name,kind,tier,country,lon,lat,deposit,confidence,note
+Krupp Gussstahlfabrik (Essen),steel_mill,3,DEU,7.01,51.45,,site,Converted from the resources_1930 steel works point of the same name (AD-M03 retirement).
+Thyssen (Duisburg-Hamborn),steel_mill,3,DEU,6.77,51.48,,site,Converted from resources_1930. August Thyssen-Hütte; Vereinigte Stahlwerke from 1926.
+Gutehoffnungshütte (Oberhausen),steel_mill,2,DEU,6.85,51.47,,site,Converted from resources_1930.
+Hoesch (Dortmund),steel_mill,2,DEU,7.49,51.51,,site,Converted from resources_1930.
+Dortmunder Union (Dortmund),steel_mill,2,DEU,7.44,51.52,,site,Vereinigte Stahlwerke works from 1926.
+Bochumer Verein (Bochum),steel_mill,2,DEU,7.20,51.48,,site,Vereinigte Stahlwerke works from 1926; cast steel.
+Donnersmarckhütte (Hindenburg O.S. / Zabrze),steel_mill,1,DEU,18.79,50.32,,site,Converted from resources_1930. Retained by Germany in the 1922 Upper Silesia partition.
+Ilseder Hütte (Peine),steel_mill,1,DEU,10.23,52.29,,site,Converted from resources_1930. Smelted the local Peine-Ilsede ore.
+Maxhütte (Sulzbach-Rosenberg),steel_mill,1,DEU,11.75,49.51,,site,Eisenwerk-Gesellschaft Maximilianshütte; Bavaria's integrated works on Oberpfalz ore.
+Stahlwerk Riesa,steel_mill,1,DEU,13.29,51.31,,site,Mitteldeutsche Stahlwerke (Flick); Saxony's principal steel site.
+Stahlwerk Hennigsdorf,steel_mill,1,DEU,13.20,52.64,,site,Electric/open-hearth steelworks north-west of Berlin (Mitteldeutsche Stahlwerke from 1926).
+Goldenberg-Werk (Knapsack),power_plant,3,DEU,6.86,50.87,,site,RWE lignite station in the Ville; among the largest in Europe in 1930. Powers the Rhenish works.
+Gersteinwerk (Werne-Stockum),power_plant,3,DEU,7.72,51.67,,site,VEW coal-fired station (1917) serving the eastern Ruhr.
+Großkraftwerk Klingenberg (Berlin-Rummelsburg),power_plant,3,DEU,13.49,52.49,,site,BEWAG station commissioned 1927.
+Kraftwerk Zschornewitz (Golpa),power_plant,3,DEU,12.40,51.72,,site,Lignite station (1915) at the Golpa pit; supplied central Germany and Berlin.
+Kraftwerk Böhlen,power_plant,2,DEU,12.38,51.20,,site,ASW lignite station south of Leipzig (1925).
+Walchenseekraftwerk (Kochel),power_plant,2,DEU,11.37,47.65,,site,Bayernwerk hydro station (1924); backbone of the Bavarian grid.
+Kraftwerk Mikultschütz,power_plant,2,DEU,18.80,50.34,,approximate,Coal-fired station in German Upper Silesia (Kreis Hindenburg). Identity and date to verify.
+Ilseder Hütte works power station (Peine),power_plant,1,DEU,10.24,52.29,,approximate,In-works generation at the Ilseder Hütte. Placed at the works.
+Grube Füsseberg (Daaden),mine,2,DEU,7.96,50.73,iron,site,Siegerland siderite mine.
+Grube Fortuna (Solms-Oberbiel),mine,1,DEU,8.42,50.55,iron,site,Lahn-Dill haematite mine.
+Grube Lengede-Bülten,mine,1,DEU,10.30,52.20,iron,site,Peine-Ilsede ore field; fed the Ilseder Hütte.
+Rangierbahnhof Hamm,rail_yard,3,DEU,7.80,51.69,,site,The principal Ruhr marshalling yard.
+Rangierbahnhof Seelze,rail_yard,2,DEU,9.60,52.40,,site,Hannover's west marshalling yard.
+Rangierbahnhof Wustermark,rail_yard,2,DEU,12.93,52.55,,site,Berlin's western marshalling yard (1909).
+Rangierbahnhof Engelsdorf (Leipzig),rail_yard,2,DEU,12.48,51.34,,site,Leipzig's main marshalling yard.
+Röchling Eisen- und Stahlwerke (Völklingen),steel_mill,2,SAA,6.85,49.25,,site,The Saar's largest works.
+Neunkircher Eisenwerk (Neunkirchen),steel_mill,1,SAA,7.17,49.35,,site,Stumm works.
+Kraftwerk Fenne,power_plant,2,SAA,6.88,49.23,,site,Coal-fired station at Fenne opposite Völklingen.
+ARBED Esch-Belval (Esch-sur-Alzette),steel_mill,2,LUX,5.95,49.50,,site,ARBED's Adolf-Emil works on the Minette.
+ARBED works power station (Esch-sur-Alzette),power_plant,2,LUX,5.97,49.50,,approximate,In-works gas-engine generation at the Esch works. Placed at the works.
+Minette iron mine (Esch-sur-Alzette),mine,1,LUX,6.02,49.51,iron,approximate,Luxembourg Minette field around Esch. Placed on the authored iron basin; Rumelange itself resolves to French Moselle.
+De Wendel (Hayange),steel_mill,2,FRA,6.08,49.33,,site,Les Petits-Fils de François de Wendel; the Fensch valley works.
+Senelle-Maubeuge (Longwy),steel_mill,2,FRA,5.78,49.49,,site,Longwy basin integrated works. Placed just south of the town: Longwy sits on the tripoint and its own hex resolves to Belgium.
+Pont-à-Mousson ironworks,steel_mill,1,FRA,6.06,48.90,,site,Société des Hauts Fourneaux et Fonderies de Pont-à-Mousson; cast-iron pipe.
+De Wendel works power station (Hayange),power_plant,2,FRA,6.09,49.33,,approximate,In-works generation at Hayange. Placed at the works.
+Longwy works power station,power_plant,2,FRA,5.79,49.49,,approximate,In-works generation in the Longwy basin. Placed at the works.
+Mine de Thil,mine,1,FRA,5.91,49.46,iron,approximate,Lorraine minette mine in the Longwy basin (Thil). Placed well inside France: the basin straddles the tripoint.
+Cockerill (Seraing),steel_mill,3,BEL,5.50,50.59,,site,Converted from resources_1930.
+Ougrée-Marihaye (Liège),steel_mill,2,BEL,5.54,50.61,,site,Converted from resources_1930.
+Seraing works power station,power_plant,2,BEL,5.51,50.60,,approximate,In-works generation at Cockerill. Placed at the works.
+Staatsmijn Maurits power station (Geleen),power_plant,1,NLD,5.83,50.97,,approximate,Dutch State Mines power station in the Limburg coalfield. Date to verify.
+Huta Królewska (Królewska Huta / Chorzów),steel_mill,2,POL,18.95,50.30,,site,Converted from resources_1930.
+Huta Pokój (Nowy Bytom),steel_mill,2,POL,18.87,50.27,,site,Converted from resources_1930.
+Huta Bankowa (Dąbrowa Górnicza),steel_mill,2,POL,19.27,50.33,,site,Converted from resources_1930.
+Huta Częstochowa (B. Hantke),steel_mill,1,POL,19.09,50.83,,site,Converted from resources_1930.
+Elektrownia Chorzów,power_plant,3,POL,18.96,50.29,,site,Large coal-fired station (1915) in Polish Upper Silesia.
+Elektrownia Zagłębie (Będzin),power_plant,2,POL,19.13,50.33,,approximate,Coal-fired station serving the Dąbrowa basin. Identity to verify.
+Elektrownia Powiśle (Warszawa),power_plant,2,POL,21.03,52.24,,site,Warsaw's municipal station (1904).
+Częstochowa basin iron mine,mine,1,POL,19.15,50.85,iron,approximate,Sideritic ore of the Częstochowa basin. Placed on the authored iron basin.
+Vítkovice Ironworks (Ostrava),steel_mill,3,CSK,18.28,49.81,,site,Converted from resources_1930.
+Třinec Ironworks,steel_mill,2,CSK,18.67,49.68,,site,Converted from resources_1930.
+Poldi Works (Kladno),steel_mill,2,CSK,14.10,50.14,,site,Converted from resources_1930.
+Škoda Works (Plzeň),steel_mill,3,CSK,13.38,49.74,,site,Converted from resources_1930.
+Vítkovice works power station (Ostrava),power_plant,3,CSK,18.29,49.81,,approximate,In-works generation at Vítkovice. Placed at the works.
+Elektrárna Holešovice (Praha),power_plant,2,CSK,14.44,50.10,,site,Prague's municipal station.
+Nučice iron mine,mine,1,CSK,14.20,49.96,iron,approximate,Barrandian ore at Nučice. Placed on the authored iron district.
+Alpine Montan Donawitz (Leoben),steel_mill,2,AUT,15.07,47.38,,site,Converted from resources_1930.
+Böhler Works (Kapfenberg),steel_mill,1,AUT,15.29,47.44,,site,Converted from resources_1930.
+Erzberg (Eisenerz),mine,3,AUT,14.90,47.52,iron,site,Austria's iron anchor; opencast siderite.
+Kraftwerk Pernegg (Mur),power_plant,2,AUT,15.34,47.34,,approximate,Mur hydro station. Commissioning date to verify against 1930.
+Kraftwerk Simmering (Wien),power_plant,2,AUT,16.43,48.18,,site,Vienna's municipal coal-fired station.
+Diósgyőr ironworks (Miskolc),steel_mill,2,HUN,20.68,48.10,,site,State ironworks (MÁVAG group).
+Ózd ironworks,steel_mill,1,HUN,20.29,48.22,,site,Rimamurány-Salgótarján Ironworks Co.
+Manfréd Weiss Works (Csepel),steel_mill,2,HUN,19.07,47.42,,site,Csepel Island steel and engineering works.
+Kelenföld power station (Budapest),power_plant,2,HUN,19.04,47.46,,site,Budapest municipal station (1914).
+Bánhida power station,power_plant,2,HUN,18.40,47.58,,site,Lignite station commissioned 1930 at the Tatabánya field.
+Diósgyőr works power station,power_plant,2,HUN,20.67,48.10,,approximate,In-works generation at Diósgyőr. Placed at the works.
+KID Jesenice,steel_mill,1,YUG,14.05,46.44,,site,Kranjska industrijska družba ironworks.
+Fala hydroelectric plant (Drava),power_plant,2,YUG,15.47,46.55,,site,Drava hydro station (1918).
+Von Roll (Gerlafingen),steel_mill,1,CHE,7.57,47.17,,site,Von Roll ironworks.
+Kraftwerk Gösgen (Aare),power_plant,2,CHE,7.97,47.37,,site,Aare hydro station (1917).
+Kraftwerk Hagneck (Aare),power_plant,2,CHE,7.19,47.06,,site,BKW Aare hydro station (1900). Pairs with Von Roll: Gerlafingen resolves into the Bern province on this map and Mühleberg into Fribourg.
+H.C. Ørsted Værket (København),power_plant,2,DNK,12.57,55.66,,site,Copenhagen municipal station (1920).
