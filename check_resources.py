@@ -33,27 +33,26 @@ TYPES = ('coal', 'steel', 'iron', 'oil')
 # Nations that must hold >= this many distinct resource types, IF the
 # artifact frames them with at least MIN_LAND_HEXES land hexes. Nations the
 # bbox doesn't reach are skipped, so Belgium/Benelux artifacts still pass.
-NATION_FLOOR = {'DEU': 3, 'POL': 3, 'CSK': 3, 'AUT': 3}
+# AUT 3 -> 2 (AD-044): its third type was steel, now authored mills.
+NATION_FLOOR = {'DEU': 3, 'POL': 3, 'CSK': 3, 'AUT': 2}
 MIN_LAND_HEXES = 200
 
-# (label, lat, lon, required resources present)
+# (label, lat, lon, required resources present). No steel: the works points
+# retired into authored mills (AD-044); see tools/build_facilities_1930.py.
 SPOT = [
     # western (Sprint 2/3)
-    ('Essen',        51.45,  7.01, ('coal', 'steel')),
-    ('Liège',        50.61,  5.54, ('steel',)),
+    ('Essen',        51.45,  7.01, ('coal',)),
     ('Saarbrücken',  49.41,  6.99, ('coal',)),
     ('Charleroi',    50.41,  4.44, ('coal',)),
     # eastern (Pre-Sprint 9.0)
     ('Katowice',     50.26, 19.02, ('coal',)),
-    ('Chorzów',      50.30, 18.95, ('coal', 'steel')),
-    ('Ostrava',      49.82, 18.29, ('coal', 'steel')),
+    ('Chorzów',      50.30, 18.95, ('coal',)),
+    ('Ostrava',      49.82, 18.29, ('coal',)),
     ('Most/Brüx',    50.53, 13.64, ('coal',)),
     ('Senftenberg',  51.52, 13.99, ('coal',)),
     ('Częstochowa',  50.81, 19.10, ('iron',)),
     ('Erzberg',      47.54, 14.88, ('iron',)),
-    ('Donawitz',     47.38, 15.07, ('steel',)),
     ('Borysław',     49.29, 23.36, ('oil',)),
-    ('Plzeň',        49.74, 13.38, ('steel',)),
 ]
 
 with open(OUTPUT, encoding='utf-8') as f:

@@ -1829,3 +1829,49 @@ Pass A artifact was never staged. Nothing is staged at the current version, so
 "artifact first" does not apply. The 1.0.7 artifact is produced here, and the
 loader bump, `HexData`, the golden fixture and the artifact copy land on the
 Unity side as **one** commit.
+
+## AD-044 — AD-M03's transitional steel deposits retire into authored mills
+
+**Date:** 2026-10-01 (Sprint 12, pass B)
+**Status:** Accepted. Matthew approved the edit directly (2026-10-01), on
+PB-MANAGER's ruling that it should happen.
+
+`data/resources/resources_1930.geojson` carried **18** `resource_type: "steel"`
+Point features: DEU 6, POL 4, CSK 4, BEL 2, AUT 2. These were steelworks,
+authored as deposits because the sim had no mill. AD-M03 named them
+transitional, to retire once mills existed. Sprint 11 built the mill, and pass B
+authors one at each of the 18 sites under the same name at the same coordinates
+(AD-043). All 18 are therefore **removed** from the resource layer, and the other
+30 features are byte-identical.
+
+**Why remove, not pin.** Keeping them would make every one of those sites yield
+steel twice, once through the dispersed deposit term and once through the mill on
+the same hex. The worst place for that is the Ruhr, where a player's steel
+picture is formed. Pinning the legacy set would have left the fix to the sim,
+which would have to ignore steel in the dispersed term: a code workaround for data
+that is wrong.
+
+**Consequences.**
+
+* `resources.steel` is `false` on every hex. The field stays (additive-only), and
+  the facility gate fails any artifact on which it is true. The sim's dispersed
+  steel arm becomes **unreachable**, not wrong. Deleting it is PB-SIM's call.
+* **Nobody in the east frame loses steel.** This was measured before the run,
+  from the real export assignment. Each of the 14 east hexes that carried steel
+  receives a mill on the same hex. HUN, FRA, CHE, YUG, LUX and SAA gain a steel
+  source they did not have. BEL's two works lie west of the east frame edge,
+  so BEL had no in-frame steel to lose.
+* **National steel supply rises materially at the start** (DEU: 5 steel hexes
+  become 11 mills). This is **placeholder-driven and not tuned.** The figure
+  comes from the sim's `[P]` yield tables and is that seat's to compute, not
+  this repository's. Sprint 16 is where it gets judged.
+* **AUT's "distinct resource types" floor drops from 3 to 2** in
+  `validate_full_bbox.py` and `check_resources.py`. Its third type was steel. The
+  steel floors and steel spot points are gone from both, because steel is no
+  longer a deposit type.
+* `resources_1930.geojson` is in the tile-cache input hash, so this edit re-tiles
+  every streaming tile once. That cost was accepted.
+
+**Constraint 2 of pass B** ("no steel deposits are authored") is enforced by
+`tools/build_facilities_1930.py`, which refuses to build while the resource layer
+carries any steel feature, and on the artifact by the facility gate.

@@ -1,7 +1,7 @@
 {
   "type": "FeatureCollection",
   "metadata": {
-    "description": "Hand-authored 1930-era strategic resource locations for the Para Bellum map. Coal/lignite basins, iron-ore districts, oil fields (polygons) and major iron & steel works (points). Covers the western Sprint-2 region (Benelux + Western Germany, features 1-12, authored Sprint 3) AND the Sprint-6 eastward expansion — eastern Germany, Poland, Czechoslovakia and Austria (features 13-48, authored Pre-Sprint 9.0).",
+    "description": "Hand-authored 1930-era strategic resource locations for the Para Bellum map. Coal/lignite basins, iron-ore districts, oil fields (polygons) and point features (oil fields). The major iron & steel works that were points here are RETIRED (AD-044, AD-M03): each is now an authored steel_mill in data/facilities/facilities_1930.csv, and this layer carries no steel feature. Covers the western Sprint-2 region (Benelux + Western Germany, features 1-12, authored Sprint 3) AND the Sprint-6 eastward expansion — eastern Germany, Poland, Czechoslovakia and Austria (features 13-48, authored Pre-Sprint 9.0).",
     "source": "Authored from public-domain period industrial geography (Ruhr, Saar, Sambre-Meuse/Borinage, Campine/Limburg, Liège, Lorraine; Upper Silesia, Dąbrowa, Lower Silesia, Ostrava-Karviná, North Bohemia, Sokolov, Central German and Lusatian lignite, Styrian lignite; Siegerland, Lahn-Dill, Peine-Salzgitter, Erzberg, Częstochowa, Nučice; Galician and Vienna-Basin oil). No licensed boundary or concession data was used. Public-domain compatible per AD-018.",
     "era": "1930",
     "review_status": "REVIEWED-EAST (Pre-Sprint 9.0) — western features 1-12 remain the Sprint-3 DRAFT, unchanged and still pending Matthew's historical review. Eastern features 13-48 were authored against the significance rule below and cross-checked feature-by-feature against data/boundaries/boundaries_1930.geojson (zero attribution disagreements). Coordinates are approximate basin/district/works centroids.",
@@ -31,41 +31,11 @@
     },
     {
       "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Krupp Gussstahlfabrik (Essen)", "country": "DEU", "historical_era": "1930"},
-      "geometry": {"type": "Point", "coordinates": [7.01, 51.45]}
-    },
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Thyssen (Duisburg-Hamborn)", "country": "DEU", "historical_era": "1930"},
-      "geometry": {"type": "Point", "coordinates": [6.77, 51.48]}
-    },
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Gutehoffnungshütte (Oberhausen)", "country": "DEU", "historical_era": "1930"},
-      "geometry": {"type": "Point", "coordinates": [6.85, 51.47]}
-    },
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Hoesch (Dortmund)", "country": "DEU", "historical_era": "1930"},
-      "geometry": {"type": "Point", "coordinates": [7.49, 51.51]}
-    },
-    {
-      "type": "Feature",
       "properties": {"resource_type": "coal", "name": "Saar Coal Basin (Saarbrücken-Neunkirchen)", "country": "DEU", "historical_era": "1930"},
       "geometry": {
         "type": "Polygon",
         "coordinates": [[[6.75, 49.50], [7.25, 49.50], [7.25, 49.20], [6.75, 49.20], [6.75, 49.50]]]
       }
-    },
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Cockerill (Seraing)", "country": "BEL", "historical_era": "1930"},
-      "geometry": {"type": "Point", "coordinates": [5.50, 50.59]}
-    },
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Ougrée-Marihaye (Liège)", "country": "BEL", "historical_era": "1930"},
-      "geometry": {"type": "Point", "coordinates": [5.54, 50.61]}
     },
     {
       "type": "Feature",
@@ -246,66 +216,6 @@
       }
     },
 
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Huta Królewska (Królewska Huta / Chorzów)", "country": "POL", "historical_era": "1930"},
-      "geometry": {"type": "Point", "coordinates": [18.95, 50.30]}
-    },
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Huta Pokój (Nowy Bytom)", "country": "POL", "historical_era": "1930"},
-      "geometry": {"type": "Point", "coordinates": [18.87, 50.27]}
-    },
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Huta Bankowa (Dąbrowa Górnicza)", "country": "POL", "historical_era": "1930"},
-      "geometry": {"type": "Point", "coordinates": [19.27, 50.33]}
-    },
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Huta Częstochowa (B. Hantke)", "country": "POL", "historical_era": "1930"},
-      "geometry": {"type": "Point", "coordinates": [19.09, 50.83]}
-    },
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Donnersmarckhütte (Hindenburg O.S. / Zabrze)", "country": "DEU", "historical_era": "1930", "note": "Added Pre-Sprint 9.0: works Germany retained in its share of Upper Silesia after the 1922 partition."},
-      "geometry": {"type": "Point", "coordinates": [18.79, 50.32]}
-    },
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Vítkovice Ironworks (Ostrava)", "country": "CSK", "historical_era": "1930"},
-      "geometry": {"type": "Point", "coordinates": [18.28, 49.81]}
-    },
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Třinec Ironworks", "country": "CSK", "historical_era": "1930"},
-      "geometry": {"type": "Point", "coordinates": [18.67, 49.68]}
-    },
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Poldi Works (Kladno)", "country": "CSK", "historical_era": "1930", "note": "The Kladno coal district itself is deliberately NOT authored (below the significance rule); the works are."},
-      "geometry": {"type": "Point", "coordinates": [14.10, 50.14]}
-    },
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Škoda Works (Plzeň)", "country": "CSK", "historical_era": "1930"},
-      "geometry": {"type": "Point", "coordinates": [13.38, 49.74]}
-    },
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Alpine Montan Donawitz (Leoben)", "country": "AUT", "historical_era": "1930"},
-      "geometry": {"type": "Point", "coordinates": [15.07, 47.38]}
-    },
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Böhler Works (Kapfenberg)", "country": "AUT", "historical_era": "1930"},
-      "geometry": {"type": "Point", "coordinates": [15.29, 47.44]}
-    },
-    {
-      "type": "Feature",
-      "properties": {"resource_type": "steel", "name": "Ilseder Hütte (Peine)", "country": "DEU", "historical_era": "1930"},
-      "geometry": {"type": "Point", "coordinates": [10.23, 52.29]}
-    },
 
     {
       "type": "Feature",

@@ -1,0 +1,1378 @@
+{
+ "type": "FeatureCollection",
+ "metadata": {
+  "description": "Hand-authored 1930 starting industrial base for Para Bellum: power plants, steel mills, iron mines and rail yards (AD-043).",
+  "generated_from": "data/facilities/facilities_1930.csv by tools/build_facilities_1930.py",
+  "review": "Every row is on Matthew's historical-review list; see `confidence`."
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     7.01,
+     51.45
+    ]
+   },
+   "properties": {
+    "name": "Krupp Gussstahlfabrik (Essen)",
+    "kind": "steel_mill",
+    "tier": 3,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from the resources_1930 steel works point of the same name (AD-M03 retirement)."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     6.77,
+     51.48
+    ]
+   },
+   "properties": {
+    "name": "Thyssen (Duisburg-Hamborn)",
+    "kind": "steel_mill",
+    "tier": 3,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930. August Thyssen-Hütte; Vereinigte Stahlwerke from 1926."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     6.85,
+     51.47
+    ]
+   },
+   "properties": {
+    "name": "Gutehoffnungshütte (Oberhausen)",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     7.49,
+     51.51
+    ]
+   },
+   "properties": {
+    "name": "Hoesch (Dortmund)",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     7.44,
+     51.52
+    ]
+   },
+   "properties": {
+    "name": "Dortmunder Union (Dortmund)",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Vereinigte Stahlwerke works from 1926."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     7.2,
+     51.48
+    ]
+   },
+   "properties": {
+    "name": "Bochumer Verein (Bochum)",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Vereinigte Stahlwerke works from 1926; cast steel."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     18.79,
+     50.32
+    ]
+   },
+   "properties": {
+    "name": "Donnersmarckhütte (Hindenburg O.S. / Zabrze)",
+    "kind": "steel_mill",
+    "tier": 1,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930. Retained by Germany in the 1922 Upper Silesia partition."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     10.23,
+     52.29
+    ]
+   },
+   "properties": {
+    "name": "Ilseder Hütte (Peine)",
+    "kind": "steel_mill",
+    "tier": 1,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930. Smelted the local Peine-Ilsede ore."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     11.75,
+     49.51
+    ]
+   },
+   "properties": {
+    "name": "Maxhütte (Sulzbach-Rosenberg)",
+    "kind": "steel_mill",
+    "tier": 1,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Eisenwerk-Gesellschaft Maximilianshütte; Bavaria's integrated works on Oberpfalz ore."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     13.29,
+     51.31
+    ]
+   },
+   "properties": {
+    "name": "Stahlwerk Riesa",
+    "kind": "steel_mill",
+    "tier": 1,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Mitteldeutsche Stahlwerke (Flick); Saxony's principal steel site."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     13.2,
+     52.64
+    ]
+   },
+   "properties": {
+    "name": "Stahlwerk Hennigsdorf",
+    "kind": "steel_mill",
+    "tier": 1,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Electric/open-hearth steelworks north-west of Berlin (Mitteldeutsche Stahlwerke from 1926)."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     6.86,
+     50.87
+    ]
+   },
+   "properties": {
+    "name": "Goldenberg-Werk (Knapsack)",
+    "kind": "power_plant",
+    "tier": 3,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "RWE lignite station in the Ville; among the largest in Europe in 1930. Powers the Rhenish works."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     7.72,
+     51.67
+    ]
+   },
+   "properties": {
+    "name": "Gersteinwerk (Werne-Stockum)",
+    "kind": "power_plant",
+    "tier": 3,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "VEW coal-fired station (1917) serving the eastern Ruhr."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     13.49,
+     52.49
+    ]
+   },
+   "properties": {
+    "name": "Großkraftwerk Klingenberg (Berlin-Rummelsburg)",
+    "kind": "power_plant",
+    "tier": 3,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "BEWAG station commissioned 1927."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     12.4,
+     51.72
+    ]
+   },
+   "properties": {
+    "name": "Kraftwerk Zschornewitz (Golpa)",
+    "kind": "power_plant",
+    "tier": 3,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Lignite station (1915) at the Golpa pit; supplied central Germany and Berlin."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     12.38,
+     51.2
+    ]
+   },
+   "properties": {
+    "name": "Kraftwerk Böhlen",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "ASW lignite station south of Leipzig (1925)."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     11.37,
+     47.65
+    ]
+   },
+   "properties": {
+    "name": "Walchenseekraftwerk (Kochel)",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Bayernwerk hydro station (1924); backbone of the Bavarian grid."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     18.8,
+     50.34
+    ]
+   },
+   "properties": {
+    "name": "Kraftwerk Mikultschütz",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "approximate",
+    "note": "Coal-fired station in German Upper Silesia (Kreis Hindenburg). Identity and date to verify."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     10.24,
+     52.29
+    ]
+   },
+   "properties": {
+    "name": "Ilseder Hütte works power station (Peine)",
+    "kind": "power_plant",
+    "tier": 1,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "approximate",
+    "note": "In-works generation at the Ilseder Hütte. Placed at the works."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     7.96,
+     50.73
+    ]
+   },
+   "properties": {
+    "name": "Grube Füsseberg (Daaden)",
+    "kind": "mine",
+    "tier": 2,
+    "country": "DEU",
+    "deposit": "iron",
+    "confidence": "site",
+    "note": "Siegerland siderite mine."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.42,
+     50.55
+    ]
+   },
+   "properties": {
+    "name": "Grube Fortuna (Solms-Oberbiel)",
+    "kind": "mine",
+    "tier": 1,
+    "country": "DEU",
+    "deposit": "iron",
+    "confidence": "site",
+    "note": "Lahn-Dill haematite mine."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     10.3,
+     52.2
+    ]
+   },
+   "properties": {
+    "name": "Grube Lengede-Bülten",
+    "kind": "mine",
+    "tier": 1,
+    "country": "DEU",
+    "deposit": "iron",
+    "confidence": "site",
+    "note": "Peine-Ilsede ore field; fed the Ilseder Hütte."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     7.8,
+     51.69
+    ]
+   },
+   "properties": {
+    "name": "Rangierbahnhof Hamm",
+    "kind": "rail_yard",
+    "tier": 3,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "The principal Ruhr marshalling yard."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     9.6,
+     52.4
+    ]
+   },
+   "properties": {
+    "name": "Rangierbahnhof Seelze",
+    "kind": "rail_yard",
+    "tier": 2,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Hannover's west marshalling yard."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     12.93,
+     52.55
+    ]
+   },
+   "properties": {
+    "name": "Rangierbahnhof Wustermark",
+    "kind": "rail_yard",
+    "tier": 2,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Berlin's western marshalling yard (1909)."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     12.48,
+     51.34
+    ]
+   },
+   "properties": {
+    "name": "Rangierbahnhof Engelsdorf (Leipzig)",
+    "kind": "rail_yard",
+    "tier": 2,
+    "country": "DEU",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Leipzig's main marshalling yard."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     6.85,
+     49.25
+    ]
+   },
+   "properties": {
+    "name": "Röchling Eisen- und Stahlwerke (Völklingen)",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "SAA",
+    "deposit": "",
+    "confidence": "site",
+    "note": "The Saar's largest works."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     7.17,
+     49.35
+    ]
+   },
+   "properties": {
+    "name": "Neunkircher Eisenwerk (Neunkirchen)",
+    "kind": "steel_mill",
+    "tier": 1,
+    "country": "SAA",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Stumm works."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     6.88,
+     49.23
+    ]
+   },
+   "properties": {
+    "name": "Kraftwerk Fenne",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "SAA",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Coal-fired station at Fenne opposite Völklingen."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     5.95,
+     49.5
+    ]
+   },
+   "properties": {
+    "name": "ARBED Esch-Belval (Esch-sur-Alzette)",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "LUX",
+    "deposit": "",
+    "confidence": "site",
+    "note": "ARBED's Adolf-Emil works on the Minette."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     5.97,
+     49.5
+    ]
+   },
+   "properties": {
+    "name": "ARBED works power station (Esch-sur-Alzette)",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "LUX",
+    "deposit": "",
+    "confidence": "approximate",
+    "note": "In-works gas-engine generation at the Esch works. Placed at the works."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     6.02,
+     49.51
+    ]
+   },
+   "properties": {
+    "name": "Minette iron mine (Esch-sur-Alzette)",
+    "kind": "mine",
+    "tier": 1,
+    "country": "LUX",
+    "deposit": "iron",
+    "confidence": "approximate",
+    "note": "Luxembourg Minette field around Esch. Placed on the authored iron basin; Rumelange itself resolves to French Moselle."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     6.08,
+     49.33
+    ]
+   },
+   "properties": {
+    "name": "De Wendel (Hayange)",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "FRA",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Les Petits-Fils de François de Wendel; the Fensch valley works."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     5.78,
+     49.49
+    ]
+   },
+   "properties": {
+    "name": "Senelle-Maubeuge (Longwy)",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "FRA",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Longwy basin integrated works. Placed just south of the town: Longwy sits on the tripoint and its own hex resolves to Belgium."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     6.09,
+     49.33
+    ]
+   },
+   "properties": {
+    "name": "De Wendel works power station (Hayange)",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "FRA",
+    "deposit": "",
+    "confidence": "approximate",
+    "note": "In-works generation at Hayange. Placed at the works."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     5.79,
+     49.49
+    ]
+   },
+   "properties": {
+    "name": "Longwy works power station",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "FRA",
+    "deposit": "",
+    "confidence": "approximate",
+    "note": "In-works generation in the Longwy basin. Placed at the works."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     5.91,
+     49.46
+    ]
+   },
+   "properties": {
+    "name": "Mine de Thil",
+    "kind": "mine",
+    "tier": 1,
+    "country": "FRA",
+    "deposit": "iron",
+    "confidence": "approximate",
+    "note": "Lorraine minette mine in the Longwy basin (Thil). Placed well inside France: the basin straddles the tripoint."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     5.5,
+     50.59
+    ]
+   },
+   "properties": {
+    "name": "Cockerill (Seraing)",
+    "kind": "steel_mill",
+    "tier": 3,
+    "country": "BEL",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     5.54,
+     50.61
+    ]
+   },
+   "properties": {
+    "name": "Ougrée-Marihaye (Liège)",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "BEL",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     5.51,
+     50.6
+    ]
+   },
+   "properties": {
+    "name": "Seraing works power station",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "BEL",
+    "deposit": "",
+    "confidence": "approximate",
+    "note": "In-works generation at Cockerill. Placed at the works."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     5.83,
+     50.97
+    ]
+   },
+   "properties": {
+    "name": "Staatsmijn Maurits power station (Geleen)",
+    "kind": "power_plant",
+    "tier": 1,
+    "country": "NLD",
+    "deposit": "",
+    "confidence": "approximate",
+    "note": "Dutch State Mines power station in the Limburg coalfield. Date to verify."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     18.95,
+     50.3
+    ]
+   },
+   "properties": {
+    "name": "Huta Królewska (Królewska Huta / Chorzów)",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "POL",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     18.87,
+     50.27
+    ]
+   },
+   "properties": {
+    "name": "Huta Pokój (Nowy Bytom)",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "POL",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     19.27,
+     50.33
+    ]
+   },
+   "properties": {
+    "name": "Huta Bankowa (Dąbrowa Górnicza)",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "POL",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     19.09,
+     50.83
+    ]
+   },
+   "properties": {
+    "name": "Huta Częstochowa (B. Hantke)",
+    "kind": "steel_mill",
+    "tier": 1,
+    "country": "POL",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     18.96,
+     50.29
+    ]
+   },
+   "properties": {
+    "name": "Elektrownia Chorzów",
+    "kind": "power_plant",
+    "tier": 3,
+    "country": "POL",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Large coal-fired station (1915) in Polish Upper Silesia."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     19.13,
+     50.33
+    ]
+   },
+   "properties": {
+    "name": "Elektrownia Zagłębie (Będzin)",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "POL",
+    "deposit": "",
+    "confidence": "approximate",
+    "note": "Coal-fired station serving the Dąbrowa basin. Identity to verify."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     21.03,
+     52.24
+    ]
+   },
+   "properties": {
+    "name": "Elektrownia Powiśle (Warszawa)",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "POL",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Warsaw's municipal station (1904)."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     19.15,
+     50.85
+    ]
+   },
+   "properties": {
+    "name": "Częstochowa basin iron mine",
+    "kind": "mine",
+    "tier": 1,
+    "country": "POL",
+    "deposit": "iron",
+    "confidence": "approximate",
+    "note": "Sideritic ore of the Częstochowa basin. Placed on the authored iron basin."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     18.28,
+     49.81
+    ]
+   },
+   "properties": {
+    "name": "Vítkovice Ironworks (Ostrava)",
+    "kind": "steel_mill",
+    "tier": 3,
+    "country": "CSK",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     18.67,
+     49.68
+    ]
+   },
+   "properties": {
+    "name": "Třinec Ironworks",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "CSK",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     14.1,
+     50.14
+    ]
+   },
+   "properties": {
+    "name": "Poldi Works (Kladno)",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "CSK",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     13.38,
+     49.74
+    ]
+   },
+   "properties": {
+    "name": "Škoda Works (Plzeň)",
+    "kind": "steel_mill",
+    "tier": 3,
+    "country": "CSK",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     18.29,
+     49.81
+    ]
+   },
+   "properties": {
+    "name": "Vítkovice works power station (Ostrava)",
+    "kind": "power_plant",
+    "tier": 3,
+    "country": "CSK",
+    "deposit": "",
+    "confidence": "approximate",
+    "note": "In-works generation at Vítkovice. Placed at the works."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     14.44,
+     50.1
+    ]
+   },
+   "properties": {
+    "name": "Elektrárna Holešovice (Praha)",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "CSK",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Prague's municipal station."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     14.2,
+     49.96
+    ]
+   },
+   "properties": {
+    "name": "Nučice iron mine",
+    "kind": "mine",
+    "tier": 1,
+    "country": "CSK",
+    "deposit": "iron",
+    "confidence": "approximate",
+    "note": "Barrandian ore at Nučice. Placed on the authored iron district."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     15.07,
+     47.38
+    ]
+   },
+   "properties": {
+    "name": "Alpine Montan Donawitz (Leoben)",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "AUT",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     15.29,
+     47.44
+    ]
+   },
+   "properties": {
+    "name": "Böhler Works (Kapfenberg)",
+    "kind": "steel_mill",
+    "tier": 1,
+    "country": "AUT",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Converted from resources_1930."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     14.9,
+     47.52
+    ]
+   },
+   "properties": {
+    "name": "Erzberg (Eisenerz)",
+    "kind": "mine",
+    "tier": 3,
+    "country": "AUT",
+    "deposit": "iron",
+    "confidence": "site",
+    "note": "Austria's iron anchor; opencast siderite."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     15.34,
+     47.34
+    ]
+   },
+   "properties": {
+    "name": "Kraftwerk Pernegg (Mur)",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "AUT",
+    "deposit": "",
+    "confidence": "approximate",
+    "note": "Mur hydro station. Commissioning date to verify against 1930."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     16.43,
+     48.18
+    ]
+   },
+   "properties": {
+    "name": "Kraftwerk Simmering (Wien)",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "AUT",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Vienna's municipal coal-fired station."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     20.68,
+     48.1
+    ]
+   },
+   "properties": {
+    "name": "Diósgyőr ironworks (Miskolc)",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "HUN",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Royal Hungarian State Ironworks."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     20.29,
+     48.22
+    ]
+   },
+   "properties": {
+    "name": "Ózd ironworks",
+    "kind": "steel_mill",
+    "tier": 1,
+    "country": "HUN",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Rimamurány-Salgótarján Ironworks Co."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     19.07,
+     47.42
+    ]
+   },
+   "properties": {
+    "name": "Manfréd Weiss Works (Csepel)",
+    "kind": "steel_mill",
+    "tier": 2,
+    "country": "HUN",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Csepel Island steel and engineering works."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     19.04,
+     47.46
+    ]
+   },
+   "properties": {
+    "name": "Kelenföld power station (Budapest)",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "HUN",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Budapest municipal station (1914)."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     20.67,
+     48.1
+    ]
+   },
+   "properties": {
+    "name": "Diósgyőr works power station",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "HUN",
+    "deposit": "",
+    "confidence": "approximate",
+    "note": "In-works generation at Diósgyőr. Placed at the works."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     14.05,
+     46.44
+    ]
+   },
+   "properties": {
+    "name": "KID Jesenice",
+    "kind": "steel_mill",
+    "tier": 1,
+    "country": "YUG",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Kranjska industrijska družba ironworks."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     15.47,
+     46.55
+    ]
+   },
+   "properties": {
+    "name": "Fala hydroelectric plant (Drava)",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "YUG",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Drava hydro station (1918)."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     7.57,
+     47.17
+    ]
+   },
+   "properties": {
+    "name": "Von Roll (Gerlafingen)",
+    "kind": "steel_mill",
+    "tier": 1,
+    "country": "CHE",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Von Roll ironworks."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     7.97,
+     47.37
+    ]
+   },
+   "properties": {
+    "name": "Kraftwerk Gösgen (Aare)",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "CHE",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Aare hydro station (1917)."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     7.19,
+     47.06
+    ]
+   },
+   "properties": {
+    "name": "Kraftwerk Hagneck (Aare)",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "CHE",
+    "deposit": "",
+    "confidence": "site",
+    "note": "BKW Aare hydro station (1900). Pairs with Von Roll: Gerlafingen resolves into the Bern province on this map and Mühleberg into Fribourg."
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     12.57,
+     55.66
+    ]
+   },
+   "properties": {
+    "name": "H.C. Ørsted Værket (København)",
+    "kind": "power_plant",
+    "tier": 2,
+    "country": "DNK",
+    "deposit": "",
+    "confidence": "site",
+    "note": "Copenhagen municipal station (1920)."
+   }
+  }
+ ]
+}

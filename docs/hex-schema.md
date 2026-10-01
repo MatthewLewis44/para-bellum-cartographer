@@ -221,7 +221,8 @@ added later without rework (AD-029).
 
 | Field | Type | Notes |
 |---|---|---|
-| `coal` / `steel` / `iron` / `oil` | bool | From the hand-authored `data/resources/resources_1930.geojson` layer (F-2): basins (polygons) tag hexes by center-in-polygon, works (points) tag the containing hex. `iron` **new in v1.0.2**. `oil` currently has no in-bbox 1930 source (always `false` here). |
+| `coal` / `iron` / `oil` | bool | From the hand-authored `data/resources/resources_1930.geojson` layer (F-2): basins (polygons) tag hexes by center-in-polygon, point features tag the containing hex. `iron` **new in v1.0.2**. |
+| `steel` | bool | **Always `false` from v1.0.7 (AD-044).** Retained because the schema is additive-only, but it is no longer populated. The 18 steel works points that set it were AD-M03's transitional deposits, and they have retired. Each is now an authored `steel_mill` in `facilities` at the same site. Steel comes from mills. A consumer still reading `steel` reads a dead flag: before v1.0.7 it was true on 14 east hexes, and now it is true on none. The validator fails any artifact on which it is true. |
 | `agriculture` | bool | True when hex landuse is farmland. |
 | `industry_level` | int | **⚠ MODERN-DERIVED, same caveat as `settlement.population`.** Range is `{0, 1}` in practice, never higher: the sampler sets `1` when the dominant landuse polygon at the hex centre is **2020s OSM `landuse=industrial`**, else `0` (`hex/sampler.py`). It is not authored, not a 1930 measurement, and not a per-hex industry rating — it is "modern OSM calls this an industrial estate". The sim multiplies non-agricultural resource yield by `(1 + industry_level)`, so on the shipped eastern artifact it doubles the output of exactly 8 hexes (4 DEU, 2 CSK, 2 POL) out of the 72 that carry the flag — the other 64 hold no resource for it to multiply. On the historical-review list, and a candidate for retirement once Sprint 12 places real facilities. |
 

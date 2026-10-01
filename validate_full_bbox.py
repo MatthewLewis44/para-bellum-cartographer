@@ -66,8 +66,11 @@ EXPECTATIONS = {
         cities_min=25,
         sprawl=[("Brussels", 3, ("Brux",)), ("Antwerp", 2, ("Antwerp",))],
         ruhr_min=None,
-        resources=dict(coal_min=5, steel_min=2, iron_min=0),
-        resource_points=[("Liège steel", 50.61, 5.54, ("steel",))],
+        # AD-044: steel is no longer a deposit (the transitional works points retired
+        # into authored mills), so no steel floor or steel spot point; mills are
+        # gated by the facility checks.
+        resources=dict(coal_min=5, iron_min=0),
+        resource_points=[],
         provinces_min=12,
         province_points=[
             ("Liège -> BEL_LIEGE", 50.63, 5.57, "BEL_LIEGE"),
@@ -113,9 +116,11 @@ EXPECTATIONS = {
         sprawl=[("Brussels", 3, ("Brux",)), ("Antwerp", 2, ("Antwerp",)),
                 ("Amsterdam", 3, ("Amsterdam",)), ("Cologne", 3, ("Köln",))],
         ruhr_min=10,
-        resources=dict(coal_min=10, steel_min=3, iron_min=1),
-        resource_points=[("Essen coal+steel", 51.45, 7.01, ("coal", "steel")),
-                         ("Liège steel", 50.61, 5.54, ("steel",))],
+        # AD-044: steel is no longer a deposit (the transitional works points retired
+        # into authored mills), so no steel floor or steel spot point; mills are
+        # gated by the facility checks.
+        resources=dict(coal_min=10, iron_min=1),
+        resource_points=[("Essen coal", 51.45, 7.01, ("coal",))],
         provinces_min=30,
         province_points=[
             ("Köln -> DEU_RHEINLAND", 50.94, 6.96, "DEU_RHEINLAND"),
@@ -193,19 +198,23 @@ EXPECTATIONS = {
         # Pre-Sprint 9.0: eastern deposits authored. Floors are deliberately
         # well below the measured counts (coal 143 / steel 16 / iron 36 /
         # oil 17) — they are absence tripwires, not balance bands.
-        resources=dict(coal_min=100, steel_min=12, iron_min=25, oil_min=8),
+        # AD-044: steel is no longer a deposit (the transitional works points retired
+        # into authored mills), so no steel floor or steel spot point; mills are
+        # gated by the facility checks.
+        resources=dict(coal_min=100, iron_min=25, oil_min=8),
         # Every type must be present SOMEWHERE, and each of these nations must
         # hold >= 3 distinct types. This pair is the "contested scarcity
         # exists" gate — it is what would have caught the 0-oil / iron-in-3-
         # countries state the eastern artifact shipped with.
-        resource_types_required=("coal", "steel", "iron", "oil"),
-        resource_nations={"DEU": 3, "POL": 3, "CSK": 3, "AUT": 3},
-        resource_points=[("Essen coal+steel", 51.45, 7.01, ("coal", "steel")),
+        # AUT's floor drops 3 -> 2: its third type was steel (Donawitz,
+        # Kapfenberg), now authored mills. It holds coal and iron, no oil.
+        resource_types_required=("coal", "iron", "oil"),
+        resource_nations={"DEU": 3, "POL": 3, "CSK": 3, "AUT": 2},
+        resource_points=[("Essen coal", 51.45, 7.01, ("coal",)),
                          ("Katowice coal", 50.26, 19.02, ("coal",)),
                          ("Ostrava coal", 49.82, 18.29, ("coal",)),
                          ("Borysław oil", 49.29, 23.36, ("oil",)),
-                         ("Erzberg iron", 47.54, 14.88, ("iron",)),
-                         ("Donawitz steel", 47.38, 15.07, ("steel",))],
+                         ("Erzberg iron", 47.54, 14.88, ("iron",))],
         provinces_min=70,
         province_partial_countries=("FRA",),
         province_points=[
@@ -280,8 +289,11 @@ EXPECTATIONS = {
                 # Benelux windowed-DEM artifact at the footprint fringe).
                 ("Köln", 2, ("Köln",))],
         ruhr_min=10,
-        resources=dict(coal_min=10, steel_min=3, iron_min=1),
-        resource_points=[("Essen coal+steel", 51.45, 7.01, ("coal", "steel"))],
+        # AD-044: steel is no longer a deposit (the transitional works points retired
+        # into authored mills), so no steel floor or steel spot point; mills are
+        # gated by the facility checks.
+        resources=dict(coal_min=10, iron_min=1),
+        resource_points=[("Essen coal", 51.45, 7.01, ("coal",))],
         provinces_min=50,
         province_partial_countries=("FRA",),
         province_points=[
