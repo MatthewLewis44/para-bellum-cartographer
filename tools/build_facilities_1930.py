@@ -177,50 +177,97 @@ def _province_seats(hexes: list[dict]) -> dict[str, tuple[str, str]]:
     return out
 
 
-def check_artifact(data: dict) -> tuple[list[tuple[str, bool, str]], list[str]]:
-    """(checks, report lines) for an artifact. Each check is (name, ok, detail)."""
+def check_artifact(data: dict, rows: list[dict] | None = None
+                   ) -> tuple[list[tuple[str, bool, str, bool]], list[str]]:
+    """(checks, report lines) for an artifact.
+
+    Each check is (name, ok, detail, crop_sensitive). A crop-sensitive check can
+    legitimately fail on a test frame that crops provinces seatless or cuts a
+    plant off past the bbox edge (AD-M19); validate_full_bbox hard-fails those
+    only on the shipped map. Every other check is hard on every artifact.
+
+    The artifact is reconciled against the authored CSV (the source of truth),
+    which also catches a stale GeoJSON, a facility silently dropped inside the
+    bbox, and a coordinate that slipped across a border onto a consistent hex.
+    """
+    rows = load_rows() if rows is None else rows
+    authored = {(r["name"], r["kind"]): r for r in rows}
     hexes = data["hexes"]
     seats = _province_seats(hexes)
-    placed = []  # (hex, entry)
+
+    malformed, placed = [], []   # placed: (hex, entry) for well-formed entries only
     for h in hexes:
-        for e in h.get("facilities", []):
-            placed.append((h, e))
+        fs = h.get("facilities")
+        if not isinstance(fs, list):
+            malformed.append((h["id"], "facilities is not a list"))
+            continue
+        for e in fs:
+            ok = (isinstance(e, dict) and set(e) == {"kind", "tier", "name", "deposit"}
+                  and isinstance(e["kind"], str) and isinstance(e["name"], str)
+                  and isinstance(e["deposit"], str) and type(e["tier"]) is int)
+            if ok:
+                placed.append((h, e))
+            else:
+                malformed.append((h["id"], e))
+        ordered = [e for e in fs if isinstance(e, dict) and e.get("kind") in KINDS]
+        keys = [(KINDS.index(e["kind"]), e.get("name", "")) for e in ordered]
+        if keys != sorted(keys):
+            malformed.append((h["id"], "entries not ordered by (kind, name)"))
 
     def hid(h):
         return h["id"]
 
+    def prov(h):
+        return h["political"]["province_at_start"]
+
+    def country(h):
+        return h["political"]["country_at_start"]
+
     bad_kind = [(hid(h), e["kind"]) for h, e in placed if e["kind"] not in KINDS]
+    placed = [(h, e) for h, e in placed if e["kind"] in KINDS]   # the rest cannot be costed
     bad_tier = [(hid(h), e["tier"]) for h, e in placed if not 1 <= e["tier"] <= MAX_TIER]
-    bad_land = [(hid(h), e["name"]) for h, e in placed
-                if h["flags"]["is_water"] or not h["political"]["country_at_start"]
-                or not h["political"]["province_at_start"]]
-    bad_owner = [(hid(h), e["name"], h["political"]["country_at_start"],
-                  seats.get(h["political"]["province_at_start"], ("?",))[0])
-                 for h, e in placed if h["political"]["province_at_start"]
-                 and h["political"]["country_at_start"]
-                 != seats.get(h["political"]["province_at_start"], ("",))[0]]
+    bad_deposit = [(hid(h), e["name"], e["deposit"]) for h, e in placed
+                   if (e["kind"] == "mine") != bool(e["deposit"])]
     bad_mine = [(hid(h), e["name"], e["deposit"]) for h, e in placed if e["kind"] == "mine"
                 and not (e["deposit"] in MINE_DEPOSITS and h["resources"].get(e["deposit"]))]
     steel_dep = [(hid(h), e["name"]) for h, e in placed if "steel" in e["deposit"]]
     steel_hex = [hid(h) for h in hexes if h["resources"].get("steel")]
 
+    # Reconciliation with the authored table.
+    unknown = [(hid(h), e["name"]) for h, e in placed if (e["name"], e["kind"]) not in authored]
+    stale = [(hid(h), e["name"]) for h, e in placed if (e["name"], e["kind"]) in authored
+             and (int(authored[(e["name"], e["kind"])]["tier"]) != e["tier"]
+                  or authored[(e["name"], e["kind"])]["deposit"] != e["deposit"])]
+    wrong_nation = [(hid(h), e["name"], country(h), authored[(e["name"], e["kind"])]["country"])
+                    for h, e in placed if (e["name"], e["kind"]) in authored
+                    and country(h) != authored[(e["name"], e["kind"])]["country"]]
+    b = data["map_metadata"]["bounds"]
+    placed_keys = Counter((e["name"], e["kind"]) for _, e in placed)
+    in_bbox = [k for k, r in authored.items()
+               if b["min_lon"] <= float(r["lon"]) <= b["max_lon"]
+               and b["min_lat"] <= float(r["lat"]) <= b["max_lat"]]
+    dropped = sorted(k[0] for k in in_bbox if placed_keys[k] == 0)
+    duplicated = sorted(k[0] for k, n in placed_keys.items() if n > 1)
+
+    # Crop-sensitive: province, ownership, slots, power.
+    bad_land = [(hid(h), e["name"]) for h, e in placed
+                if h["flags"]["is_water"] or not country(h) or not prov(h)]
+    bad_owner = [(hid(h), e["name"], country(h), seats[prov(h)][0])
+                 for h, e in placed if prov(h) and country(h) != seats[prov(h)][0]]
     per_prov: dict[str, list[dict]] = defaultdict(list)
     for h, e in placed:
-        if h["political"]["province_at_start"]:
-            per_prov[h["political"]["province_at_start"]].append(e)
-    over_slots = []
-    for p, es in sorted(per_prov.items()):
-        total = SEAT_SLOTS.get(seats[p][1], 0)
-        if len(es) > total:
-            over_slots.append(f"{p} {len(es)}>{total}")
+        if prov(h):
+            per_prov[prov(h)].append(e)
+    over_slots = [f"{p} {len(es)}>{SEAT_SLOTS.get(seats[p][1], 0)}"
+                  for p, es in sorted(per_prov.items())
+                  if len(es) > SEAT_SLOTS.get(seats[p][1], 0)]
     unpowered_mill_prov = sorted(p for p, es in per_prov.items()
                                  if any(e["kind"] == "steel_mill" for e in es)
                                  and not any(e["kind"] == "power_plant" for e in es))
-
     supply, draw = Counter(), Counter()
     count_by_nation: dict[str, Counter] = defaultdict(Counter)
     for h, e in placed:
-        n = h["political"]["country_at_start"]
+        n = country(h)
         count_by_nation[n][e["kind"]] += 1
         if e["kind"] == "power_plant":
             supply[n] += power_supply(e["tier"])
@@ -229,23 +276,37 @@ def check_artifact(data: dict) -> tuple[list[tuple[str, bool, str]], list[str]]:
     short = sorted(f"{n} {supply[n]}<{draw[n]}" for n in draw if supply[n] < draw[n])
 
     checks = [
-        ("facilities: kinds are the four authored kinds", not bad_kind, f"{bad_kind[:4]}"),
-        ("facilities: tier within 1..3", not bad_tier, f"{bad_tier[:4]}"),
-        ("facilities: every facility on a land hex with country + province",
-         not bad_land, f"{bad_land[:4]}"),
-        ("facilities: hex country == province baseline owner", not bad_owner, f"{bad_owner[:4]}"),
-        ("facilities: no province holds more than its seat's slot total",
-         not over_slots, f"{over_slots[:6]}"),
-        ("facilities: every mine sits on its deposit", not bad_mine, f"{bad_mine[:4]}"),
-        ("facilities: every steel mill's province holds a power plant (constraint 1)",
-         not unpowered_mill_prov, f"{unpowered_mill_prov}"),
-        ("facilities: every nation's plant supply covers its draw (constraint 1)",
-         not short, f"{short}"),
+        ("facilities: every entry well-formed and ordered (kind, name)",
+         not malformed, f"{malformed[:4]}", False),
+        ("facilities: kinds are the four authored kinds", not bad_kind, f"{bad_kind[:4]}", False),
+        ("facilities: tier within 1..3", not bad_tier, f"{bad_tier[:4]}", False),
+        ("facilities: deposit set on mines and only on mines", not bad_deposit,
+         f"{bad_deposit[:4]}", False),
+        ("facilities: every mine sits on its deposit", not bad_mine, f"{bad_mine[:4]}", False),
+        ("facilities: every entry matches the authored table (not stale, not unknown)",
+         not unknown and not stale, f"unknown {unknown[:3]} stale {stale[:3]}", False),
+        ("facilities: every facility lands in its authored nation", not wrong_nation,
+         f"{wrong_nation[:4]}", False),
+        ("facilities: every authored facility inside the bbox is placed exactly once",
+         not dropped and not duplicated, f"dropped {dropped[:4]} duplicated {duplicated[:4]}",
+         False),
         ("facilities: no steel deposit authored, no hex carries resources.steel (constraint 2)",
-         not steel_dep and not steel_hex, f"{len(steel_dep)} entries, {len(steel_hex)} hexes"),
+         not steel_dep and not steel_hex, f"{len(steel_dep)} entries, {len(steel_hex)} hexes",
+         False),
+        ("facilities: every facility on a land hex with country + province",
+         not bad_land, f"{bad_land[:4]}", True),
+        ("facilities: hex country == province baseline owner", not bad_owner,
+         f"{bad_owner[:4]}", True),
+        ("facilities: no province holds more than its seat's slot total",
+         not over_slots, f"{over_slots[:6]}", True),
+        ("facilities: every steel mill's province holds a power plant (constraint 1)",
+         not unpowered_mill_prov, f"{unpowered_mill_prov}", True),
+        ("facilities: every nation's plant supply covers its draw (constraint 1)",
+         not short, f"{short}", True),
     ]
 
-    report = [f"Facilities in artifact: {len(placed)} on {len({hid(h) for h, _ in placed})} hexes"]
+    report = [f"Facilities in artifact: {len(placed)} on {len({hid(h) for h, _ in placed})} hexes; "
+              f"{len(authored) - len(in_bbox)} authored facilities lie outside this bbox"]
     for n in sorted(count_by_nation):
         c = count_by_nation[n]
         report.append(f"  {n}: " + ", ".join(f"{k} {c[k]}" for k in KINDS if c[k])
@@ -260,8 +321,9 @@ def main(argv: list[str]) -> int:
         data = json.loads(Path(argv[2]).read_text(encoding="utf-8"))
         checks, report = check_artifact(data)
         failed = [c for c in checks if not c[1]]
-        for name, ok, detail in checks:
-            print(f"  {'PASS' if ok else 'FAIL'}  {name}" + ("" if ok else f"  [{detail}]"))
+        for name, ok, detail, crop in checks:
+            print(f"  {'PASS' if ok else 'FAIL'}  {name}" + ("  (crop-sensitive)" if crop else "")
+                  + ("" if ok else f"  [{detail}]"))
         print("\n".join(report))
         return 1 if failed else 0
 

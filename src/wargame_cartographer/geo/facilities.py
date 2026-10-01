@@ -34,13 +34,22 @@ MAX_TIER = 3                      # the sim's MaxFacilityTier
 MINE_DEPOSITS = ("iron",)         # the sim's RequiredDepositFor has one arm
 
 
+def resolve_facilities_file() -> Path:
+    """The layer path, with the same cwd fallback resources.py uses for a
+    non-editable install."""
+    if FACILITIES_FILE.exists():
+        return FACILITIES_FILE
+    fallback = Path.cwd() / "data" / "facilities" / "facilities_1930.geojson"
+    return fallback if fallback.exists() else FACILITIES_FILE
+
+
 def load_facilities_1930(path: Path | None = None) -> list[dict]:
     """Return the authored facility features (GeoJSON Point features).
 
     Empty (not an error) if the file is absent: every hex then exports
     ``facilities: []``, exactly what a pre-pass-B artifact means.
     """
-    path = Path(path) if path is not None else FACILITIES_FILE
+    path = Path(path) if path is not None else resolve_facilities_file()
     if not path.exists():
         console.print(f"  [yellow]Facilities layer not found: {path} — no starting facilities[/yellow]")
         return []

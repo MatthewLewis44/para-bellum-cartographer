@@ -1768,7 +1768,9 @@ facility is one point on one hex and needs nothing a tile holds. Keeping it out
 of `_SAMPLING_CODE_MODULES` and out of `_input_data_hash` means editing the
 authored layer, which historical review will do, re-exports the artifact without
 invalidating a single cached tile and without touching the OSM cache. It is the
-cheapest regeneration this pipeline can do.
+cheapest regeneration this pipeline can do. (The steel retirement this pass
+needs is the exception. It edits `resources_1930.geojson`, which IS in
+`_input_data_hash`, so that one edit re-tiles every tile.)
 
 ### "The infrastructure network"
 
@@ -1782,9 +1784,11 @@ A file there would retire that AD's inertness guard for data that does not exist
 
 ### The validator enforces what the sim would refuse
 
-The authored base must be one the sim could have built. `tools/build_facilities_1930.py`
-fails on any of the following, and `validate_full_bbox.py` runs the same checks
-against every artifact:
+The authored base must be one the sim could have built. The builder refuses
+to write the layer if the TABLE fails a static check (shape, steel, a nation
+with a mill and no plant). `tools/build_facilities_1930.py --check <artifact>`,
+which `validate_full_bbox.py` runs, fails an ARTIFACT on any of the following.
+`tests/test_facility_checks.py` seeds each violation and asserts it is caught.
 
 * a facility on a hex that is water, has no country, or has no province;
 * a facility whose hex country differs from its province's baseline owner, which
@@ -1799,6 +1803,24 @@ against every artifact:
 
 The power figures are mirrored from `GameState.cs` in one named place, and they
 are unsigned placeholders. If the sim moves them, the mirror moves with them.
+
+The artifact is also reconciled against the authored CSV. That catches a stale
+GeoJSON, a facility silently dropped inside the bbox, and a coordinate that
+slipped across a border onto a hex that is internally consistent but belongs
+to the wrong nation.
+
+**Province, owner, slots and both power checks hard-fail only on the shipped
+map.** A test frame crops provinces until they have no seat (AD-M19) and can
+cut a plant off at the bbox edge. The same authored layer then puts a
+Lorraine mill in a 0-slot province in the Belgium frame, and loses Fenne in the
+Benelux frame. Test frames report these checks instead of failing on them, and
+a test-frame artifact is not a start state. Every other check fails on every
+artifact.
+
+**Provenance.** The layer is read outside both tile-cache hashes, so the
+AD-040 manifest records `facilities_layer_sha256` and
+`facilities_source_sha256` in its `run` block. Without those, nothing would
+record which authored base an artifact carries.
 
 ### Landing order
 

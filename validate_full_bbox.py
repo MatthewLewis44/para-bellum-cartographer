@@ -745,26 +745,26 @@ def main() -> int:
               f"hex {h['id']} -> {h['political']['province_at_start'] or '(none)'}")
 
     # --- Starting industrial base (v1.0.7, AD-043) -----------------------------
-    # One implementation of the checks, in tools/build_facilities_1930.py. They
-    # HARD-FAIL only on the shipped map (start_state_min_facilities set): a test
-    # frame crops provinces and leaves them seatless (AD-M19), so the same
-    # authored layer legitimately lands a mill in a 0-slot province or loses a
-    # plant past the bbox edge. Test frames report, and are not start states.
+    # One implementation of the checks, in tools/build_facilities_1930.py.
+    # Shape, authored-table reconciliation and constraint 2 are hard on EVERY
+    # artifact. The crop-sensitive checks (province, owner, slots, constraint 1)
+    # hard-fail only on the shipped map: a test frame crops provinces seatless
+    # (AD-M19) and can cut a plant off past the bbox edge, so there they report.
     if ver_t >= (1, 0, 7):
-        missing = [h["id"] for h in hexes if not isinstance(h.get("facilities"), list)]
-        check("every hex carries a facilities array", not missing, f"{len(missing)} missing")
         fac_checks, fac_report = check_facilities(data)
-        n_fac = sum(len(h.get("facilities") or []) for h in hexes)
+        n_fac = sum(len(h["facilities"]) for h in hexes
+                    if isinstance(h.get("facilities"), list))
         min_fac = exp.get("start_state_min_facilities")
         if min_fac is not None:
             check(f"starting industrial base present (>= {min_fac} facilities)",
                   n_fac >= min_fac, f"{n_fac}")
-            for name, ok, detail in fac_checks:
-                check(name, ok, detail)
-        else:
-            for name, ok, detail in fac_checks:
+        for name, ok, detail, crop_sensitive in fac_checks:
+            if crop_sensitive and min_fac is None:
                 check(f"[info] test frame, not a start state: {name}"
-                      + ("" if ok else " (cropped)"), True, "" if ok else detail)
+                      + ("" if ok else " (fails on the cropped frame)"),
+                      True, "" if ok else detail)
+            else:
+                check(name, ok, detail)
         resource_matrix.extend(fac_report)
 
     # Authored-layer totals (global facts, not per-bbox)

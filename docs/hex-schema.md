@@ -263,9 +263,19 @@ the sim's own per-kind tables, because the artifact carries neither. Because
 the walk order is deterministic, the assigned `Facility.Id`s are deterministic
 too.
 
-**What the pipeline validator guarantees for every entry** (it fails the
-build otherwise; the checks are in `tools/build_facilities_1930.py`, and
-`validate_full_bbox.py` runs them):
+**What the pipeline validator guarantees on the shipped map**
+(`para_bellum_east_expansion`). The checks are in
+`tools/build_facilities_1930.py --check`, `validate_full_bbox.py` runs them, and
+`tests/test_facility_checks.py` proves each one fails on a seeded violation.
+Checks 1–5 depend on which provinces the frame includes. A **test frame**
+(Belgium, Benelux) crops provinces down to having no seat (AD-M19) and can cut a
+plant off at the bbox edge, so there those checks only report. **A test-frame
+artifact is not a valid start state.** Every other check fails the build on
+every artifact. That covers entry shape and `(kind, name)` order, tier, the
+deposit rules, and steel. It also reconciles every placed entry with the
+authored table, which catches a stale layer and a facility landing in a
+different nation from the one authored, and it requires that every authored
+facility inside the bbox is placed exactly once.
 
 1. The hex is land, and `country_at_start` and `province_at_start` are both
    non-empty.

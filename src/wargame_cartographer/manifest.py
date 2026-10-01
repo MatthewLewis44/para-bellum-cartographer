@@ -316,6 +316,17 @@ def manifest_path_for(artifact_path: Path) -> Path:
     return artifact_path.with_name(f"{artifact_path.stem}_manifest.json")
 
 
+def _facilities_hashes() -> dict:
+    """Content hashes of the authored facility layer and the module that
+    assigns it (AD-043). None for a layer that is absent, which exports []."""
+    from wargame_cartographer.geo import facilities as _fac
+    layer = _fac.resolve_facilities_file()
+    return {
+        "facilities_layer_sha256": _sha256_text_lf(layer) if layer.exists() else None,
+        "facilities_source_sha256": _sha256_text_lf(Path(_fac.__file__)),
+    }
+
+
 def write_manifest(
     artifact_path,
     spec,
@@ -379,6 +390,9 @@ def write_manifest(
         "pipeline_version": _pipeline_version(),
         "schema_version": _exp.SCHEMA_VERSION,
         "exporter_source_sha256": _sha256_text_lf(exporter_src),
+        # AD-043: the authored facility layer is read at export, outside the
+        # tile-cache hashes, so the receipt names it explicitly.
+        **_facilities_hashes(),
         "python": sys.version.split()[0],
         "osm_cache_max_age_days": os.environ.get(
             "PARA_BELLUM_OSM_CACHE_MAX_AGE_DAYS", "") or None,

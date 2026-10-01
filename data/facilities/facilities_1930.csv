@@ -33,7 +33,6 @@ ARBED works power station (Esch-sur-Alzette),power_plant,2,LUX,5.97,49.50,,appro
 Minette iron mine (Esch-sur-Alzette),mine,1,LUX,6.02,49.51,iron,approximate,Luxembourg Minette field around Esch. Placed on the authored iron basin; Rumelange itself resolves to French Moselle.
 De Wendel (Hayange),steel_mill,2,FRA,6.08,49.33,,site,Les Petits-Fils de François de Wendel; the Fensch valley works.
 Senelle-Maubeuge (Longwy),steel_mill,2,FRA,5.78,49.49,,site,Longwy basin integrated works. Placed just south of the town: Longwy sits on the tripoint and its own hex resolves to Belgium.
-Pont-à-Mousson ironworks,steel_mill,1,FRA,6.06,48.90,,site,Société des Hauts Fourneaux et Fonderies de Pont-à-Mousson; cast-iron pipe.
 De Wendel works power station (Hayange),power_plant,2,FRA,6.09,49.33,,approximate,In-works generation at Hayange. Placed at the works.
 Longwy works power station,power_plant,2,FRA,5.79,49.49,,approximate,In-works generation in the Longwy basin. Placed at the works.
 Mine de Thil,mine,1,FRA,5.91,49.46,iron,approximate,Lorraine minette mine in the Longwy basin (Thil). Placed well inside France: the basin straddles the tripoint.
@@ -61,11 +60,10 @@ Böhler Works (Kapfenberg),steel_mill,1,AUT,15.29,47.44,,site,Converted from res
 Erzberg (Eisenerz),mine,3,AUT,14.90,47.52,iron,site,Austria's iron anchor; opencast siderite.
 Kraftwerk Pernegg (Mur),power_plant,2,AUT,15.34,47.34,,approximate,Mur hydro station. Commissioning date to verify against 1930.
 Kraftwerk Simmering (Wien),power_plant,2,AUT,16.43,48.18,,site,Vienna's municipal coal-fired station.
-Diósgyőr ironworks (Miskolc),steel_mill,2,HUN,20.68,48.10,,site,State ironworks (MÁVAG group).
+Diósgyőr ironworks (Miskolc),steel_mill,2,HUN,20.68,48.10,,site,Royal Hungarian State Ironworks.
 Ózd ironworks,steel_mill,1,HUN,20.29,48.22,,site,Rimamurány-Salgótarján Ironworks Co.
 Manfréd Weiss Works (Csepel),steel_mill,2,HUN,19.07,47.42,,site,Csepel Island steel and engineering works.
 Kelenföld power station (Budapest),power_plant,2,HUN,19.04,47.46,,site,Budapest municipal station (1914).
-Bánhida power station,power_plant,2,HUN,18.40,47.58,,site,Lignite station commissioned 1930 at the Tatabánya field.
 Diósgyőr works power station,power_plant,2,HUN,20.67,48.10,,approximate,In-works generation at Diósgyőr. Placed at the works.
 KID Jesenice,steel_mill,1,YUG,14.05,46.44,,site,Kranjska industrijska družba ironworks.
 Fala hydroelectric plant (Drava),power_plant,2,YUG,15.47,46.55,,site,Drava hydro station (1918).
