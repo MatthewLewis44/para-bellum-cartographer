@@ -695,25 +695,6 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     5.91,
-     49.46
-    ]
-   },
-   "properties": {
-    "name": "Mine de Thil",
-    "kind": "mine",
-    "tier": 1,
-    "country": "FRA",
-    "deposit": "iron",
-    "confidence": "approximate",
-    "note": "Lorraine minette mine in the Longwy basin (Thil). Placed well inside France: the basin straddles the tripoint."
-   }
-  },
-  {
-   "type": "Feature",
-   "geometry": {
-    "type": "Point",
-    "coordinates": [
      5.5,
      50.59
     ]

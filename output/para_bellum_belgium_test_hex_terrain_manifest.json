@@ -1,26 +1,28 @@
 {
   "manifest_version": "1",
-  "generated_at": "2026-09-29T18:53:40Z",
+  "generated_at": "2026-10-01T20:39:41Z",
   "artifact": {
     "file": "para_bellum_belgium_test_hex_terrain.json",
-    "bytes": 1188298,
+    "bytes": 1209231,
     "hex_count": 775,
-    "schema_version": "1.0.6",
-    "raw_sha256": "ca822d8472005dd112b64bc0d5ec7de6c9dbd6c316405e92fa5a920277ee8a15",
-    "content_sha256": "6a51ce2439ae95e56de71e470aef10bc789ff957311b98c130e38a128c68a486"
+    "schema_version": "1.0.7",
+    "raw_sha256": "972c10af84067bc4ac1f3a60d320767894347587e24e57eb69b210ca7b6bd9a9",
+    "content_sha256": "9d46b64ec1000c3cc4c54fe97556b594b3aa9478df6e74e022bb796ba2a211c5"
   },
   "run": {
     "path": "monolithic",
     "pipeline_version": "0.1.0",
-    "schema_version": "1.0.6",
-    "exporter_source_sha256": "a32a75df5c69aa8417014e9f1ec4c8efe976ff297a7f1a12ab5d3649bd7e139e",
+    "schema_version": "1.0.7",
+    "exporter_source_sha256": "1fc9d05f181a4a1e9d151f9de61b179ea1a0ed3c1a73d11485f252db4bf7699f",
+    "facilities_layer_sha256": "ba6884fddd2214db96a25d9cba4207dbdb20e29a5e80356299a157ae24dcf6b0",
+    "facilities_source_sha256": "8bdf0de05ec1c44a1b2c8f314b80269fc6f5a3286ce10e193326d6f1fac1d6ce",
     "python": "3.12.0",
     "osm_cache_max_age_days": "120",
-    "commit": "8c75d277832916a97576ecf3ea525e9607ae206c",
+    "commit": "f5b2562e596f206afd7c3103dbc5c8e0c309f667",
     "dirty": true,
     "streaming_version": "s7.0",
-    "sampling_code_hash": "d68b36c2",
-    "input_data_hash": "e6baaaa1"
+    "sampling_code_hash": "53254cca",
+    "input_data_hash": "8a614b4a"
   },
   "config": {
     "path": "~/para-bellum-cartographer/para-bellum-cartographer/configs/para_bellum_belgium_test.yaml",
@@ -206,6 +208,6 @@
     "bytes": 759497992,
     "hashed_this_run": 0,
     "reused_from_hash_cache": 13,
-    "seconds": 0.2
+    "seconds": 0.29
   }
 }
