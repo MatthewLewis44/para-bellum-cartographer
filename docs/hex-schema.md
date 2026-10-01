@@ -1,4 +1,4 @@
-# Para Bellum Hex JSON Schema — v1.0.6
+# Para Bellum Hex JSON Schema — v1.0.7
 
 The contract between the cartography pipeline (`output/game_data_exporter.py`)
 and the Unity 6 C# loader. **Bump `SCHEMA_VERSION` on any field
@@ -47,6 +47,14 @@ add/remove/rename** and record the change in the changelog below and in
 > 3. **Verify by counting, not by looking.** A defaulted field cannot be seen. For
 >    v1.0.6 the check is that **1,157 hexes carry `population > 0`**; zero
 >    everywhere means the artifact never landed.
+>
+> **For the v1.0.7 bump the silently-defaulted field is `facilities`**, and a
+> defaulted `[]` is indistinguishable from "this nation starts with no industry".
+> An older artifact under a 1.0.7 loader boots with **no starting facilities
+> anywhere and no error**. That outcome is correct for a genuinely pre-pass-B
+> map and wrong for every other map, and nothing on screen tells the two apart.
+> Count the facilities the start-state step created against the total in the
+> v1.0.7 changelog entry below.
 
 ## Top-Level Document
 
@@ -60,7 +68,7 @@ add/remove/rename** and record the change in the changelog below and in
 
 | Field | Type | Notes |
 |---|---|---|
-| `schema_version` | string | Semver. Currently `"1.0.6"`. |
+| `schema_version` | string | Semver. Currently `"1.0.7"`. |
 | `map_metadata` | object | See below. |
 | `hexes` | array | One object per hex, sorted **numerically by `(coords.col, coords.row)`** (v1.0.5, AD-031 — the pre-1.0.5 "sorted by `id` string" ordering broke once packed id widths mixed). |
 
@@ -75,7 +83,7 @@ add/remove/rename** and record the change in the changelog below and in
 | `hex_size_miles` | number | Derived from `hex_size_km`, 2 decimals. |
 | `generated_at` | string | ISO 8601 UTC timestamp. |
 | `pipeline_version` | string | Pipeline build version. |
-| `data_sources` | object | Provenance strings per layer (`terrain`, `elevation`, `boundaries`, `resources`). |
+| `data_sources` | object | Provenance strings per layer (`terrain`, `elevation`, `boundaries`, `provinces`, `resources`, and `facilities` since v1.0.7). Informational; never parse. |
 | `bounds` | object | `min_lon`, `min_lat`, `max_lon`, `max_lat` (WGS84). |
 | `grid` | object | `orientation: "flat_top"`, `offset: "odd_q"` (flat-top odd-q offset, AD-012), `col_min/max`, `row_min/max`, `num_cols`, `num_rows`. **The `odd_q` layout is exact and guaranteed since v1.0.5 (AD-034):** rows run south → north, and **odd `col` columns are shifted +half a row north**. (Pre-1.0.5 artifacts did not guarantee which parity was shifted — it varied per bbox; Belgium/wceurope shipped odd-shifted, Benelux even-shifted. The grid now normalizes parity, which renumbered Benelux cols +1.) Neighbor deltas, keyed by `col % 2`: even → `(+1,0)(+1,−1)(0,−1)(−1,−1)(−1,0)(0,+1)`; odd → `(+1,+1)(+1,0)(0,−1)(−1,0)(−1,+1)(0,+1)`. |
 | `hex_count` | int | Length of `hexes`. |
@@ -120,6 +128,7 @@ add/remove/rename** and record the change in the changelog below and in
     "oil": false, "coal": false, "steel": false,
     "agriculture": true, "industry_level": 0
   },
+  "facilities": [],
   "movement": {"base_cost": 1, "base_defense": 0},
   "flags": {"is_water": false, "is_impassable": false, "is_coastal": false}
 }
@@ -216,6 +225,74 @@ added later without rework (AD-029).
 | `agriculture` | bool | True when hex landuse is farmland. |
 | `industry_level` | int | **⚠ MODERN-DERIVED, same caveat as `settlement.population`.** Range is `{0, 1}` in practice, never higher: the sampler sets `1` when the dominant landuse polygon at the hex centre is **2020s OSM `landuse=industrial`**, else `0` (`hex/sampler.py`). It is not authored, not a 1930 measurement, and not a per-hex industry rating — it is "modern OSM calls this an industrial estate". The sim multiplies non-agricultural resource yield by `(1 + industry_level)`, so on the shipped eastern artifact it doubles the output of exactly 8 hexes (4 DEU, 2 CSK, 2 POL) out of the 72 that carry the flag — the other 64 hold no resource for it to multiply. On the historical-review list, and a candidate for retirement once Sprint 12 places real facilities. |
 
+### `facilities`
+
+**v1.0.7 (AD-043).** The authored **1930 starting industrial base**: the
+facilities that exist on this hex at the first tick. This is an **array** and
+is `[]` on almost every hex. It is hand-authored scenario data (from
+`data/facilities/facilities_1930.csv`) and is never detected from OSM.
+
+```json
+"facilities": [
+  {"kind": "power_plant", "tier": 3, "name": "Goldenberg-Werk (Knapsack)", "deposit": ""},
+  {"kind": "steel_mill",  "tier": 3, "name": "Krupp Gussstahlfabrik (Essen)", "deposit": ""},
+  {"kind": "mine",        "tier": 3, "name": "Erzberg (Eisenerz)", "deposit": "iron"}
+]
+```
+
+| Field | Type | Notes |
+|---|---|---|
+| `kind` | enum string | `power_plant`, `steel_mill`, `mine`, `rail_yard`. Each maps **by name** onto the sim's `FacilityKind` (`PowerPlant`, `SteelMill`, `Mine`, `RailYard`). **No other value is emitted.** `civilian_factory`, `military_factory` and `refinery` are not authored, so the starting base has no factories. A new kind would be a schema change, so a loader **should throw on an unknown kind** rather than skip it. |
+| `tier` | int | `1`–`3`: the facility's `Tier` at the first tick. It records relative scale, so Krupp Essen is 3 and a single-site works is 1. The ceiling is the sim's `MaxFacilityTier`, and the pipeline validator fails on anything above 3. |
+| `name` | string | The historical works or station, in its 1930 local spelling. **Display only.** It is not an id, it is not unique across the map, and nothing should key on it. |
+| `deposit` | string | On a `mine`: the pool it extracts. Always `"iron"` in this version, because the sim's `RequiredDepositFor` has one arm (Sprint 11 close report §7.3). On every other kind it is `""`. **A mine always sits on a hex whose `resources` flag for that deposit is `true`.** `"steel"` is never emitted. |
+
+**Where it sits, and why this is per-hex.** A sim `Facility` is keyed on its
+`Hex`. Its province and its owner are both *derived* from that hex, never
+stored. A per-hex array is therefore the sim's own shape. A per-province list
+would have made the start-state step invent a hex for each facility.
+`ProvinceIndex.Build` does not need to change: the start-state step walks
+`hexes` once, independently of it.
+
+**Instantiation contract (what the start-state step can rely on).** Walk
+`hexes` in export order, which is numeric `(col, row)`, and each hex's array
+in order. That order is fixed: by kind as listed above, then by name. Create
+one `Facility` per entry, with `Hex` = this hex's `coords`, `Kind` and `Tier`
+from the entry, and `DamagePerMille = 0`. `PowerDraw` and `Staffing` come from
+the sim's own per-kind tables, because the artifact carries neither. Because
+the walk order is deterministic, the assigned `Facility.Id`s are deterministic
+too.
+
+**What the pipeline validator guarantees for every entry** (it fails the
+build otherwise; the checks are in `tools/build_facilities_1930.py`, and
+`validate_full_bbox.py` runs them):
+
+1. The hex is land, and `country_at_start` and `province_at_start` are both
+   non-empty.
+2. The hex's `country_at_start` equals the province's **baseline owner**,
+   computed by the `ProvinceIndex` rule. A facility therefore belongs at the
+   first tick to the nation that owns its province.
+3. The number of facilities in a province is at most that province's **slot
+   total**, read from the settlement type of its seat (capture seat per
+   `ProvinceIndex`: metropolis 7, city 5, town 3, otherwise 0). No facility
+   sits in a zero-slot province, so the start-state step never has to
+   over-fill a province or bypass `CanBuildFacility`'s slot rule.
+4. **Every `steel_mill`'s province also holds a `power_plant`.**
+5. **Every nation's authored power supply covers its authored draw** under
+   the sim's current tables: a plant supplies `tier × tier`, which is base
+   `Tier` times the Facility layer `1 + (tier − 1)`; a mill draws 2, and a mine
+   or rail yard draws 1. At the first tick no nation is in brownout. These are
+   the sim's unsigned `[P]` values mirrored in one place in the validator. If
+   the sim changes them, the mirror must change too.
+6. A `mine`'s hex carries `resources.<deposit> = true`.
+7. No entry and no resource feature authors a steel deposit (AD-M03's
+   transitional deposits retire; steel comes from mills).
+
+**Not on this field:** ports, airfields and fortifications. Those remain the
+inert `infrastructure` booleans of AD-036, because nothing in the sim consumes
+them yet. The pass B "infrastructure network" means rail yards here, plus the
+`road` and `rail` levels that were already sampled.
+
 ### `movement`
 
 | Field | Type | Notes |
@@ -232,6 +309,21 @@ added later without rework (AD-029).
 | `is_coastal` | bool | Duplicate of `terrain.is_coastal` for fast Unity filtering. |
 
 ## Changelog
+
+### v1.0.7 (2026-10-01, Sprint 12 pass B)
+
+- **`facilities` (additive, AD-043).** A new per-hex array of authored
+  starting facilities `{kind, tier, name, deposit}`. See the field section
+  above. The exporter also adds `map_metadata.data_sources.facilities`.
+  **Nothing else changed:** a field diff of Belgium regenerated at 1.0.7
+  against 1.0.6 differs only in `facilities` (all 775 hexes, `[]` before the
+  data landed) and in that metadata string.
+- **An older artifact under a 1.0.7 loader** loads, and every hex defaults
+  `facilities` to `[]`. The game then starts with **no industry anywhere**,
+  silently. See the banner at the top.
+- **A 1.0.7 artifact under an older loader** is refused, which is the loud
+  failure. The loader bump, `HexData`, the golden fixture and the artifact copy
+  land in **one** Unity commit.
 
 ### v1.0.6 (2026-08-26, Pass A)
 

@@ -2,7 +2,7 @@
 
 Produces the canonical hex JSON consumed by Unity 6.6 LTS.
 This is the contract between the cartography pipeline and the game engine.
-Schema version: see SCHEMA_VERSION below (currently 1.0.6).
+Schema version: see SCHEMA_VERSION below (currently 1.0.7).
 
 OUT OF SCOPE (not written here, implemented in Unity or later pipeline stages):
     - Tactical battle map selection logic
@@ -31,6 +31,10 @@ from wargame_cartographer.terrain.types import (
     IMPASSABLE_BIOMES,
     WATER_BIOMES,
 )
+from wargame_cartographer.geo.facilities import (
+    assign_facilities_to_hexes,
+    load_facilities_1930,
+)
 from wargame_cartographer.infrastructure.types import (
     RoadLevel,
     RailLevel,
@@ -44,7 +48,7 @@ from wargame_cartographer.infrastructure.types import (
 # Schema version — bump when any field is added/removed/renamed.
 # Unity C# loader checks this on load and rejects incompatible versions.
 # ---------------------------------------------------------------------------
-SCHEMA_VERSION = "1.0.6"
+SCHEMA_VERSION = "1.0.7"
 
 
 def _safe_enum_value(val, default: str) -> str:
@@ -104,6 +108,9 @@ def export_game_data(
         row_max = max(rs) - grid._row_offset + 1
     else:
         col_min = col_max = row_min = row_max = 0
+
+    # v1.0.7 (AD-043): the authored 1930 starting industrial base, per hex.
+    facilities_by_hex = assign_facilities_to_hexes(grid, load_facilities_1930())
 
     # --- Build hex list ---
     hexes = []
@@ -271,6 +278,9 @@ def export_game_data(
                 "agriculture": agriculture,
                 "industry_level": industry_level,
             },
+            # v1.0.7 (AD-043): authored starting facilities on this hex,
+            # [] on almost every hex. See docs/hex-schema.md.
+            "facilities": facilities_by_hex.get((q, r), []),
             "movement": {
                 "base_cost": base_movement,
                 "base_defense": base_defense,
@@ -317,6 +327,8 @@ def export_game_data(
                               "(CC0) for DEU/POL/CSK/AUT + Natural Earth "
                               "admin_1 derived for BEL/NLD/FRA/LUX (AD-027/035)"),
                 "resources": "hand-authored 1930 layer (public domain, F-2)",
+                "facilities": ("hand-authored 1930 starting industrial base "
+                               "(public domain, AD-043)"),
             },
             "bounds": {
                 "min_lon": spec.bbox.min_lon,

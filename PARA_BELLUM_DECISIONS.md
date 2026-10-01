@@ -1716,3 +1716,94 @@ parts, none younger than a day, before and after). Gate:
 `tests/test_cache_guard.py`, 25 checks, no network and no real cache.
 
 ---
+
+## AD-043 — The 1930 starting industrial base is a per-hex `facilities` array (schema v1.0.7)
+
+**Date:** 2026-10-01 (Sprint 12, pass B)
+**Status:** Accepted
+
+The starting industrial base (power plants, steel mills, mines and rail yards)
+is authored data, carried in the artifact and instantiated by the sim before the
+first tick. This entry fixes its shape.
+
+### Shape
+
+There is a new top-level per-hex key `facilities`: an array of
+`{kind, tier, name, deposit}`, which is `[]` on almost every hex.
+`docs/hex-schema.md` is the field-level authority.
+
+**Per hex, not per province.** The sim's `Facility` is keyed on `Hex`. Its
+province and its owner are derived from that hex and are never stored, and the
+slot rule (`SlotsOf`) counts a province's facilities by deriving each one's
+province from its hex. A per-province record would force the start-state step to
+choose a hex for each facility, which means re-deriving the placement this layer
+exists to author. It would also add a second province-level structure next to
+`ProvinceIndex`, so the sim would pay twice. Per hex, the start-state step is a
+single walk of `hexes` and `ProvinceIndex` is untouched. This is the same
+argument that put `settlement.population` on the hex (AD-038).
+
+**Why an array.** The sim allows more than one facility on a hex (slots are a
+province rule, not a hex rule), and the Ruhr needs it: Oberhausen and Hamborn
+fall within one 10 km hex of each other.
+
+**`kind` maps by name onto `FacilityKind`.** Only the four authored kinds are
+emitted. A loader should reject an unknown kind, because a fifth kind is a
+schema change.
+
+**`tier` is the starting `Tier`, from 1 to 3**, recording relative scale. The
+sim's `MaxFacilityTier` is the ceiling.
+
+**`deposit` exists only for mines, and is `"iron"` only.** The sim can express
+nothing but an iron mine (`RequiredDepositFor` has one arm; whether coal mines
+should exist is Sprint 11 open item §7.3 and is Matthew's call). Coal reaches the
+economy through the dispersed basin term as before. The field exists so that a
+mine record can never be read as the wrong deposit, and so that coal mines are a
+data change rather than a schema change if they are ever allowed.
+
+### Assignment happens at export, not in the sampler
+
+`geo/facilities.py` maps each authored point to its containing hex inside
+`export_game_data`, which both the monolithic and streaming paths call. A
+facility is one point on one hex and needs nothing a tile holds. Keeping it out
+of `_SAMPLING_CODE_MODULES` and out of `_input_data_hash` means editing the
+authored layer, which historical review will do, re-exports the artifact without
+invalidating a single cached tile and without touching the OSM cache. It is the
+cheapest regeneration this pipeline can do.
+
+### "The infrastructure network"
+
+This means **rail yards**, a `FacilityKind` the sim already has, on top of the
+`road` and `rail` levels that were already sampled. Ports, airfields and
+fortifications stay inert under AD-036, because that AD's test (a system
+consuming the data exists or is in the current sprint) still fails for them:
+nothing in `Assets/Scripts/Sim` reads them. The authored layer is therefore
+**not** at AD-036's reserved `data/infrastructure/infrastructure_1930.geojson`.
+A file there would retire that AD's inertness guard for data that does not exist.
+
+### The validator enforces what the sim would refuse
+
+The authored base must be one the sim could have built. `tools/build_facilities_1930.py`
+fails on any of the following, and `validate_full_bbox.py` runs the same checks
+against every artifact:
+
+* a facility on a hex that is water, has no country, or has no province;
+* a facility whose hex country differs from its province's baseline owner, which
+  would give the facility to a different nation from the one that owns its slot;
+* more facilities in a province than its seat's slot total (7/5/3/0);
+* a mine whose hex does not carry its deposit;
+* **a steel mill whose province holds no power plant** (constraint 1);
+* **a nation whose authored power supply falls short of its authored draw**
+  under the sim's current `[P]` tables (constraint 1, nation scale, because the
+  sim's power pool is national);
+* **any authored steel deposit** (constraint 2).
+
+The power figures are mirrored from `GameState.cs` in one named place, and they
+are unsigned placeholders. If the sim moves them, the mirror moves with them.
+
+### Landing order
+
+Unity's staged east artifact is still **1.0.5**, under a 1.0.6 loader, so the
+Pass A artifact was never staged. Nothing is staged at the current version, so
+"artifact first" does not apply. The 1.0.7 artifact is produced here, and the
+loader bump, `HexData`, the golden fixture and the artifact copy land on the
+Unity side as **one** commit.
