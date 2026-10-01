@@ -329,6 +329,15 @@ them yet. The pass B "infrastructure network" means rail yards here, plus the
   **Nothing else changed:** a field diff of Belgium regenerated at 1.0.7
   against 1.0.6 differs only in `facilities` (all 775 hexes, `[]` before the
   data landed) and in that metadata string.
+- **Count against this.** The shipped east artifact
+  (`para_bellum_east_expansion`, manifest committed at 1.0.7) carries
+  **68 facilities on 55 hexes**: 31 `steel_mill`, 26 `power_plant`, 7 `mine`
+  and 4 `rail_yard`. The authored table has 71; the 3 Belgian rows lie west
+  of the east frame. Belgium's artifact carries 9. A start-state step that
+  creates any other number of facilities from east has loaded a different
+  artifact.
+- **`resources.steel` is `false` everywhere from this version (AD-044).**
+  The 14 east hexes that carried it now carry a `steel_mill` instead.
 - **An older artifact under a 1.0.7 loader** loads, and every hex defaults
   `facilities` to `[]`. The game then starts with **no industry anywhere**,
   silently. See the banner at the top.
