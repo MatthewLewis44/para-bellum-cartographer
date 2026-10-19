@@ -35,6 +35,34 @@ uv run python -m wargame_cartographer.manifest check configs/para_bellum_belgium
 - **Windows console**: set `PYTHONIOENCODING=utf-8` first, or rich's spinner glyphs crash on the
   legacy cp1252 console at the end of a run.
 
+## This tool has a scheduled end — read this before proposing any work
+
+**This pipeline is a content build tool, not a system the game contains.** It bakes public geodata
+into a map artifact; its output is an **asset**, and a human will open that asset and edit it. The
+lifecycle: small test frames (**where we are**) → a map format and overrides layer the eventual map
+editor reads and writes → **one** global run into that format → retirement to a bootstrap role.
+
+Three consequences bind every seat working here:
+
+1. **Regenerate for information, never for freshness.** A run is justified by a field, layer or
+   region the artifact lacks. It is never justified by data age. The project is in its testing
+   phase; a village moving three miles does not matter.
+2. **The OSM cache is deliberately frozen** (as of 2026-10-19: 798 of 3,117 parts past the 120-day
+   pin, oldest 130 days). The AD-042 guard refusing a run is **correct behaviour, not a defect** —
+   do not "fix" it, do not archive the 36 GB of re-downloadable cache, and do not reach for
+   `PARA_BELLUM_ALLOW_CACHE_REFETCH=1` to make a refusal go away. The committed artifacts are the
+   copy that matters.
+3. **Provenance tooling is finished.** AD-040, AD-041 and AD-042 are enough. Adding more is
+   polishing scaffolding on a tool with a limited life.
+
+What *is* long-lived work here: the artifact's round-trippability (an editor must be able to write
+every field the pipeline writes), and — after the map freezes — acting as the **independent second
+implementation** that validates the game's content files.
+
+Authority: **AD-M35**. The full reasoning, the costed world run and the retirement test live in the
+Unity repository at `docs/design/MAP_PIPELINE_INTENT.md`, which also lists the specific misreadings
+this ruling closes.
+
 ## Provenance
 
 Every export writes `output/<name>_hex_terrain_manifest.json` beside the artifact: the content
