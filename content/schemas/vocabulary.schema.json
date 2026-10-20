@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:vocabulary:1",
+  "title": "Para Bellum content: the engine vocabulary",
+  "description": "File: Content/vocabulary.json. Lists the engine-level names content files may use: stat keys, resource pools and unit types. THE GAME NEVER READS THIS FILE TO DECIDE BEHAVIOUR. It describes the code; it does not extend it. A test in the game asserts that it equals the code exactly, so editing it cannot add a stat, a pool or a unit type. Adding one is a code change, by design.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "_comment", "stat_keys", "pools", "unit_types"],
+  "properties": {
+    "format": { "const": "pb-content/vocabulary/1" },
+    "_comment": {
+      "description": "The header. It must carry the rule that the game never reads this file to decide behaviour.",
+      "type": "string",
+      "minLength": 1
+    },
+    "stat_keys": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+    },
+    "pools": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+    },
+    "unit_types": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]*$" }
+    }
+  }
+}

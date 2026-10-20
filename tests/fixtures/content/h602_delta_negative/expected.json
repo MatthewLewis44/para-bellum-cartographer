@@ -1,0 +1,8 @@
+{
+  "code": "C602",
+  "rule": "resolved-negative",
+  "file": "pb/variant.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "variants[0].cost.steel -50 on a model costing 7"
+}

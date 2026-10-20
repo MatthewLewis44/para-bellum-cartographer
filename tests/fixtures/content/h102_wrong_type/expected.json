@@ -1,0 +1,8 @@
+{
+  "code": "C102",
+  "rule": "wrong-type",
+  "file": "pb/model.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "models[0].year is the string \"1930\""
+}

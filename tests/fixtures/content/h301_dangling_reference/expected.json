@@ -1,0 +1,8 @@
+{
+  "code": "C301",
+  "rule": "dangling-reference",
+  "file": "pb/variant.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "variants[1].model is \"pb:light_tnak\""
+}

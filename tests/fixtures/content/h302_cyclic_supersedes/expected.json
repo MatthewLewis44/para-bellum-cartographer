@@ -1,0 +1,8 @@
+{
+  "code": "C302",
+  "rule": "cyclic-supersedes",
+  "file": "pb/model.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "the light tank supersedes the medium tank, which supersedes it"
+}

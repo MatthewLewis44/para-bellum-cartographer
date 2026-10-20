@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:variant:1",
+  "title": "Para Bellum content: variants",
+  "description": "A DELTA on a model, never a copy: an up-armoured mark, a diesel conversion, a longer gun. File: Content/<namespace>/variant.json. A variant is its own DESIGN: it is produced and stockpiled separately from its model, and its id may not equal any model's id. The contract is docs/design/CONTENT_MODEL.md section 3 in the game repository.\n\nONE LEVEL ONLY. A variant's model is always a model, never another variant. Depth is unnecessary because TRAITS COMPOSE: a mark plus a field modification is a variant carrying a trait, not a variant of a variant.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "variants"],
+  "properties": {
+    "format": { "const": "pb-content/variant/1" },
+    "variants": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/variant" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "A namespaced id, <namespace>:<name>, lower case.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+:[a-z0-9_]+$"
+    },
+    "statKey": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "poolName": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "variant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "model", "year", "traits_add", "traits_remove", "stats", "cost", "units_per_factory_per_month"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": {
+          "description": "Display name. Optional: a missing or blank name displays the id.",
+          "type": "string"
+        },
+        "model": {
+          "description": "The model this variant modifies, by MODEL id. Naming a variant here is refused.",
+          "$ref": "#/$defs/id"
+        },
+        "year": { "type": "integer", "minimum": 0 },
+        "traits_add": {
+          "description": "Traits the variant adds to its model's traits. Each must be legal on the model's class.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "traits_remove": {
+          "description": "Traits the variant removes. Each must be one the model carries.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "stats": {
+          "description": "Stat DELTAS added to the model's values. A delta may be negative, but the resulting value may not be. Keys must be on the model's class. Use {} for no change.",
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/statKey" },
+          "additionalProperties": { "type": "integer" }
+        },
+        "cost": {
+          "description": "Cost DELTAS per pool. A delta may be negative, but the resulting cost may not be. Use {} for no change.",
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/poolName" },
+          "additionalProperties": { "type": "integer" }
+        },
+        "units_per_factory_per_month": {
+          "description": "DELTA on the model's production rate. 0 means unchanged; the result may not be negative.",
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

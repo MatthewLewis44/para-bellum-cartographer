@@ -1,0 +1,8 @@
+{
+  "code": "C106",
+  "rule": "bad-id-format",
+  "file": "pb/model.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "models[0].id is \"Tiger\" (no namespace, upper case)"
+}

@@ -1,0 +1,8 @@
+{
+  "code": "C503",
+  "rule": "remove-absent-trait",
+  "file": "pb/variant.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "variants[0] removes pb:unreliable_transmission, which its model lacks"
+}

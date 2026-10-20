@@ -1,0 +1,8 @@
+{
+  "code": "C201",
+  "rule": "unknown-namespace",
+  "file": "pb/model.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "models[2] carries trait \"mymod:extra_fuel\"; no Content/mymod/ exists"
+}

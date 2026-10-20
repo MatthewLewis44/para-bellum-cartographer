@@ -1,0 +1,8 @@
+{
+  "code": "C403",
+  "rule": "unknown-pool",
+  "file": "pb/model.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "models[0] costs gold, not a resource pool"
+}

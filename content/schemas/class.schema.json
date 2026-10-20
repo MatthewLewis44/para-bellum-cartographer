@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:class:1",
+  "title": "Para Bellum content: equipment classes",
+  "description": "What a kind of equipment IS. File: Content/<namespace>/class.json. A class declares the stat surface its models may set, with a default for each stat, and the traits that are legal on it. The contract is docs/design/CONTENT_MODEL.md section 3 in the game repository; when this schema and that document disagree, the document wins.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "classes"],
+  "properties": {
+    "format": {
+      "description": "The file format and its version. A reader refuses a format it does not know rather than misread it.",
+      "const": "pb-content/class/1"
+    },
+    "classes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/class" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "A namespaced id, <namespace>:<name>, lower case. The namespace is the folder the file sits in: pb for shipped content, your mod's folder name for a mod. The player namespace is reserved for the save.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+:[a-z0-9_]+$"
+    },
+    "statKey": {
+      "description": "An engine stat key, with its unit in the name (_mm, _kph, _kg, _per_mille). Stat keys are fixed by the game's code and listed in Content/vocabulary.json. A content file cannot add one.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "class": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "stats", "traits"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": {
+          "description": "Display name. Optional: a missing or blank name displays the id.",
+          "type": "string"
+        },
+        "stats": {
+          "description": "The stat surface: every stat a model or variant of this class may set, each with its default. A model that omits a stat takes this default. All values are whole numbers (integers), and none is negative.",
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/statKey" },
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "traits": {
+          "description": "The traits that are legal on this class, by id. A model or variant carrying a trait not listed here is refused.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    }
+  }
+}

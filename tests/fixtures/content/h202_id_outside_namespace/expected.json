@@ -1,0 +1,8 @@
+{
+  "code": "C202",
+  "rule": "id-outside-namespace",
+  "file": "pb/model.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "models[0].id is \"mymod:infantry_kit\" inside the pb folder"
+}

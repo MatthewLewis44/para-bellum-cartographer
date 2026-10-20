@@ -1,0 +1,8 @@
+{
+  "code": "C901",
+  "rule": "template-missing-unit-type",
+  "file": "pb/template.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "no template for Armored"
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:template:1",
+  "title": "Para Bellum content: division templates",
+  "description": "What a division draws from the stockpile when it is trained. File: Content/<namespace>/template.json. There is exactly one row per engine unit type. A requirement names a CLASS, and it is filled by designs of that class newest-first (along supersedes, then by year), models and variants alike. The contract is docs/design/CONTENT_MODEL.md section 4 in the game repository.\n\nRecorded limitation: a requirement cannot ask for one specific model (for example, a light tank for reconnaissance).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "templates"],
+  "properties": {
+    "format": { "const": "pb-content/template/1" },
+    "templates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/template" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "A namespaced id, <namespace>:<name>, lower case.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+:[a-z0-9_]+$"
+    },
+    "template": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit_type", "equipment"],
+      "properties": {
+        "unit_type": {
+          "description": "An engine unit type (for example Infantry, Motorized, Armored), listed in Content/vocabulary.json. Unit types are fixed by the game's code.",
+          "type": "string",
+          "pattern": "^[A-Z][A-Za-z0-9]*$"
+        },
+        "equipment": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["class", "count"],
+            "properties": {
+              "class": {
+                "description": "The class required, by id. At least one design must belong to it.",
+                "$ref": "#/$defs/id"
+              },
+              "count": {
+                "description": "How many units of that class the division draws.",
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

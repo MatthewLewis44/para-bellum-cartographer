@@ -1,0 +1,8 @@
+{
+  "code": "C402",
+  "rule": "unknown-stat-key",
+  "file": "pb/model.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "the light tank sets warp_factor, not an engine stat key"
+}

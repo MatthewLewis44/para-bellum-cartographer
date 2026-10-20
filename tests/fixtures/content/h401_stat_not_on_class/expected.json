@@ -1,0 +1,8 @@
+{
+  "code": "C401",
+  "rule": "stat-not-on-class",
+  "file": "pb/model.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "the trucks set armour_front_mm, which pb:trucks does not have"
+}

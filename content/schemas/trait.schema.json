@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:trait:1",
+  "title": "Para Bellum content: traits",
+  "description": "A named, composable effect: sloped armour, wet stowage, night optics. File: Content/<namespace>/trait.json. Each modifier writes one contribution into the game's modifier pipeline, with source trait:<id>, in the Base layer. Contributions within a layer add; layers multiply. A trait is legal on a class only if that class lists it, and only if every stat it modifies is on that class. The contract is docs/design/CONTENT_MODEL.md section 3 in the game repository.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "traits"],
+  "properties": {
+    "format": { "const": "pb-content/trait/1" },
+    "traits": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/trait" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "A namespaced id, <namespace>:<name>, lower case.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+:[a-z0-9_]+$"
+    },
+    "statKey": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "trait": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "modifiers"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": {
+          "description": "Display name. Optional: a missing or blank name displays the id.",
+          "type": "string"
+        },
+        "modifiers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["stat", "per_mille"],
+            "properties": {
+              "stat": {
+                "description": "The stat this modifier changes.",
+                "$ref": "#/$defs/statKey"
+              },
+              "per_mille": {
+                "description": "The change in thousandths: 300 is +30%, -100 is -10%. A whole number.",
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "format": "pb-content/model/1",
+  "models": [
+    {
+      "id": "pb:infantry_kit",
+      "class": "pb:infantry_kit",
+      "name": "Infantry kit",
+      "year": 1930,
+      "unlock": null,
+      "supersedes": null,
+      "stats": {
+        "weight_kg": 20
+      },
+      "traits": [],
+      "cost": {
+        "steel": 1,
+        "gold": 1
+      },
+      "units_per_factory_per_month": 10
+    },
+    {
+      "id": "pb:artillery",
+      "class": "pb:artillery",
+      "name": "Artillery",
+      "year": 1930,
+      "unlock": null,
+      "supersedes": null,
+      "stats": {
+        "main_gun_mm": 105,
+        "crew": 6
+      },
+      "traits": [],
+      "cost": {
+        "steel": 3
+      },
+      "units_per_factory_per_month": 2
+    },
+    {
+      "id": "pb:light_tank",
+      "class": "pb:tank",
+      "name": "Light tank",
+      "year": 1934,
+      "unlock": null,
+      "supersedes": null,
+      "stats": {
+        "armour_front_mm": 13,
+        "main_gun_mm": 20,
+        "speed_road_kph": 40,
+        "crew": 2
+      },
+      "traits": [
+        "pb:unreliable_transmission"
+      ],
+      "cost": {
+        "steel": 4,
+        "oil": 1
+      },
+      "units_per_factory_per_month": 2
+    },
+    {
+      "id": "pb:medium_tank",
+      "class": "pb:tank",
+      "name": "Medium tank",
+      "year": 1938,
+      "unlock": null,
+      "supersedes": "pb:light_tank",
+      "stats": {
+        "armour_front_mm": 30,
+        "main_gun_mm": 75,
+        "speed_road_kph": 40,
+        "crew": 5
+      },
+      "traits": [],
+      "cost": {
+        "steel": 7,
+        "oil": 1
+      },
+      "units_per_factory_per_month": 1
+    },
+    {
+      "id": "pb:trucks",
+      "class": "pb:trucks",
+      "name": "Trucks",
+      "year": 1930,
+      "unlock": null,
+      "supersedes": null,
+      "stats": {
+        "transport_capacity": 3000
+      },
+      "traits": [],
+      "cost": {
+        "steel": 2,
+        "oil": 1
+      },
+      "units_per_factory_per_month": 4
+    }
+  ]
+}

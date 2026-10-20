@@ -1,0 +1,10 @@
+{
+  "code": "C701",
+  "rule": "vocabulary-drift",
+  "file": "vocabulary.json",
+  "seeded": "vocabulary.json lists a stat key (rotor_rpm) the engine's code does not have",
+  "python": "accept",
+  "csharp": "refuse",
+  "why": "Python cannot see the engine's enums; only the C# vocabulary test can catch drift (CONTENT_MODEL 2).",
+  "declared_divergence": true
+}

@@ -1,0 +1,36 @@
+{
+  "format": "pb-content/vocabulary/1",
+  "_comment": "THE GAME NEVER READS THIS FILE TO DECIDE BEHAVIOUR. It describes the code; it does not extend it. A test asserts it equals the engine's enums exactly.",
+  "stat_keys": [
+    "weight_kg",
+    "crew",
+    "speed_road_kph",
+    "speed_offroad_kph",
+    "range_km",
+    "armour_front_mm",
+    "armour_side_mm",
+    "armour_top_mm",
+    "main_gun_mm",
+    "penetration_mm",
+    "rate_of_fire_rpm",
+    "transport_capacity",
+    "reliability_per_mille",
+    "supply_need",
+    "fuel_capacity_l",
+    "ceiling_m"
+  ],
+  "pools": [
+    "money",
+    "manpower",
+    "coal",
+    "steel",
+    "iron",
+    "oil",
+    "agriculture"
+  ],
+  "unit_types": [
+    "Infantry",
+    "Motorized",
+    "Armored"
+  ]
+}

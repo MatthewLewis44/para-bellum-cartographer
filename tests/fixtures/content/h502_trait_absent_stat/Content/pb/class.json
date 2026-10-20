@@ -1,0 +1,59 @@
+{
+  "format": "pb-content/class/1",
+  "classes": [
+    {
+      "id": "pb:infantry_kit",
+      "name": "Infantry kit",
+      "stats": {
+        "weight_kg": 0,
+        "supply_need": 0,
+        "reliability_per_mille": 900
+      },
+      "traits": []
+    },
+    {
+      "id": "pb:artillery",
+      "name": "Artillery",
+      "stats": {
+        "weight_kg": 0,
+        "crew": 0,
+        "main_gun_mm": 0,
+        "rate_of_fire_rpm": 0,
+        "supply_need": 0
+      },
+      "traits": []
+    },
+    {
+      "id": "pb:tank",
+      "name": "Tank",
+      "stats": {
+        "weight_kg": 0,
+        "crew": 0,
+        "speed_road_kph": 0,
+        "speed_offroad_kph": 0,
+        "armour_front_mm": 0,
+        "armour_side_mm": 0,
+        "main_gun_mm": 0,
+        "reliability_per_mille": 900,
+        "supply_need": 0
+      },
+      "traits": [
+        "pb:sloped_armour",
+        "pb:unreliable_transmission"
+      ]
+    },
+    {
+      "id": "pb:trucks",
+      "name": "Trucks",
+      "stats": {
+        "weight_kg": 0,
+        "speed_road_kph": 0,
+        "transport_capacity": 0,
+        "supply_need": 0
+      },
+      "traits": [
+        "pb:sloped_armour"
+      ]
+    }
+  ]
+}

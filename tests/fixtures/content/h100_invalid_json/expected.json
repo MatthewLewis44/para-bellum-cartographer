@@ -1,0 +1,8 @@
+{
+  "code": "C100",
+  "rule": "invalid-json",
+  "file": "pb/model.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "model.json is not JSON (truncated)"
+}

@@ -1,0 +1,35 @@
+{
+  "format": "pb-content/variant/1",
+  "variants": [
+    {
+      "id": "pb:medium_tank_late",
+      "model": "pb:medium_tank",
+      "name": "Medium tank (late)",
+      "year": 1942,
+      "traits_add": [
+        "pb:sloped_armour"
+      ],
+      "traits_remove": [],
+      "stats": {
+        "armour_front_mm": 20
+      },
+      "cost": {
+        "steel": 1
+      },
+      "units_per_factory_per_month": 0
+    },
+    {
+      "id": "pb:light_tank_rebuilt",
+      "model": "pb:light_tnak",
+      "name": "Light tank (rebuilt transmission)",
+      "year": 1937,
+      "traits_add": [],
+      "traits_remove": [
+        "pb:unreliable_transmission"
+      ],
+      "stats": {},
+      "cost": {},
+      "units_per_factory_per_month": 0
+    }
+  ]
+}

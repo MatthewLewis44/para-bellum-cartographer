@@ -1,0 +1,8 @@
+{
+  "code": "C203",
+  "rule": "duplicate-id",
+  "file": "pb/model.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "models[0] is defined twice"
+}

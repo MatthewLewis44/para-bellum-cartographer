@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:model:1",
+  "title": "Para Bellum content: models",
+  "description": "A real vehicle or weapon. File: Content/<namespace>/model.json. A model belongs to one class, sets base values for any subset of that class's stats, and carries its materiel cost and production rate. A model is a DESIGN: it can be produced and stockpiled. The contract is docs/design/CONTENT_MODEL.md section 3 in the game repository.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "models"],
+  "properties": {
+    "format": { "const": "pb-content/model/1" },
+    "models": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/model" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "A namespaced id, <namespace>:<name>, lower case.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+:[a-z0-9_]+$"
+    },
+    "statKey": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "poolName": {
+      "description": "A resource pool name, listed in Content/vocabulary.json. Pools are fixed by the game's code.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "class", "year", "unlock", "supersedes", "stats", "traits", "cost", "units_per_factory_per_month"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": {
+          "description": "Display name. Optional: a missing or blank name displays the id.",
+          "type": "string"
+        },
+        "class": {
+          "description": "The class this model belongs to, by class id.",
+          "$ref": "#/$defs/id"
+        },
+        "year": {
+          "description": "The year the model becomes available.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "unlock": {
+          "description": "The research that unlocks this model, by id, or null if no research is needed. Research content arrives in a later version; until it does, this must be null.",
+          "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }]
+        },
+        "supersedes": {
+          "description": "The model this one replaces, by id, or null. It must be a model of the SAME class, and the supersedes chain must not loop. A requirement for a class is filled newest-first along this chain.",
+          "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }]
+        },
+        "stats": {
+          "description": "Base values for any subset of the class's stats. A stat you omit takes the class default. Whole numbers, never negative.",
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/statKey" },
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "traits": {
+          "description": "Traits this model carries, by id. Each must be legal on the model's class.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "cost": {
+          "description": "Materiel per unit produced, keyed by pool name. Whole numbers, never negative. Omit a pool to cost none of it.",
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/poolName" },
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "units_per_factory_per_month": {
+          "description": "How many units one factory on a production line turns out per month at full efficiency.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

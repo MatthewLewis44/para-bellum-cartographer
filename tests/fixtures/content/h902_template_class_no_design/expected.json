@@ -1,0 +1,8 @@
+{
+  "code": "C902",
+  "rule": "template-class-has-no-design",
+  "file": "pb/template.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "a template requires pb:helicopter, a class no design belongs to"
+}

@@ -1,0 +1,56 @@
+{
+  "format": "pb-content/template/1",
+  "templates": [
+    {
+      "unit_type": "Infantry",
+      "equipment": [
+        {
+          "class": "pb:infantry_kit",
+          "count": 10
+        },
+        {
+          "class": "pb:artillery",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "unit_type": "Motorized",
+      "equipment": [
+        {
+          "class": "pb:infantry_kit",
+          "count": 8
+        },
+        {
+          "class": "pb:artillery",
+          "count": 2
+        },
+        {
+          "class": "pb:trucks",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "unit_type": "Armored",
+      "equipment": [
+        {
+          "class": "pb:infantry_kit",
+          "count": 4
+        },
+        {
+          "class": "pb:artillery",
+          "count": 2
+        },
+        {
+          "class": "pb:trucks",
+          "count": 4
+        },
+        {
+          "class": "pb:tank",
+          "count": 6
+        }
+      ]
+    }
+  ]
+}
