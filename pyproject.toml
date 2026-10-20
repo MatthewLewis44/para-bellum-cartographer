@@ -43,3 +43,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/wargame_cartographer"]
+
+[dependency-groups]
+dev = [
+    "check-jsonschema<0.38",
+]
