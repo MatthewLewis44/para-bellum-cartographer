@@ -18,6 +18,9 @@ the check meant to catch it fails — above all Matthew's two constraints:
   9. A tier of 4 and an unknown kind               -> shape, without crashing.
  10. Entries out of (kind, name) order             -> ordering.
  11. The clean baseline passes every check, and the power mirror is tier^2.
+ 12. The power model is a parameter (the stack/base coupling): the base that
+     balances at tier^2 fails under a linear model (step 0) and under a heavier
+     mill draw, and supply truncates like the sim's per-mille stack.
 
 Also: the table-level checks refuse a steel deposit and a mill-without-plant
 nation, and the resource-layer check refuses any `steel` feature.
@@ -99,6 +102,22 @@ def main() -> int:
     check("clean baseline passes every check", failing(baseline()) == set())
     check("power mirror is tier^2 (base Tier x Facility layer)",
           [bf.power_supply(t) for t in (1, 2, 3)] == [1, 4, 9])
+
+    # The power model is a parameter (the coupling, PowerModel): the same base
+    # passes under the sim's current stack and fails under a linear "fix".
+    check("PowerModel default reproduces the sim's tier^2 exactly",
+          [bf.CURRENT_POWER.supply(t) for t in (1, 2, 3)] == [1, 4, 9])
+    lin = bf.PowerModel(tier_step_per_mille=0)
+    check("a linear model (step 0) gives supply = tier", [lin.supply(t) for t in (1, 2, 3)] == [1, 2, 3])
+    check("supply truncates like the sim's per-mille stack (tier 2, step 500 -> 3)",
+          bf.PowerModel(tier_step_per_mille=500).supply(2) == 3)
+    f = {n for n, ok, _, _ in bf.check_artifact(baseline(), ROWS, power=lin)[0] if not ok}
+    check("the authored base that balances at tier^2 FAILS under a linear model",
+          len(f) == 1 and "supply covers its draw" in next(iter(f)))
+    heavy = bf.PowerModel(draw=(("power_plant", 0), ("steel_mill", 9), ("mine", 1), ("rail_yard", 1)))
+    f = {n for n, ok, _, _ in bf.check_artifact(baseline(), ROWS, power=heavy)[0] if not ok}
+    check("a heavier mill draw read from the model fails the supply check",
+          any("supply covers its draw" in n for n in f))
 
     d = baseline(); d["hexes"][0]["facilities"] = [_entry(ROWS[1])]
     f = failing(d, ROWS[1:])

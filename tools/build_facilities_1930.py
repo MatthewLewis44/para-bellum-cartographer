@@ -37,6 +37,7 @@ import csv
 import json
 import sys
 from collections import Counter, defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -49,15 +50,42 @@ MAX_TIER = 3
 MINE_DEPOSITS = ("iron",)
 CONFIDENCE = ("site", "approximate")
 
-# --- Mirrors of the sim's [P] tables (Assets/Scripts/Sim/GameState.cs) ----------
-# Unsigned placeholders on the Unity side, mirrored here in ONE place. If the sim
-# moves them, move these. Supply: PowerOutputFor = base Tier x Facility layer
-# (1 + (tier-1)) = tier^2 at v0. Draw: FacilityPowerDrawFor.
-def power_supply(tier: int) -> int:
-    return tier * tier
+# --- The power model: the coupling between the sim's stack and this base ----------
+# A plant's supply is the tier applied TWICE: its base output is
+# supply_per_tier x tier, and the global Facility-layer tier step then multiplies
+# every facility by (1000 + (tier-1) x tier_step_per_mille) / 1000. Mills and
+# mines get the step once, on output. The authored base is sized against that.
+# A linear "fix" (step 0) leaves seven nations short at the first tick.
+#
+# The defaults are the sim's current [P] values (GameState.cs PowerOutputFor,
+# StackFor, FacilityPowerDrawFor). Sprint 12.5 moves them into the content file
+# facilities.json; this model is then read FROM that file, so a hand-mirror
+# that could drift becomes a cross-check that recomputes the file's numbers.
+@dataclass(frozen=True)
+class PowerModel:
+    supply_per_tier: int = 1
+    tier_step_per_mille: int = 1000
+    draw: tuple[tuple[str, int], ...] = (
+        ("power_plant", 0), ("steel_mill", 2), ("mine", 1), ("rail_yard", 1))
+
+    def supply(self, tier: int) -> int:
+        """One plant's supply, in the sim's integer per-mille arithmetic:
+        base x layer-per-mille / 1000, truncating, as StackFor applies it."""
+        base = self.supply_per_tier * tier
+        return base * (1000 + (tier - 1) * self.tier_step_per_mille) // 1000
+
+    def draw_of(self, kind: str) -> int:
+        return dict(self.draw)[kind]
 
 
-POWER_DRAW = {"power_plant": 0, "steel_mill": 2, "mine": 1, "rail_yard": 1}
+CURRENT_POWER = PowerModel()
+
+
+def power_supply(tier: int, power: PowerModel = CURRENT_POWER) -> int:
+    return power.supply(tier)
+
+
+POWER_DRAW = dict(CURRENT_POWER.draw)
 
 # Slots: SlotsForSeatSettlement, read from the province's CAPTURE SEAT.
 SEAT_SLOTS = {"metropolis": 7, "city": 5, "town": 3}
@@ -177,7 +205,8 @@ def _province_seats(hexes: list[dict]) -> dict[str, tuple[str, str]]:
     return out
 
 
-def check_artifact(data: dict, rows: list[dict] | None = None
+def check_artifact(data: dict, rows: list[dict] | None = None,
+                   power: PowerModel = CURRENT_POWER,
                    ) -> tuple[list[tuple[str, bool, str, bool]], list[str]]:
     """(checks, report lines) for an artifact.
 
@@ -270,9 +299,9 @@ def check_artifact(data: dict, rows: list[dict] | None = None
         n = country(h)
         count_by_nation[n][e["kind"]] += 1
         if e["kind"] == "power_plant":
-            supply[n] += power_supply(e["tier"])
+            supply[n] += power.supply(e["tier"])
         else:
-            draw[n] += POWER_DRAW[e["kind"]]
+            draw[n] += power.draw_of(e["kind"])
     short = sorted(f"{n} {supply[n]}<{draw[n]}" for n in draw if supply[n] < draw[n])
 
     checks = [
