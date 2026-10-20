@@ -9,7 +9,7 @@
   "properties": {
     "format": { "const": "pb-content/vocabulary/1" },
     "_comment": {
-      "description": "The header. It must carry the rule that the game never reads this file to decide behaviour.",
+      "description": "The header. It must carry the rule that the game never reads this file to decide behaviour. This key is the ONE EXPLICIT EXCEPTION to the content rule that unknown keys are refused (PB-C105): it is legal in this file only, and it is declared here rather than left implicit.",
       "type": "string",
       "minLength": 1
     },

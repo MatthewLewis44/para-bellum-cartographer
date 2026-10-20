@@ -19,7 +19,11 @@ cross-check: both implementations must agree on WHY each file is wrong.
      the modder-facing command, `check-jsonschema`, file by file.
   5. The control set's derived values match the committed snapshot
      (h000_valid.resolved.txt), which the C# reader must also reproduce.
-  6. The hash pin (content/SHA256SUMS) matches the schemas and fixtures.
+  6. The hash pin (content/SHA256SUMS) matches the schemas, the rule-code register
+     and the fixtures.
+  2a. THE REGISTER IS DATA. content/schemas/rule_codes.json is the only source of
+     the codes: the checker reads it, every code it emits is in it, and every
+     fixture's rule name and python/csharp behaviour match it.
   7. DRIFT AGAINST THE GAME. If the game repository is present (PB_UNITY_REPO,
      default C:/UnityProjects/ParaBellum), its Content/schemas/ must equal ours
      byte for byte (line endings normalised), and its real Content/ must pass
@@ -57,8 +61,13 @@ def _lf(b: bytes) -> bytes:
     return b.replace(b"\r\n", b"\n")
 
 
+def contract_files() -> list[Path]:
+    """The files that are vendored into the game: every schema plus the rule-code register."""
+    return sorted(SCHEMAS.glob("*.schema.json")) + [cc.RULE_CODES_FILE]
+
+
 def pinned_files() -> list[Path]:
-    files = sorted(SCHEMAS.glob("*.schema.json"))
+    files = contract_files()
     files += sorted(p for p in FIXTURES.rglob("*") if p.is_file())
     return files
 
@@ -95,6 +104,29 @@ def main() -> int:
             check(f"{d.name}: refused with exactly PB-{exp['code']} in {exp['file']}",
                   got == [(exp["code"], exp["file"])], f"{[str(p) for p in cs.problems][:3]}")
 
+    # 2a. The register (rule_codes.json) is sound, and is the checker's only source.
+    codes = [c["code"] for c in cc.REGISTER]
+    check("rule_codes.json: codes are unique and well-formed (C + 3 digits)",
+          len(codes) == len(set(codes)) and all(len(c) == 4 and c[0] == "C" and c[1:].isdigit() for c in codes))
+    check("rule_codes.json: every entry declares layer, python and csharp behaviour",
+          all({"rule", "layer", "python", "csharp", "summary"} <= set(c) for c in cc.REGISTER))
+    check("the checker's RULES are exactly the register (no copy in code)",
+          cc.RULES == {c["code"]: c["rule"] for c in cc.REGISTER})
+    reg = {c["code"]: c for c in cc.REGISTER}
+    bad_meta = []
+    for d in dirs:
+        exp = json.loads((d / "expected.json").read_text(encoding="utf-8"))
+        if exp["code"] and (exp.get("rule") != reg[exp["code"]]["rule"]
+                            or (not exp.get("declared_divergence")
+                                and (exp["python"], exp["csharp"]) != (reg[exp["code"]]["python"],
+                                                                       reg[exp["code"]]["csharp"]))):
+            bad_meta.append(d.name)
+    check("every fixture's rule name and python/csharp behaviour match the register", not bad_meta,
+          f"{bad_meta}")
+    emitted = {pr.code for d in dirs for pr in cc.ContentSet(d / "Content").problems}
+    check("every code the checker emitted is in the register", emitted <= set(codes),
+          f"{sorted(emitted - set(codes))}")
+
     # 2. Register coverage.
     uncovered = sorted(set(cc.RULES) - covered - set(PENDING))
     check("every rule-register code has a fixture (or is declared pending)", not uncovered, f"{uncovered}")
@@ -117,7 +149,7 @@ def main() -> int:
         r = subprocess.run([sys.executable, "-m", "check_jsonschema", *args],
                            capture_output=True, text=True, encoding="utf-8")
         return r.returncode == 0
-    check("every schema passes --check-metaschema", cli("--check-metaschema", *map(str, SCHEMAS.glob("*.json"))))
+    check("every schema passes --check-metaschema", cli("--check-metaschema", *map(str, SCHEMAS.glob("*.schema.json"))))
     content = FIXTURES / "h000_valid" / "Content"
     ok = cli("--schemafile", str(SCHEMAS / "vocabulary.schema.json"), str(content / "vocabulary.json"))
     for stem, _ in cc.TYPES:
@@ -150,10 +182,12 @@ def main() -> int:
         print(f"  SKIP  !!! {game_schemas} does not exist yet: the schemas are not vendored into "
               f"the game. NO DRIFT CHECK RAN.")
     else:
-        mine = {p.name: _lf(p.read_bytes()) for p in SCHEMAS.glob("*.schema.json")}
-        theirs = {p.name: _lf(p.read_bytes()) for p in game_schemas.glob("*.schema.json")}
+        mine = {p.name: _lf(p.read_bytes()) for p in contract_files()}
+        theirs = {p.name: _lf(p.read_bytes()) for p in game_schemas.iterdir() if p.is_file()
+                  and (p.name.endswith(".schema.json") or p.name == cc.RULE_CODES_FILE.name)}
         drift = sorted(k for k in mine.keys() | theirs.keys() if mine.get(k) != theirs.get(k))
-        check("the game's Content/schemas/ equals the pinned copy", not drift, f"{drift}")
+        check("the game's Content/schemas/ (schemas + rule_codes.json) equals the pinned copy",
+              not drift, f"{drift}")
         gcs = cc.ContentSet(game_content)
         check("the game's real Content/ passes the checker", not gcs.problems,
               f"{[str(p) for p in gcs.problems][:3]}")

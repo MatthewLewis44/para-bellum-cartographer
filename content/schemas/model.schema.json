@@ -28,7 +28,7 @@
     "model": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "class", "year", "unlock", "supersedes", "stats", "traits", "cost", "units_per_factory_per_month"],
+      "required": ["id", "class", "year", "unlock", "supersedes", "stats", "traits", "cost", "production"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
         "name": {
@@ -45,7 +45,7 @@
           "minimum": 0
         },
         "unlock": {
-          "description": "The research that unlocks this model, by id, or null if no research is needed. Research content arrives in a later version; until it does, this must be null.",
+          "description": "The research that unlocks this model, by id, or null if no research is needed. This is a DELIBERATE FORWARD REFERENCE, not an unfinished field: no research content type exists yet, so any non-null value is refused as a dangling reference (PB-C301) against type research. When research content is added, the same check starts resolving instead of failing.",
           "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }]
         },
         "supersedes": {
@@ -70,10 +70,18 @@
           "propertyNames": { "$ref": "#/$defs/poolName" },
           "additionalProperties": { "type": "integer", "minimum": 0 }
         },
-        "units_per_factory_per_month": {
-          "description": "How many units one factory on a production line turns out per month at full efficiency.",
-          "type": "integer",
-          "minimum": 0
+        "production": {
+          "description": "The model's base production figures. It is an object, the same shape as a variant's production delta, so the two read alike.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["units_per_factory_per_month"],
+          "properties": {
+            "units_per_factory_per_month": {
+              "description": "How many units one factory on a production line turns out per month at full efficiency.",
+              "type": "integer",
+              "minimum": 0
+            }
+          }
         }
       }
     }

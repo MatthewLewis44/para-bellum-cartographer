@@ -24,7 +24,7 @@
     "variant": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "model", "year", "traits_add", "traits_remove", "stats", "cost", "units_per_factory_per_month"],
+      "required": ["id", "model", "year", "traits_add", "traits_remove", "stats", "cost", "production"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
         "name": {
@@ -49,20 +49,24 @@
           "items": { "$ref": "#/$defs/id" }
         },
         "stats": {
-          "description": "Stat DELTAS added to the model's values. A delta may be negative, but the resulting value may not be. Keys must be on the model's class. Use {} for no change.",
+          "description": "Stat DELTAS added to the model's values. The container is required and may be {}; members are sparse, and an absent stat means no change. A delta may be negative, but the resulting value may not be. Keys must be on the model's class.",
           "type": "object",
           "propertyNames": { "$ref": "#/$defs/statKey" },
           "additionalProperties": { "type": "integer" }
         },
         "cost": {
-          "description": "Cost DELTAS per pool. A delta may be negative, but the resulting cost may not be. Use {} for no change.",
+          "description": "Cost DELTAS per pool. The container is required and may be {}; members are sparse, and an absent pool means no change. A delta may be negative, but the resulting cost may not be.",
           "type": "object",
           "propertyNames": { "$ref": "#/$defs/poolName" },
           "additionalProperties": { "type": "integer" }
         },
-        "units_per_factory_per_month": {
-          "description": "DELTA on the model's production rate. 0 means unchanged; the result may not be negative.",
-          "type": "integer"
+        "production": {
+          "description": "Production DELTAS. The container is required and may be {}; its members are SPARSE, and an absent member means no change. Zero is a real delta, never a 'no change' marker. The result may not be negative. Recorded limitation: setting production to exactly zero must be written as a delta of minus the model's base.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "units_per_factory_per_month": { "type": "integer" }
+          }
         }
       }
     }

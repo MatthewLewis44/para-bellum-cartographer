@@ -1,0 +1,8 @@
+{
+  "code": "C802",
+  "rule": "shipped-content-unnamed",
+  "file": "pb/model.json",
+  "python": "refuse",
+  "csharp": "report",
+  "seeded": "models[0] (pb:infantry_kit) has no name: a PROJECT INVARIANT, refused by our gate, loaded and reported by the game"
+}

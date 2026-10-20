@@ -14,7 +14,9 @@
       "cost": {
         "steel": 1
       },
-      "units_per_factory_per_month": 10
+      "production": {
+        "units_per_factory_per_month": 10
+      }
     },
     {
       "id": "pb:artillery",
@@ -31,7 +33,9 @@
       "cost": {
         "steel": 3
       },
-      "units_per_factory_per_month": 2
+      "production": {
+        "units_per_factory_per_month": 2
+      }
     },
     {
       "id": "pb:light_tank",
@@ -53,7 +57,9 @@
         "steel": 4,
         "oil": 1
       },
-      "units_per_factory_per_month": 2
+      "production": {
+        "units_per_factory_per_month": 2
+      }
     },
     {
       "id": "pb:medium_tank",
@@ -73,7 +79,9 @@
         "steel": 7,
         "oil": 1
       },
-      "units_per_factory_per_month": 1
+      "production": {
+        "units_per_factory_per_month": 1
+      }
     },
     {
       "id": "pb:trucks",
@@ -90,7 +98,9 @@
         "steel": 2,
         "oil": 1
       },
-      "units_per_factory_per_month": 4
+      "production": {
+        "units_per_factory_per_month": 4
+      }
     }
   ]
 }

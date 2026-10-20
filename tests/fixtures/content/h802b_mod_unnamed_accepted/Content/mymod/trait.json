@@ -1,0 +1,9 @@
+{
+  "format": "pb-content/trait/1",
+  "traits": [
+    {
+      "id": "mymod:extra_fuel",
+      "modifiers": []
+    }
+  ]
+}

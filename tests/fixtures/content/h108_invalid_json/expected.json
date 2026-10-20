@@ -1,5 +1,5 @@
 {
-  "code": "C100",
+  "code": "C108",
   "rule": "invalid-json",
   "file": "pb/model.json",
   "python": "refuse",

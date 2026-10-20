@@ -1,14 +1,14 @@
-pb:artillery class=pb:artillery model=pb:artillery traits=- cost=steel:3 units=2
+pb:artillery class=pb:artillery model=pb:artillery traits=- cost=steel:3 production=units_per_factory_per_month:2
   pb:artillery.crew = 6 [model=6]
   pb:artillery.main_gun_mm = 105 [model=105]
   pb:artillery.rate_of_fire_rpm = 0 [class=0]
   pb:artillery.supply_need = 0 [class=0]
   pb:artillery.weight_kg = 0 [class=0]
-pb:infantry_kit class=pb:infantry_kit model=pb:infantry_kit traits=- cost=steel:1 units=10
+pb:infantry_kit class=pb:infantry_kit model=pb:infantry_kit traits=- cost=steel:1 production=units_per_factory_per_month:10
   pb:infantry_kit.reliability_per_mille = 900 [class=900]
   pb:infantry_kit.supply_need = 0 [class=0]
   pb:infantry_kit.weight_kg = 20 [model=20]
-pb:light_tank class=pb:tank model=pb:light_tank traits=pb:unreliable_transmission cost=oil:1,steel:4 units=2
+pb:light_tank class=pb:tank model=pb:light_tank traits=pb:unreliable_transmission cost=oil:1,steel:4 production=units_per_factory_per_month:2
   pb:light_tank.armour_front_mm = 13 [model=13]
   pb:light_tank.armour_side_mm = 0 [class=0]
   pb:light_tank.crew = 2 [model=2]
@@ -18,7 +18,7 @@ pb:light_tank class=pb:tank model=pb:light_tank traits=pb:unreliable_transmissio
   pb:light_tank.speed_road_kph = 40 [model=40]
   pb:light_tank.supply_need = 0 [class=0]
   pb:light_tank.weight_kg = 0 [class=0]
-pb:light_tank_rebuilt class=pb:tank model=pb:light_tank traits=- cost=oil:1,steel:4 units=2
+pb:light_tank_rebuilt class=pb:tank model=pb:light_tank traits=- cost=oil:1,steel:4 production=units_per_factory_per_month:2
   pb:light_tank_rebuilt.armour_front_mm = 13 [model=13]
   pb:light_tank_rebuilt.armour_side_mm = 0 [class=0]
   pb:light_tank_rebuilt.crew = 2 [model=2]
@@ -28,7 +28,7 @@ pb:light_tank_rebuilt class=pb:tank model=pb:light_tank traits=- cost=oil:1,stee
   pb:light_tank_rebuilt.speed_road_kph = 40 [model=40]
   pb:light_tank_rebuilt.supply_need = 0 [class=0]
   pb:light_tank_rebuilt.weight_kg = 0 [class=0]
-pb:medium_tank class=pb:tank model=pb:medium_tank traits=- cost=oil:1,steel:7 units=1
+pb:medium_tank class=pb:tank model=pb:medium_tank traits=- cost=oil:1,steel:7 production=units_per_factory_per_month:1
   pb:medium_tank.armour_front_mm = 30 [model=30]
   pb:medium_tank.armour_side_mm = 0 [class=0]
   pb:medium_tank.crew = 5 [model=5]
@@ -38,7 +38,7 @@ pb:medium_tank class=pb:tank model=pb:medium_tank traits=- cost=oil:1,steel:7 un
   pb:medium_tank.speed_road_kph = 40 [model=40]
   pb:medium_tank.supply_need = 0 [class=0]
   pb:medium_tank.weight_kg = 0 [class=0]
-pb:medium_tank_late class=pb:tank model=pb:medium_tank traits=pb:sloped_armour cost=oil:1,steel:8 units=1
+pb:medium_tank_late class=pb:tank model=pb:medium_tank traits=pb:sloped_armour cost=oil:1,steel:8 production=units_per_factory_per_month:2
   pb:medium_tank_late.armour_front_mm = 50 [model=30 variant:pb:medium_tank_late+20] mods[trait:pb:sloped_armour+300pm]
   pb:medium_tank_late.armour_side_mm = 0 [class=0]
   pb:medium_tank_late.crew = 5 [model=5]
@@ -48,7 +48,7 @@ pb:medium_tank_late class=pb:tank model=pb:medium_tank traits=pb:sloped_armour c
   pb:medium_tank_late.speed_road_kph = 40 [model=40]
   pb:medium_tank_late.supply_need = 0 [class=0]
   pb:medium_tank_late.weight_kg = 0 [class=0]
-pb:trucks class=pb:trucks model=pb:trucks traits=- cost=oil:1,steel:2 units=4
+pb:trucks class=pb:trucks model=pb:trucks traits=- cost=oil:1,steel:2 production=units_per_factory_per_month:4
   pb:trucks.speed_road_kph = 0 [class=0]
   pb:trucks.supply_need = 0 [class=0]
   pb:trucks.transport_capacity = 3000 [model=3000]

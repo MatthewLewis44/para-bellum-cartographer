@@ -47,40 +47,14 @@ TYPES = (("class", "classes"), ("model", "models"), ("variant", "variants"),
 VOCABULARY_FILE = "vocabulary.json"
 RESERVED_NAMESPACE = "player"   # player designs live in the save, never on disk
 
-# THE RULE-CODE REGISTER. Owned by the pipeline seat (CONTENT_MODEL 10a): codes
-# are an interface between the two implementations, so none is renumbered
-# unilaterally. Append only.
-RULES = {
-    "C100": "invalid-json",
-    "C101": "missing-key",
-    "C102": "wrong-type",
-    "C103": "not-integer",
-    "C104": "negative-value",
-    "C105": "unknown-key",
-    "C106": "bad-id-format",
-    "C107": "bad-format",
-    "C201": "unknown-namespace",
-    "C202": "id-outside-namespace",
-    "C203": "duplicate-id",
-    "C204": "reserved-namespace",
-    "C205": "design-id-collision",
-    "C301": "dangling-reference",
-    "C302": "cyclic-supersedes",
-    "C303": "supersedes-across-class",
-    "C401": "stat-not-on-class",
-    "C402": "unknown-stat-key",
-    "C403": "unknown-pool",
-    "C404": "unknown-unit-type",
-    "C501": "illegal-trait-on-class",
-    "C502": "trait-targets-absent-stat",
-    "C503": "remove-absent-trait",
-    "C601": "variant-of-variant",
-    "C602": "resolved-negative",
-    "C701": "vocabulary-drift",      # C# only: Python cannot see the engine's enums
-    "C801": "base-browns-out",       # PROJECT INVARIANT, not content validity (10c)
-    "C901": "template-missing-unit-type",
-    "C902": "template-class-has-no-design",
-}
+# THE RULE-CODE REGISTER is DATA: content/schemas/rule_codes.json, a pinned copy
+# of the authoritative file that ships beside the content. Both implementations
+# test that the codes they emit are exactly the ones it lists, so the interface
+# between the two seats has one source and no copy in code.
+RULE_CODES_FILE = SCHEMA_DIR / "rule_codes.json"
+REGISTER = json.loads(RULE_CODES_FILE.read_text(encoding="utf-8"))["codes"]
+RULES = {c["code"]: c["rule"] for c in REGISTER}
+SHIPPED_NAMESPACE = "pb"   # project invariants (C8xx) hold OUR content to more than a mod's
 
 
 @dataclass(frozen=True, order=True)
@@ -163,6 +137,7 @@ class ContentSet:
         # cross-file layer runs only on a structurally sound set.
         if not any(p.code.startswith("C1") for p in self.problems):
             self._cross_file()
+            self._project_invariants()
         self.problems.sort()
 
     # -- loading and the schema layer ------------------------------------------------
@@ -172,7 +147,7 @@ class ContentSet:
         try:
             doc = json.loads(path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as e:
-            self.problems.append(Problem(rel, "C100", "$", str(e)))
+            self.problems.append(Problem(rel, "C108", "$", str(e)))
             return rel, None
         errs = _schema_problems(rel, stem, doc)
         self.problems += errs
@@ -352,10 +327,10 @@ class ContentSet:
                     r = base["cost"].get(p, 0) + d
                     if r < 0:
                         self._add(rel, "C602", where("variant", i, "cost", p), f"cost {p} resolves to {r}")
-                r = base["units_per_factory_per_month"] + v["units_per_factory_per_month"]
-                if r < 0:
-                    self._add(rel, "C602", where("variant", i, "units_per_factory_per_month"),
-                              f"units_per_factory_per_month resolves to {r}")
+                for k, d in v["production"].items():
+                    r = base["production"][k] + d
+                    if r < 0:
+                        self._add(rel, "C602", where("variant", i, "production", k), f"production {k} resolves to {r}")
 
         # Templates: one row per engine unit type; every class has a design.
         seen_ut: dict[str, tuple[str, int]] = {}
@@ -380,6 +355,21 @@ class ContentSet:
             if ut not in seen_ut:
                 self._add(any_template_file or "pb/template.json", "C901", "$.templates",
                           f'no template for unit type "{ut}"')
+
+    # -- project invariants (C8xx) ---------------------------------------------------------
+
+    def _project_invariants(self):
+        """Rules about OUR shipped content, not about content validity. The game
+        loads these cases and reports them (a mod may legitimately do them); this
+        gate refuses them for the pb namespace. Declared in rule_codes.json."""
+        coll = dict(TYPES)
+        for stem, _ in TYPES:
+            if stem == "template":
+                continue
+            for rel, ns, i, e in self.entries[stem]:
+                if ns == SHIPPED_NAMESPACE and not str(e.get("name", "")).strip():
+                    self._add(rel, "C802", _json_path([coll[stem], i, "name"]),
+                              f'shipped entry "{e["id"]}" has no name; mods may omit one, pb: content may not')
 
     # -- derived values (the T2 cross-check) -------------------------------------------
 
@@ -411,14 +401,15 @@ class ContentSet:
                         for m in traits[t]["modifiers"] if m["stat"] == k]
                 stats[k] = {"base": sum(v for _, v in terms), "terms": terms, "modifiers": mods}
             cost = dict(model["cost"])
-            units = model["units_per_factory_per_month"]
+            production = dict(model["production"])
             if variant:
                 for p, d in variant["cost"].items():
                     cost[p] = cost.get(p, 0) + d
-                units += variant["units_per_factory_per_month"]
+                for k, d in variant["production"].items():
+                    production[k] += d
             return {"class": cls["id"], "model": model["id"], "traits": sorted(trait_set),
                     "stats": stats, "cost": dict(sorted(cost.items())),
-                    "units_per_factory_per_month": units}
+                    "production": dict(sorted(production.items()))}
 
         for mid, m in models.items():
             out[mid] = design(mid, classes[m["class"]], m, None)
@@ -435,7 +426,7 @@ def snapshot(resolved: dict[str, dict]) -> str:
     for did, d in resolved.items():
         lines.append(f"{did} class={d['class']} model={d['model']} traits={','.join(d['traits']) or '-'} "
                      f"cost={','.join(f'{p}:{n}' for p, n in d['cost'].items()) or '-'} "
-                     f"units={d['units_per_factory_per_month']}")
+                     f"production={','.join(f'{k}:{n}' for k, n in d['production'].items())}")
         for k, s in d["stats"].items():
             terms = " ".join(f"{src}{v:+d}" if i else f"{src}={v}" for i, (src, v) in enumerate(s["terms"]))
             mods = " ".join(f"{src}{pm:+d}pm" for src, pm in s["modifiers"])

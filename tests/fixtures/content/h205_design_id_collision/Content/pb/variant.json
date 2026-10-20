@@ -16,7 +16,9 @@
       "cost": {
         "steel": 1
       },
-      "units_per_factory_per_month": 0
+      "production": {
+        "units_per_factory_per_month": 1
+      }
     },
     {
       "id": "pb:light_tank_rebuilt",
@@ -29,7 +31,7 @@
       ],
       "stats": {},
       "cost": {},
-      "units_per_factory_per_month": 0
+      "production": {}
     }
   ]
 }

@@ -37,7 +37,9 @@ FIXTURES = ROOT / "tests" / "fixtures" / "content"
 VALID = FIXTURES / "h000_valid"
 
 sys.path.insert(0, str(ROOT / "tools"))
-from content_check import RULES  # noqa: E402
+from content_check import REGISTER, RULES  # noqa: E402
+
+SIDES = {c["code"]: {"python": c["python"], "csharp": c["csharp"]} for c in REGISTER}
 
 FILES = ("vocabulary.json", "pb/class.json", "pb/model.json", "pb/variant.json",
          "pb/trait.json", "pb/template.json")
@@ -97,7 +99,7 @@ C = "pb/class.json"
 T = "pb/template.json"
 
 MUTATIONS = [
-    ("h100_invalid_json", "C100", M, "model.json is not JSON (truncated)", "RAW"),
+    ("h108_invalid_json", "C108", M, "model.json is not JSON (truncated)", "RAW"),
     ("h101_missing_key", "C101", M, "models[0] has no year", _del([M, "models", 0, "year"])),
     ("h102_wrong_type", "C102", M, 'models[0].year is the string "1930"', _set([M, "models", 0, "year"], "1930")),
     ("h103_not_integer", "C103", M, "models[2].stats.armour_front_mm is 13.5",
@@ -145,6 +147,11 @@ MUTATIONS = [
      _set([V, "variants", 1, "model"], "pb:medium_tank_late")),
     ("h602_delta_negative", "C602", V, "variants[0].cost.steel -50 on a model costing 7",
      _set([V, "variants", 0, "cost", "steel"], -50)),
+    ("h602b_production_negative", "C602", V, "variants[1].production delta -5 on a model producing 2",
+     _set([V, "variants", 1, "production"], {"units_per_factory_per_month": -5})),
+    ("h802_shipped_unnamed", "C802", M, "models[0] (pb:infantry_kit) has no name: a PROJECT INVARIANT, "
+     "refused by our gate, loaded and reported by the game",
+     _del([M, "models", 0, "name"])),
     ("h901_template_missing_unit_type", "C901", T, "no template for Armored",
      _del([T, "templates", 2])),
     ("h902_template_class_no_design", "C902", T, "a template requires pb:helicopter, a class no design belongs to",
@@ -161,6 +168,15 @@ DIVERGENT = [
      {"python": "accept", "csharp": "refuse",
       "why": "Python cannot see the engine's enums; only the C# vocabulary test can catch drift (CONTENT_MODEL 2)."}),
 ]
+# Controls that must be ACCEPTED, proving a rule is scoped correctly rather than
+# refusing too much. (name, seeded, mutate)
+ACCEPTED = [
+    ("h802b_mod_unnamed_accepted", "a mod trait (mymod:extra_fuel) with no name: forgiven, because C802 holds "
+     "only pb: content to a name",
+     lambda d: d.__setitem__("mymod/trait.json", {"format": "pb-content/trait/1",
+                                                  "traits": [{"id": "mymod:extra_fuel", "modifiers": []}]})),
+]
+
 # C801 base-browns-out needs the facilities balance file, whose shape is not yet
 # in the contract. Its register entry exists; its fixture lands with facilities.json.
 
@@ -168,7 +184,7 @@ DIVERGENT = [
 def write_set(target: Path, docs: dict, raw: dict[str, str] | None = None):
     if target.exists():
         shutil.rmtree(target)
-    for f in FILES:
+    for f in sorted(docs):
         p = target / "Content" / f
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text((raw or {}).get(f, dump(docs[f])), encoding="utf-8", newline="\n")
@@ -195,7 +211,7 @@ def build(root: Path = FIXTURES) -> list[str]:
             fn(docs)
         write_set(root / name, docs, raw)
         exp = {"code": code, "rule": RULES[code], "file": file,
-               "python": "refuse", "csharp": "refuse", "seeded": seeded}
+               **SIDES[code], "seeded": seeded}
         (root / name / "expected.json").write_text(dump(exp), encoding="utf-8", newline="\n")
         built.append(name)
     for name, code, file, seeded, fn, sides in DIVERGENT:
@@ -204,6 +220,13 @@ def build(root: Path = FIXTURES) -> list[str]:
         write_set(root / name, docs)
         exp = {"code": code, "rule": RULES[code], "file": file, "seeded": seeded, **sides,
                "declared_divergence": True}
+        (root / name / "expected.json").write_text(dump(exp), encoding="utf-8", newline="\n")
+        built.append(name)
+    for name, seeded, fn in ACCEPTED:
+        docs = copy.deepcopy(valid)
+        fn(docs)
+        write_set(root / name, docs)
+        exp = {"code": None, "python": "accept", "csharp": "accept", "seeded": seeded}
         (root / name / "expected.json").write_text(dump(exp), encoding="utf-8", newline="\n")
         built.append(name)
     return built
