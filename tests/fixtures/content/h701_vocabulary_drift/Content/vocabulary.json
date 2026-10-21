@@ -13,9 +13,8 @@
     "main_gun_mm",
     "penetration_mm",
     "rate_of_fire_rpm",
-    "transport_capacity",
+    "transport_passengers",
     "reliability_per_mille",
-    "supply_need",
     "fuel_capacity_l",
     "ceiling_m",
     "rotor_rpm"

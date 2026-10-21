@@ -23,7 +23,7 @@
       "pattern": "^[a-z0-9_]+:[a-z0-9_]+$"
     },
     "statKey": {
-      "description": "An engine stat key, with its unit in the name (_mm, _kph, _kg, _per_mille). Stat keys are fixed by the game's code and listed in Content/vocabulary.json. A content file cannot add one.",
+      "description": "An engine stat key. Measures carry their unit in the name (_mm, _kph, _kg, _per_mille); count keys are plain nouns (crew, transport_passengers). Stat keys are fixed by the game's code and listed in Content/vocabulary.json. A content file cannot add one.",
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]*$"
     },

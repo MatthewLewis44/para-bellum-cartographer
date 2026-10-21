@@ -92,7 +92,7 @@
       "unlock": null,
       "supersedes": null,
       "stats": {
-        "transport_capacity": 3000
+        "transport_passengers": 12
       },
       "traits": [
         "pb:sloped_armour"
