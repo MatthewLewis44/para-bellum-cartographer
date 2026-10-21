@@ -1,0 +1,6 @@
+{
+  "code": null,
+  "python": "accept",
+  "csharp": "accept",
+  "seeded": "ONE truncating division per layer after summing: two +150 traits on armour 13 give 13 x 1300/1000 = 16 (per-contribution rounding would give 15). And the VISIBLE clamp: reliability penalties summing to -1400 hold the Base layer at 0 with a clamp:non_negative +400 source, so the value is 0, never negative"
+}

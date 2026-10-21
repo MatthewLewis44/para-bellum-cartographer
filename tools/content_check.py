@@ -7,7 +7,8 @@ disagree about a file, one of them is wrong. That disagreement is the point:
 two independent readers agreeing is the strongest cheap evidence available.
 
     uv run python tools/content_check.py <Content-dir>            # validate
-    uv run python tools/content_check.py <Content-dir> --resolve  # derived values
+    uv run python tools/content_check.py <Content-dir> --resolve  # derived values (terms)
+    uv run python tools/content_check.py <Content-dir> --applied  # applied values (layers)
 
 The contract is docs/design/CONTENT_MODEL.md in the game repository. When this
 file and that document disagree, the document wins. The schemas this tool
@@ -66,6 +67,51 @@ class Problem:
 
     def __str__(self) -> str:
         return f"{self.file}: PB-{self.code} {RULES[self.code]}: {self.path}: {self.detail}"
+
+
+# --- The modifier arithmetic (CONTENT_MODEL section 3, "The arithmetic, exactly") -------
+# The signed layer order. A design's stat goes through every layer; only Base has
+# writers in content (traits). The other four are present and neutral at 1000.
+LAYERS = ("Base", "Facility", "Research", "Policy", "CaptureState")
+CLAMP_SOURCE = "clamp:non_negative"
+
+
+def mul_div_nonneg(value: int, per_mille: int) -> int:
+    """value x per_mille / 1000, truncating, for NON-NEGATIVE operands only.
+
+    CONTENT_MODEL section 3 point 6: C# `/` truncates toward zero and Python `//`
+    floors. The two agree ONLY because every resolved value is non-negative. This
+    helper refuses a negative operand instead of silently rounding a different way
+    from C#. Any future SIGNED quantity needs one rounding rule agreed in the
+    contract before either side implements it."""
+    if value < 0 or per_mille < 0:
+        raise ValueError(f"signed operand ({value} x {per_mille}/1000): the two implementations round "
+                         f"negatives differently, so the contract forbids them (section 3 point 6)")
+    return value * per_mille // 1000
+
+
+def apply_layers(base: int, base_contributions: list[tuple[str, int]]) -> tuple[int, list[dict]]:
+    """Resolve one stat through the signed layers. Returns (value, layers), where each
+    layer is {layer, per_mille, sources}.
+
+    - The Base layer is 1000 + the SUM of its contributions; traits sum (point 2).
+    - ONE truncating division per layer, after summing, never one per contribution
+      (point 4).
+    - A layer summing below 0 is held at 0, VISIBLY: a clamp:non_negative source
+      whose delta is exactly what it added, so the layer still equals 1000 + the
+      sum of its sources (point 5). A layer above 1000 is never capped."""
+    if base < 0:
+        raise ValueError(f"base {base} is negative; C602 should have refused it")
+    out, value = [], base
+    for name in LAYERS:
+        sources = list(base_contributions) if name == "Base" else []
+        pm = 1000 + sum(d for _, d in sources)
+        if pm < 0:
+            sources.append((CLAMP_SOURCE, -pm))
+            pm = 0
+        value = mul_div_nonneg(value, pm)
+        out.append({"layer": name, "per_mille": pm, "sources": sources})
+    return value, out
 
 
 def _schema(stem: str) -> Draft202012Validator:
@@ -399,7 +445,10 @@ class ContentSet:
                     terms.append((f"variant:{variant['id']}", variant["stats"][k]))
                 mods = [(f"trait:{t}", m["per_mille"]) for t in sorted(trait_set)
                         for m in traits[t]["modifiers"] if m["stat"] == k]
-                stats[k] = {"base": sum(v for _, v in terms), "terms": terms, "modifiers": mods}
+                base = sum(v for _, v in terms)
+                value, layers = apply_layers(base, mods)
+                stats[k] = {"base": base, "terms": terms, "modifiers": mods,
+                            "value": value, "layers": layers}
             cost = dict(model["cost"])
             production = dict(model["production"])
             if variant:
@@ -434,6 +483,22 @@ def snapshot(resolved: dict[str, dict]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def applied_snapshot(resolved: dict[str, dict]) -> str:
+    """Applied values: each design-stat's final value and every layer it passed
+    through, with each layer's per-mille and its sources (a clamp shows as its own
+    source). A separate file from snapshot(), which C# already matches byte for
+    byte, so adding values does not move that agreement."""
+    lines = []
+    for did, d in resolved.items():
+        for k, s in d["stats"].items():
+            parts = []
+            for L in s["layers"]:
+                src = ",".join(f"{n}{v:+d}" for n, v in L["sources"])
+                parts.append(f"{L['layer']}={L['per_mille']}" + (f"({src})" if src else ""))
+            lines.append(f"{did}.{k} = {s['value']} base={s['base']} layers[{' '.join(parts)}]")
+    return "\n".join(lines) + "\n"
+
+
 def main(argv: list[str]) -> int:
     if len(argv) < 2:
         print(__doc__)
@@ -444,7 +509,9 @@ def main(argv: list[str]) -> int:
     if cs.problems:
         print(f"REFUSED: {len(cs.problems)} problem(s) in {cs.root}")
         return 1
-    if "--resolve" in argv:
+    if "--applied" in argv:
+        sys.stdout.write(applied_snapshot(cs.resolve()))
+    elif "--resolve" in argv:
         sys.stdout.write(snapshot(cs.resolve()))
     else:
         n = {s: len(cs.entries[s]) for s, _ in TYPES}

@@ -170,7 +170,27 @@ DIVERGENT = [
 ]
 # Controls that must be ACCEPTED, proving a rule is scoped correctly rather than
 # refusing too much. (name, seeded, mutate)
+def _layer_arithmetic(d):
+    """a001: the two cases a single-trait set cannot discriminate (CONTENT_MODEL 3).
+    The light tank (armour 13, reliability 900) carries two +150 armour traits and
+    penalties summing to -1400 on reliability (-200 -800 -400)."""
+    tr = d["pb/trait.json"]["traits"]
+    tr += [{"id": "pb:plus_a", "name": "Plus A", "modifiers": [{"stat": "armour_front_mm", "per_mille": 150}]},
+           {"id": "pb:plus_b", "name": "Plus B", "modifiers": [{"stat": "armour_front_mm", "per_mille": 150}]},
+           {"id": "pb:minus_a", "name": "Minus A", "modifiers": [{"stat": "reliability_per_mille", "per_mille": -800}]},
+           {"id": "pb:minus_b", "name": "Minus B", "modifiers": [{"stat": "reliability_per_mille", "per_mille": -400}]}]
+    tank = next(c for c in d["pb/class.json"]["classes"] if c["id"] == "pb:tank")
+    tank["traits"] += ["pb:plus_a", "pb:plus_b", "pb:minus_a", "pb:minus_b"]
+    light = next(m for m in d["pb/model.json"]["models"] if m["id"] == "pb:light_tank")
+    light["traits"] += ["pb:plus_a", "pb:plus_b", "pb:minus_a", "pb:minus_b"]
+
+
 ACCEPTED = [
+    ("a001_layer_arithmetic",
+     "ONE truncating division per layer after summing: two +150 traits on armour 13 give 13 x 1300/1000 = 16 "
+     "(per-contribution rounding would give 15). And the VISIBLE clamp: reliability penalties summing to -1400 "
+     "hold the Base layer at 0 with a clamp:non_negative +400 source, so the value is 0, never negative",
+     _layer_arithmetic),
     ("h802b_mod_unnamed_accepted", "a mod trait (mymod:extra_fuel) with no name: forgiven, because C802 holds "
      "only pb: content to a name",
      lambda d: d.__setitem__("mymod/trait.json", {"format": "pb-content/trait/1",

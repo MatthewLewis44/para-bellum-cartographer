@@ -166,7 +166,8 @@ def main() -> int:
         fresh = {p.relative_to(built_root).as_posix(): _lf(p.read_bytes())
                  for p in built_root.rglob("*") if p.is_file()}
         committed = {p.relative_to(FIXTURES).as_posix(): _lf(p.read_bytes())
-                     for p in FIXTURES.rglob("*") if p.is_file() and p != SNAPSHOT}
+                     for p in FIXTURES.rglob("*") if p.is_file()
+                     and not p.name.endswith((".resolved.txt", ".applied.txt"))}
         diff = sorted(k for k in fresh.keys() | committed.keys() if fresh.get(k) != committed.get(k))
         check("committed fixtures are exactly what the generator builds", not diff, f"{diff[:5]}")
 
@@ -191,6 +192,39 @@ def main() -> int:
           SNAPSHOT.exists() and _lf(SNAPSHOT.read_bytes()).decode("utf-8") == snap,
           "regenerate with: uv run python tools/content_check.py "
           "tests/fixtures/content/h000_valid/Content --resolve")
+
+    # 5b. Applied values (CONTENT_MODEL section 3's arithmetic): snapshots for the
+    #     control set and the discriminating a001 fixture, the arithmetic's own
+    #     invariants, and proof that a001 actually tells the right rule from the wrong one.
+    for name in ("h000_valid", "a001_layer_arithmetic"):
+        path = FIXTURES / f"{name}.applied.txt"
+        got = cc.applied_snapshot(cc.ContentSet(FIXTURES / name / "Content").resolve())
+        check(f"{name} applied values match the committed snapshot (C# must reproduce)",
+              path.exists() and _lf(path.read_bytes()).decode("utf-8") == got,
+              f"regenerate with: uv run python tools/content_check.py tests/fixtures/content/{name}/Content "
+              f"--applied")
+    a001 = cc.ContentSet(FIXTURES / "a001_layer_arithmetic" / "Content").resolve()["pb:light_tank"]["stats"]
+    arm, rel = a001["armour_front_mm"], a001["reliability_per_mille"]
+    check("traits SUM within a layer: armour 13 with +150 +150 resolves to 16", arm["value"] == 16, f"{arm['value']}")
+    wrong = arm["base"] + sum(cc.mul_div_nonneg(arm["base"], d) for _, d in arm["modifiers"])
+    check("a001 DISCRIMINATES: per-contribution rounding would give a different value",
+          wrong != arm["value"], f"wrong-method {wrong} == right {arm['value']}")
+    base_layer = rel["layers"][0]
+    check("a layer summing below zero is held at 0 by a VISIBLE clamp source, and the value is 0",
+          rel["value"] == 0 and base_layer["per_mille"] == 0
+          and (cc.CLAMP_SOURCE, 400) in base_layer["sources"], f"{base_layer}")
+    every = [L for d in a001.values() for L in d["layers"]]
+    check("every layer equals 1000 + the sum of its sources, clamp included",
+          all(L["per_mille"] == 1000 + sum(v for _, v in L["sources"]) for L in every))
+    check("all five layers are present on every stat, in the signed order",
+          all([L["layer"] for L in d["layers"]] == list(cc.LAYERS) for d in a001.values()))
+    try:
+        cc.mul_div_nonneg(-7, 500)
+        refused = False
+    except ValueError:
+        refused = True
+    check("a signed operand is refused rather than rounded (section 3 point 6: C# / and Python // "
+          "agree only on non-negatives)", refused and cc.mul_div_nonneg(7, 500) == 3)
 
     # 6. The hash pin.
     check("content/SHA256SUMS matches the schemas and fixtures",
