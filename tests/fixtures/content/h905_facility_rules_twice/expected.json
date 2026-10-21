@@ -1,7 +1,7 @@
 {
   "code": "C905",
   "rule": "facility-rules-defined-twice",
-  "file": "pb/facility.json",
+  "file": "mymod/facility.json",
   "python": "refuse",
   "csharp": "refuse",
   "seeded": "a second facility.json (mymod) carries the tier and repair rules"

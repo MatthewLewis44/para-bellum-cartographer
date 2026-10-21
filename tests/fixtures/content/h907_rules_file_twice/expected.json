@@ -1,8 +1,8 @@
 {
   "code": "C907",
   "rule": "rules-file-defined-twice",
-  "file": "pb/rates.json",
+  "file": "mymod/rates.json",
   "python": "refuse",
   "csharp": "refuse",
-  "seeded": "a second rates.json, in mymod. Blamed on pb/: both readers take namespaces in ordinal order and mymod sorts first (raised as a modder-facing question)"
+  "seeded": "a second rates.json, in mymod. Blamed on the mod, never on pb/: error attribution follows authorship (D59)"
 }

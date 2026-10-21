@@ -185,7 +185,7 @@ MUTATIONS = [
      lambda d: d[FA].__setitem__("facilities", [f for f in d[FA]["facilities"] if f["kind"] != "RailYard"])),
     ("h904_deposit_without_output", "C904", FA, "the Mine lists a coal deposit but its output has no coal",
      _set([FA, "facilities", 0, "deposits"], ["iron", "coal"])),
-    ("h905_facility_rules_twice", "C905", "pb/facility.json",
+    ("h905_facility_rules_twice", "C905", "mymod/facility.json",
      "a second facility.json (mymod) carries the tier and repair rules",
      lambda d: d.__setitem__("mymod/facility.json", {"format": "pb-content/facility/1",
                                                      "tier": dict(d[FA]["tier"]),
@@ -193,9 +193,14 @@ MUTATIONS = [
                                                      "facilities": []})),
     ("h906_settlement_missing_type", "C906", ST, "no settlement row for type none",
      lambda d: d[ST].__setitem__("settlements", [r for r in d[ST]["settlements"] if r["type"] != "none"])),
-    ("h907_rules_file_twice", "C907", "pb/rates.json", "a second rates.json, in mymod. Blamed on pb/: both "
-     "readers take namespaces in ordinal order and mymod sorts first (raised as a modder-facing question)",
+    ("h907_rules_file_twice", "C907", "mymod/rates.json", "a second rates.json, in mymod. Blamed on the mod, "
+     "never on pb/: error attribution follows authorship (D59)",
      lambda d: d.__setitem__("mymod/rates.json", copy.deepcopy(d["pb/rates.json"]))),
+    ("h907b_rules_file_two_mods", "C907", ["amod/combat.json", "zmod/combat.json"],
+     "no shipped combat.json; two mods each define one. With no pb/ copy there is no right one to single "
+     "out, so EVERY copy is named (D59)",
+     lambda d: (d.__setitem__("amod/combat.json", d.pop("pb/combat.json")),
+                d.__setitem__("zmod/combat.json", copy.deepcopy(d["amod/combat.json"])), None)[-1]),
     ("h908_rules_file_missing", "C908", "combat.json", "no namespace defines combat.json",
      lambda d: d.pop("pb/combat.json") and None),
     ("h901_template_missing_unit_type", "C901", T, "no template for Armored",

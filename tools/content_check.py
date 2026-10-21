@@ -465,18 +465,31 @@ class ContentSet:
                           f'no template for unit type "{ut}"')
         self._facilities_and_settlements(pools)
 
+    def _blame_duplicates(self, files: list[str], code: str, path: str, detail):
+        """A project-wide file defined more than once (C905, C907). ERROR ATTRIBUTION
+        FOLLOWS AUTHORSHIP (D59): the base game is never blamed for a third party's
+        file. With a shipped pb/ copy among them, every OTHER copy is blamed and pb/
+        is not. With no pb/ copy, there is no right one to single out, so EVERY copy
+        is named, ordered by file. Folder order is arbitrary with respect to
+        authorship and is not the discriminator."""
+        if len(files) < 2:
+            return
+        shipped = [f for f in files if f.startswith(SHIPPED_NAMESPACE + "/")]
+        blamed = [f for f in files if f not in shipped] if shipped else sorted(files)
+        for f in sorted(blamed):
+            self._add(f, code, path, detail(sorted(x for x in files if x != f)))
+
     def _facilities_and_settlements(self, pools):
         """facility.json, settlement.json and the singleton rules files (Sprint 12.5 T5)."""
         kinds = list(self.vocab.get("facility_kinds", []))
         stypes = list(self.vocab.get("settlement_types", []))
 
         # Facility rules: once, in one facility.json across every namespace (C905).
-        header_file = None
-        for rel, _ in self.facility_headers:
-            if header_file is None:
-                header_file = rel
-            else:
-                self._add(rel, "C905", "$.tier", f"the facility rules are already defined in {header_file}")
+        # Blame follows AUTHORSHIP (D59), not folder order: see _blame_duplicates.
+        self._blame_duplicates([r for r, _ in self.facility_headers], "C905", "$.tier",
+                               lambda others: f"the facility rules are also defined in {', '.join(others)}")
+        header_file = next((r for r, _ in self.facility_headers if r.startswith(SHIPPED_NAMESPACE + "/")),
+                           self.facility_headers[0][0] if self.facility_headers else None)
         self.facility_doc = next((d for r, d in self.facility_headers if r == header_file), None)
 
         # Rows: an engine kind (C405), each deposit produces (C904), pools (C403), once each (C203).
@@ -527,8 +540,9 @@ class ContentSet:
         # Singletons: exactly one each (C907 for a second copy, C908 for none).
         for t in SINGLETONS:
             copies = self.singletons[t]
-            for rel, _ in copies[1:]:
-                self._add(rel, "C907", "$", f"{t}.json is already defined in {copies[0][0]}: there is one per content set")
+            self._blame_duplicates([r for r, _ in copies], "C907", "$",
+                                   lambda others, t=t: f"{t}.json is also defined in {', '.join(others)}: "
+                                                       f"there is one per content set")
             if not copies:
                 self._add(f"{t}.json", "C908", "$", f"no namespace defines {t}.json, and the game needs one")
         economy = self.singletons["economy"][0][1] if self.singletons["economy"] else None

@@ -1,0 +1,11 @@
+{
+  "code": "C907",
+  "rule": "rules-file-defined-twice",
+  "file": [
+    "amod/combat.json",
+    "zmod/combat.json"
+  ],
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "no shipped combat.json; two mods each define one. With no pb/ copy there is no right one to single out, so EVERY copy is named (D59)"
+}

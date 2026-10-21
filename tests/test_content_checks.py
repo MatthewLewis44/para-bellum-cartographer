@@ -127,8 +127,9 @@ def main() -> int:
         if exp["python"] == "accept":
             check(f"{d.name}: accepted", not got, f"{[str(p) for p in cs.problems][:3]}")
         else:
-            check(f"{d.name}: refused with exactly PB-{exp['code']} in {exp['file']}",
-                  got == [(exp["code"], exp["file"])], f"{[str(p) for p in cs.problems][:3]}")
+            files = exp["file"] if isinstance(exp["file"], list) else [exp["file"]]
+            check(f"{d.name}: refused with exactly PB-{exp['code']} in {', '.join(files)}",
+                  got == [(exp["code"], f) for f in files], f"{[str(p) for p in cs.problems][:3]}")
 
     # 2a. The register (rule_codes.json) is sound, and is the checker's only source.
     codes = [c["code"] for c in cc.REGISTER]
