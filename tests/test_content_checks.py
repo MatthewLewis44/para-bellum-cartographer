@@ -25,9 +25,12 @@ cross-check: both implementations must agree on WHY each file is wrong.
      the codes: the checker reads it, every code it emits is in it, and every
      fixture's rule name and python/csharp behaviour match it.
   7. DRIFT AGAINST THE GAME. If the game repository is present (PB_UNITY_REPO,
-     default C:/UnityProjects/ParaBellum), its Content/schemas/ must equal ours
-     byte for byte (line endings normalised), and its real Content/ must pass
-     the checker. If the game repository is absent, or has not vendored the
+     default C:/UnityProjects/ParaBellum), its Content/schemas/ and its vendored
+     hostile set (Assets/Tests/EditMode/Fixtures/content, .meta ignored) must
+     equal ours byte for byte (line endings normalised), and its real Content/
+     must pass the checker. Both trees are printed with their SHA and whether the
+     working tree differs from it (D24), so a red result during a handover is
+     readable as a pending handover rather than a broken instrument. If the game repository is absent, or has not vendored the
      schemas yet, this prints a LOUD SKIP rather than a silent pass.
 
 Run: uv run python tests/test_content_checks.py
@@ -55,6 +58,29 @@ SNAPSHOT = FIXTURES / "h000_valid.resolved.txt"
 # Codes with a register entry but no fixture yet, and why. Anything else
 # uncovered fails check 2.
 PENDING = {"C801": "base-browns-out needs facilities.json, whose shape is not yet in the contract"}
+
+
+def tree_of(path: Path, *scope: str) -> str:
+    """D24: a tool that produces evidence prints the tree it measured. Returns
+    '<repo> @ <short sha>' plus whether the measured paths differ from that commit,
+    so red during a handover reads as a pending handover, not a broken instrument."""
+    def git(*a):
+        r = subprocess.run(["git", "-C", str(path), *a], capture_output=True, text=True, encoding="utf-8")
+        return r.stdout.strip() if r.returncode == 0 else ""
+    sha = git("rev-parse", "--short", "HEAD")
+    if not sha:
+        return f"{path} (not a git checkout)"
+    dirty = git("status", "--porcelain", "--", *scope) if scope else git("status", "--porcelain")
+    n = len([ln for ln in dirty.splitlines() if ln.strip()])
+    state = "clean" if not n else f"WORKING TREE differs from HEAD in {n} path(s)"
+    return f"{path} @ {sha} ({state}{' under ' + ', '.join(scope) if scope else ''})"
+
+
+def _tree_files(root: Path) -> dict[str, bytes]:
+    """Every file under root, keyed by relative path, line endings normalised.
+    Unity's .meta sidecars are ignored: the game adds one beside every asset."""
+    return {p.relative_to(root).as_posix(): _lf(p.read_bytes())
+            for p in root.rglob("*") if p.is_file() and p.suffix != ".meta"}
 
 
 def _lf(b: bytes) -> bytes:
@@ -171,10 +197,12 @@ def main() -> int:
           PIN.exists() and _lf(PIN.read_bytes()).decode("utf-8") == pin_text(),
           "re-pin with: uv run python tests/test_content_checks.py --repin")
 
-    # 7. Drift against the game's copy.
+    # 7. Drift against the game's copy. Both trees are printed (D24).
     unity = Path(os.environ.get("PB_UNITY_REPO", "C:/UnityProjects/ParaBellum"))
     game_content = unity / "Assets" / "StreamingAssets" / "Content"
     game_schemas = game_content / "schemas"
+    game_fixtures = unity / "Assets" / "Tests" / "EditMode" / "Fixtures" / "content"
+    print(f"  TREE  measured (this repo): {tree_of(ROOT, 'content', 'tests/fixtures/content')}")
     if not unity.exists():
         print(f"  SKIP  !!! game repository not found at {unity} (set PB_UNITY_REPO): "
               f"NO DRIFT CHECK RAN. This is expected for an outside clone of the public repo.")
@@ -185,9 +213,19 @@ def main() -> int:
         mine = {p.name: _lf(p.read_bytes()) for p in contract_files()}
         theirs = {p.name: _lf(p.read_bytes()) for p in game_schemas.iterdir() if p.is_file()
                   and (p.name.endswith(".schema.json") or p.name == cc.RULE_CODES_FILE.name)}
+        print(f"  TREE  compared (the game): "
+              f"{tree_of(unity, 'Assets/StreamingAssets/Content', 'Assets/Tests/EditMode/Fixtures/content')}")
         drift = sorted(k for k in mine.keys() | theirs.keys() if mine.get(k) != theirs.get(k))
         check("the game's Content/schemas/ (schemas + rule_codes.json) equals the pinned copy",
               not drift, f"{drift}")
+        if game_fixtures.exists():
+            mine_f, theirs_f = _tree_files(FIXTURES), _tree_files(game_fixtures)
+            fdrift = sorted(k for k in mine_f.keys() | theirs_f.keys() if mine_f.get(k) != theirs_f.get(k))
+            check("the game's vendored hostile set (EditMode Fixtures/content) equals ours",
+                  not fdrift, f"{len(fdrift)} file(s) differ, e.g. {fdrift[:3]}")
+        else:
+            print(f"  SKIP  !!! {game_fixtures} does not exist: the hostile set is not vendored. "
+                  f"NO FIXTURE DRIFT CHECK RAN.")
         gcs = cc.ContentSet(game_content)
         check("the game's real Content/ passes the checker", not gcs.problems,
               f"{[str(p) for p in gcs.problems][:3]}")
