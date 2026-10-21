@@ -3,6 +3,6 @@
   "rule": "base-browns-out",
   "file": "pb/facility.json",
   "python": "refuse",
-  "csharp": "report",
-  "seeded": "tier.step_per_mille is 0: a linear power stack. A PROJECT INVARIANT: the authored 1930 base then browns out eight nations, so our gate refuses; the game loads it and reports"
+  "csharp": "accept",
+  "seeded": "tier.step_per_mille is 0: a linear power stack. A PROJECT INVARIANT: the authored 1930 base then browns out eight nations, so our gate refuses. The C# content READER accepts it (it has no map); the C# START STATE reports it, which is a different layer (register csharp_elsewhere)"
 }

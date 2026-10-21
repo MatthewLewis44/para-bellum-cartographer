@@ -1,6 +1,6 @@
 {
   "format": "pb-content/rule-codes/1",
-  "_comment": "The rule-code register: the AUTHORITATIVE list of every refusal code the content readers emit. It is an interface between two implementations, the game's C# reader and the pipeline's Python checker, and both test that the codes they emit are exactly these. Neither side renumbers a code; a new rule takes the next free number in its family, and codes are never reused. The table in CONTENT_MODEL.md section 5 is the human-readable index and cites this file as authoritative.",
+  "_comment": "The rule-code register: the AUTHORITATIVE list of every refusal code the content readers emit. It is an interface between two implementations, the game's C# reader and the pipeline's Python checker, and both test that the codes they emit are exactly these. Neither side renumbers a code; a new rule takes the next free number in its family, and codes are never reused. The table in CONTENT_MODEL.md section 5 is the human-readable index and cites this file as authoritative. FIELDS: `python` and `csharp` say what each CONTENT READER does with a file breaking the rule (refuse, report, accept, n/a); the shared hostile fixtures exercise exactly those readers. `csharp_elsewhere`, where present, records a check that ANOTHER C# layer performs (its layer, what it does, and its status). That is a layer difference inside one implementation, which is not the same as a behavioural difference between implementations (a fixture's declared_divergence).",
   "error_format": "<file>: PB-<CODE> <rule>: <json-path>: <detail>",
   "codes": [
     { "code": "C101", "rule": "missing-key", "layer": "schema", "python": "refuse", "csharp": "refuse",
@@ -59,8 +59,9 @@
       "summary": "A variant's delta makes a stat, cost or production value negative." },
     { "code": "C701", "rule": "vocabulary-drift", "layer": "engine", "python": "n/a", "csharp": "refuse",
       "summary": "vocabulary.json differs from the engine's code. Only C# can see the enums." },
-    { "code": "C801", "rule": "base-browns-out", "layer": "project-invariant", "python": "refuse", "csharp": "report",
-      "summary": "Under the shipped power model, the authored 1930 base leaves a nation with supply below draw. A legal modelled state, so the game loads and reports it; our gate refuses it for OUR shipped files." },
+    { "code": "C801", "rule": "base-browns-out", "layer": "project-invariant", "python": "refuse", "csharp": "accept",
+      "csharp_elsewhere": { "layer": "start_state", "does": "report", "status": "specified (D38 Q3), not yet built: a synthetic-map test asserting which nations, and what supply against what draw" },
+      "summary": "Under the shipped power model, the authored 1930 base leaves a nation with supply below draw. The C# content READER accepts it: it has no map and cannot compute this. Brownout is a legal modelled state, so the C# START STATE loads and reports it. The pipeline gate refuses it for OUR shipped files. C#'s synthetic test proves the mechanism; the pipeline gate proves the shipped base." },
     { "code": "C802", "rule": "shipped-content-unnamed", "layer": "project-invariant", "python": "refuse", "csharp": "report",
       "summary": "A pb: entry has no name, or a blank one. Mods may omit names; shipped content may not." },
     { "code": "C901", "rule": "template-missing-unit-type", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
