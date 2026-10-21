@@ -43,6 +43,10 @@
       "summary": "A cost names a resource pool not in the engine vocabulary." },
     { "code": "C404", "rule": "unknown-unit-type", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
       "summary": "A template names a unit type not in the engine vocabulary." },
+    { "code": "C405", "rule": "unknown-facility-kind", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
+      "summary": "A facility row's kind is not an engine facility kind (vocabulary.json facility_kinds)." },
+    { "code": "C406", "rule": "unknown-settlement-type", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
+      "summary": "A settlement row's type is not one the map produces (vocabulary.json settlement_types)." },
     { "code": "C501", "rule": "illegal-trait-on-class", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
       "summary": "A model or variant carries a trait its class does not list." },
     { "code": "C502", "rule": "trait-targets-absent-stat", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
@@ -62,6 +66,18 @@
     { "code": "C901", "rule": "template-missing-unit-type", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
       "summary": "An engine unit type has no template row." },
     { "code": "C902", "rule": "template-class-has-no-design", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
-      "summary": "A template requires a class that no model belongs to." }
+      "summary": "A template requires a class that no model belongs to." },
+    { "code": "C903", "rule": "facility-missing-kind", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
+      "summary": "No facility.json defines the tier and repair rules, or an engine facility kind has no row." },
+    { "code": "C904", "rule": "deposit-without-output", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
+      "summary": "A facility lists a deposit its output does not produce." },
+    { "code": "C905", "rule": "facility-rules-defined-twice", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
+      "summary": "A second facility.json, in any namespace, carries the tier and repair rules." },
+    { "code": "C906", "rule": "settlement-missing-type", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
+      "summary": "A settlement type the map produces, none included, has no row." },
+    { "code": "C907", "rule": "rules-file-defined-twice", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
+      "summary": "rates.json, combat.json or economy.json is defined in a second namespace." },
+    { "code": "C908", "rule": "rules-file-missing", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
+      "summary": "rates.json, combat.json or economy.json is absent from every namespace." }
   ]
 }

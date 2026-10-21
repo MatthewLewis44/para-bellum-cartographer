@@ -57,7 +57,7 @@ PIN = ROOT / "content" / "SHA256SUMS"
 SNAPSHOT = FIXTURES / "h000_valid.resolved.txt"
 # Codes with a register entry but no fixture yet, and why. Anything else
 # uncovered fails check 2.
-PENDING = {"C801": "base-browns-out needs facilities.json, whose shape is not yet in the contract"}
+PENDING: dict[str, str] = {}   # every code in the register now has a fixture
 
 
 def tree_of(path: Path, *scope: str) -> str:
@@ -226,6 +226,20 @@ def main() -> int:
     check("a signed operand is refused rather than rounded (section 3 point 6: C# / and Python // "
           "agree only on non-negatives)", refused and cc.mul_div_nonneg(7, 500) == 3)
 
+    # 5c. The power model now comes FROM facility.json. The former hand-mirror
+    #     (CURRENT_POWER) is kept as a cross-check: it must equal the file, so a change
+    #     to the file that nobody carried here fails rather than drifting.
+    import build_facilities_1930 as bf
+    ctl_fac = json.loads((FIXTURES / "h000_valid" / "Content" / "pb" / "facility.json").read_text(encoding="utf-8"))
+    check("the power model read from the control set's facility.json equals the cross-check mirror",
+          bf.PowerModel.from_facility_json(ctl_fac) == bf.CURRENT_POWER)
+    check("the authored 1930 base balances under it (C801 holds for the shipped figures)",
+          all(sv >= dv for sv, dv in bf.nation_power(bf.load_rows(), bf.CURRENT_POWER).values()))
+    lin = bf.PowerModel.from_facility_json({**ctl_fac, "tier": {**ctl_fac["tier"], "step_per_mille": 0}})
+    short = sorted(n for n, (sv, dv) in bf.nation_power(bf.load_rows(), lin).items() if sv < dv)
+    check("a linear stack browns out the eight nations the coupling predicts",
+          short == ["AUT", "BEL", "CSK", "DEU", "HUN", "LUX", "POL", "SAA"], f"{short}")
+
     # 6. The hash pin.
     check("content/SHA256SUMS matches the schemas and fixtures",
           PIN.exists() and _lf(PIN.read_bytes()).decode("utf-8") == pin_text(),
@@ -260,6 +274,14 @@ def main() -> int:
         else:
             print(f"  SKIP  !!! {game_fixtures} does not exist: the hostile set is not vendored. "
                   f"NO FIXTURE DRIFT CHECK RAN.")
+        game_fac = game_content / "pb" / "facility.json"
+        if game_fac.exists():
+            gm = bf.PowerModel.from_facility_json(json.loads(game_fac.read_text(encoding="utf-8")))
+            check("the game's SHIPPED facility.json gives the same power model as the cross-check mirror",
+                  gm == bf.CURRENT_POWER, f"{gm}")
+        else:
+            print(f"  SKIP  !!! {game_fac} does not exist yet: the shipped power model is not "
+                  f"checked against the mirror. NO POWER CROSS-CHECK RAN.")
         gcs = cc.ContentSet(game_content)
         check("the game's real Content/ passes the checker", not gcs.problems,
               f"{[str(p) for p in gcs.problems][:3]}")

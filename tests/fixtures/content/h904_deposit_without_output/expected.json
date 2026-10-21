@@ -1,0 +1,8 @@
+{
+  "code": "C904",
+  "rule": "deposit-without-output",
+  "file": "pb/facility.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "the Mine lists a coal deposit but its output has no coal"
+}

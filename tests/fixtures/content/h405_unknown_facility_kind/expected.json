@@ -1,0 +1,8 @@
+{
+  "code": "C405",
+  "rule": "unknown-facility-kind",
+  "file": "pb/facility.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "an extra facility row of kind \"Shipyard\", not an engine kind"
+}

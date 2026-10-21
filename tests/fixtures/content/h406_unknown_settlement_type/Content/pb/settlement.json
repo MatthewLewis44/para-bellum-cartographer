@@ -1,0 +1,53 @@
+{
+  "format": "pb-content/settlement/1",
+  "settlements": [
+    {
+      "type": "none",
+      "income": 0,
+      "manpower": 0,
+      "facility_slots": 0,
+      "training_slots": 0,
+      "tier": 0
+    },
+    {
+      "type": "suburb",
+      "income": 1,
+      "manpower": 100,
+      "facility_slots": 0,
+      "training_slots": 0,
+      "tier": 1
+    },
+    {
+      "type": "town",
+      "income": 3,
+      "manpower": 250,
+      "facility_slots": 3,
+      "training_slots": 1,
+      "tier": 2
+    },
+    {
+      "type": "city",
+      "income": 6,
+      "manpower": 500,
+      "facility_slots": 5,
+      "training_slots": 2,
+      "tier": 3
+    },
+    {
+      "type": "metropolis",
+      "income": 12,
+      "manpower": 1000,
+      "facility_slots": 7,
+      "training_slots": 3,
+      "tier": 4
+    },
+    {
+      "type": "village",
+      "income": 0,
+      "manpower": 0,
+      "facility_slots": 0,
+      "training_slots": 0,
+      "tier": 0
+    }
+  ]
+}

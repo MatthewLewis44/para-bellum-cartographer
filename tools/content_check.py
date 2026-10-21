@@ -33,6 +33,7 @@ Two layers, kept apart:
 from __future__ import annotations
 
 import json
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -44,7 +45,14 @@ SCHEMA_DIR = ROOT / "content" / "schemas"
 
 # Content types: (file stem, collection key). Content/<namespace>/<stem>.json.
 TYPES = (("class", "classes"), ("model", "models"), ("variant", "variants"),
-         ("trait", "traits"), ("template", "templates"))
+         ("trait", "traits"), ("template", "templates"),
+         ("facility", "facilities"), ("settlement", "settlements"))
+# Singleton rules files: flat objects, exactly ONE across every namespace (C907, C908).
+SINGLETONS = ("rates", "combat", "economy")
+# Types whose rows are keyed on an engine name (unit type, facility kind, settlement type), not an id.
+UNKEYED_TYPES = ("template", "facility", "settlement")
+CONTENT_FILES = tuple(f"{t}.json" for t, _ in TYPES) + tuple(f"{t}.json" for t in SINGLETONS)
+SCHEMAS_FOLDER = "schemas"   # Content/schemas/ is the contract's machine form, not a namespace
 VOCABULARY_FILE = "vocabulary.json"
 RESERVED_NAMESPACE = "player"   # player designs live in the save, never on disk
 
@@ -56,6 +64,7 @@ RULE_CODES_FILE = SCHEMA_DIR / "rule_codes.json"
 REGISTER = json.loads(RULE_CODES_FILE.read_text(encoding="utf-8"))["codes"]
 RULES = {c["code"]: c["rule"] for c in REGISTER}
 SHIPPED_NAMESPACE = "pb"   # project invariants (C8xx) hold OUR content to more than a mod's
+AUTHORED_BASE = ROOT / "data" / "facilities" / "facilities_1930.csv"   # the shipped 1930 starting base (C801)
 
 
 @dataclass(frozen=True, order=True)
@@ -155,8 +164,9 @@ def _schema_problems(rel: str, stem: str, doc) -> list[Problem]:
         # A failing `required` names its missing key in the message, not the path.
         path = _json_path(err.absolute_path)
         if err.validator == "required":
-            missing = [k for k in err.validator_value if k not in err.instance]
-            path += f".{missing[0]}" if missing else ""
+            # One error per missing key; name THAT key's path, as the C# reader does.
+            m = re.match(r"'(.+?)' is a required property", err.message)
+            path += f".{m.group(1)}" if m else ""
         out.append(Problem(rel, _schema_code(err), path, err.message))
     return out
 
@@ -175,6 +185,8 @@ class ContentSet:
         self.vocab: dict = {}
         # stem -> list of (relative file, namespace, entry index, entry)
         self.entries: dict[str, list[tuple[str, str, int, dict]]] = {s: [] for s, _ in TYPES}
+        self.singletons: dict[str, list[tuple[str, dict]]] = {t: [] for t in SINGLETONS}
+        self.facility_headers: list[tuple[str, dict]] = []
         self.namespaces: set[str] = set()
         self._load()
         # Structure first. If ANY file fails the schema layer, its entries are
@@ -206,8 +218,12 @@ class ContentSet:
         else:
             _, doc = self._read(vpath, "vocabulary")
             self.vocab = doc or {}
+        self.singletons: dict[str, list[tuple[str, dict]]] = {t: [] for t in SINGLETONS}
+        self.facility_headers: list[tuple[str, dict]] = []   # (file, the facility.json document)
         for ns_dir in sorted(p for p in self.root.iterdir() if p.is_dir()):
             ns = ns_dir.name
+            if ns == SCHEMAS_FOLDER:
+                continue
             self.namespaces.add(ns)
             for stem, key in TYPES:
                 f = ns_dir / f"{stem}.json"
@@ -216,8 +232,16 @@ class ContentSet:
                 rel, doc = self._read(f, stem)
                 if doc is None:
                     continue
+                if stem == "facility":
+                    self.facility_headers.append((rel, doc))
                 for i, e in enumerate(doc[key]):
                     self.entries[stem].append((rel, ns, i, e))
+            for stem in SINGLETONS:
+                f = ns_dir / f"{stem}.json"
+                if f.exists():
+                    rel, doc = self._read(f, stem)
+                    if doc is not None:
+                        self.singletons[stem].append((rel, doc))
 
     # -- the cross-file layer ----------------------------------------------------------
 
@@ -234,10 +258,10 @@ class ContentSet:
             return _json_path([coll[stem], i, *rest])
 
         # Identity: namespace, reserved namespace, duplicates within a type.
-        self.by_id: dict[str, dict[str, dict]] = {s: {} for s, _ in TYPES}
+        self.by_id: dict[str, dict[str, dict]] = {s: {} for s, _ in TYPES if s not in UNKEYED_TYPES}
         self.loc: dict[tuple[str, str], tuple[str, int]] = {}
         for stem, _ in TYPES:
-            if stem == "template":
+            if stem in UNKEYED_TYPES:
                 continue
             for rel, ns, i, e in self.entries[stem]:
                 id_ = e["id"]
@@ -392,6 +416,9 @@ class ContentSet:
                           f'unit type "{ut}" already has a template at {seen_ut[ut][0]} templates[{seen_ut[ut][1]}]')
             else:
                 seen_ut[ut] = (rel, i)
+            for p in t["cost"]:
+                if p not in pools:
+                    self._add(rel, "C403", where("template", i, "cost", p), f'"{p}" is not a resource pool')
             for j, e in enumerate(t["equipment"]):
                 if ref(rel, where("template", i, "equipment", j, "class"), e["class"], "class") \
                         and e["class"] not in design_classes:
@@ -399,8 +426,82 @@ class ContentSet:
                               f'no model or variant belongs to class "{e["class"]}"')
         for ut in unit_types:
             if ut not in seen_ut:
-                self._add(any_template_file or "pb/template.json", "C901", "$.templates",
+                self._add(any_template_file or "template.json", "C901", "$.templates",
                           f'no template for unit type "{ut}"')
+        self._facilities_and_settlements(pools)
+
+    def _facilities_and_settlements(self, pools):
+        """facility.json, settlement.json and the singleton rules files (Sprint 12.5 T5)."""
+        kinds = list(self.vocab.get("facility_kinds", []))
+        stypes = list(self.vocab.get("settlement_types", []))
+
+        # Facility rules: once, in one facility.json across every namespace (C905).
+        header_file = None
+        for rel, _ in self.facility_headers:
+            if header_file is None:
+                header_file = rel
+            else:
+                self._add(rel, "C905", "$.tier", f"the facility rules are already defined in {header_file}")
+        self.facility_doc = next((d for r, d in self.facility_headers if r == header_file), None)
+
+        # Rows: an engine kind (C405), each deposit produces (C904), pools (C403), once each (C203).
+        rows: dict[str, tuple[str, int]] = {}
+        for rel, _, i, f in self.entries["facility"]:
+            if f["kind"] not in kinds:
+                self._add(rel, "C405", _json_path(["facilities", i, "kind"]),
+                          f'"{f["kind"]}" is not an engine facility kind')
+                continue
+            for j, d in enumerate(f["deposits"]):
+                if d not in pools:
+                    self._add(rel, "C403", _json_path(["facilities", i, "deposits", j]), f'"{d}" is not a resource pool')
+            for part in ("cost", "output"):
+                for pool in f[part]:
+                    if pool not in pools:
+                        self._add(rel, "C403", _json_path(["facilities", i, part, pool]), f'"{pool}" is not a resource pool')
+            for d in f["deposits"]:
+                if d in pools and d not in f["output"]:
+                    self._add(rel, "C904", _json_path(["facilities", i, "output"]),
+                              f'deposit "{d}" produces nothing: list it in output')
+            if f["kind"] in rows:
+                self._add(rel, "C203", _json_path(["facilities", i, "kind"]), f'facility kind {f["kind"]} has two rows')
+                continue
+            rows[f["kind"]] = (rel, i)
+        facility_file = header_file or next((r for r, *_ in self.entries["facility"]), None) or "facility.json"
+        if header_file is None:
+            self._add(facility_file, "C903", "$.tier", "no facility.json defines the facility rules (tier, repair_per_mille)")
+        for k in kinds:
+            if k not in rows:
+                self._add(facility_file, "C903", "$.facilities", f"no facility row for kind {k}")
+
+        # Settlements: a type the map produces (C406), once each (C203), every type present (C906).
+        srows: dict[str, tuple[str, int]] = {}
+        for rel, _, i, r in self.entries["settlement"]:
+            if r["type"] not in stypes:
+                self._add(rel, "C406", _json_path(["settlements", i, "type"]),
+                          f'"{r["type"]}" is not a settlement type the map produces')
+                continue
+            if r["type"] in srows:
+                self._add(rel, "C203", _json_path(["settlements", i, "type"]), f'settlement type {r["type"]} has two rows')
+                continue
+            srows[r["type"]] = (rel, i)
+        settlement_file = next((r for r, *_ in self.entries["settlement"]), None) or "settlement.json"
+        for t in stypes:
+            if t not in srows:
+                self._add(settlement_file, "C906", "$.settlements", f"no settlement row for type {t}")
+
+        # Singletons: exactly one each (C907 for a second copy, C908 for none).
+        for t in SINGLETONS:
+            copies = self.singletons[t]
+            for rel, _ in copies[1:]:
+                self._add(rel, "C907", "$", f"{t}.json is already defined in {copies[0][0]}: there is one per content set")
+            if not copies:
+                self._add(f"{t}.json", "C908", "$", f"no namespace defines {t}.json, and the game needs one")
+        economy = self.singletons["economy"][0][1] if self.singletons["economy"] else None
+        if economy:
+            for pool in economy["dispersed_yield_per_hex"]:
+                if pool not in pools:
+                    self._add(self.singletons["economy"][0][0], "C403", f"$.dispersed_yield_per_hex.{pool}",
+                              f'"{pool}" is not a resource pool')
 
     # -- project invariants (C8xx) ---------------------------------------------------------
 
@@ -408,14 +509,37 @@ class ContentSet:
         """Rules about OUR shipped content, not about content validity. The game
         loads these cases and reports them (a mod may legitimately do them); this
         gate refuses them for the pb namespace. Declared in rule_codes.json."""
+        if self.problems:
+            return   # invariants are judged on a content set that is otherwise valid
+        self._base_browns_out()
         coll = dict(TYPES)
         for stem, _ in TYPES:
-            if stem == "template":
+            if stem in UNKEYED_TYPES:
                 continue
             for rel, ns, i, e in self.entries[stem]:
                 if ns == SHIPPED_NAMESPACE and not str(e.get("name", "")).strip():
                     self._add(rel, "C802", _json_path([coll[stem], i, "name"]),
                               f'shipped entry "{e["id"]}" has no name; mods may omit one, pb: content may not')
+
+    def _base_browns_out(self):
+        """PB-C801: under THIS content set's facility.json, the authored 1930 starting
+        base (data/facilities/facilities_1930.csv, every row, by its authored nation)
+        must leave no nation with supply below draw. The game loads such a content set
+        and reports it; brownout is a legal modelled state. This gate refuses it,
+        because it is a claim about OUR shipped base under OUR shipped balance file.
+        C#'s synthetic C801 test proves the mechanism; this proves the shipped base.
+        Neither substitutes for the other."""
+        if self.facility_doc is None or not AUTHORED_BASE.exists():
+            return
+        rel = next(r for r, d in self.facility_headers if d is self.facility_doc)
+        if not rel.startswith(SHIPPED_NAMESPACE + "/"):
+            return
+        import build_facilities_1930 as bf
+        power = bf.PowerModel.from_facility_json(self.facility_doc)
+        short = [f"{n} {s}<{d}" for n, (s, d) in bf.nation_power(bf.load_rows(AUTHORED_BASE), power).items() if s < d]
+        if short:
+            self._add(rel, "C801", "$.tier.step_per_mille",
+                      "the authored 1930 base browns out under this power model: " + ", ".join(short))
 
     # -- derived values (the T2 cross-check) -------------------------------------------
 

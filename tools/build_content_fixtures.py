@@ -42,7 +42,8 @@ from content_check import REGISTER, RULES  # noqa: E402
 SIDES = {c["code"]: {"python": c["python"], "csharp": c["csharp"]} for c in REGISTER}
 
 FILES = ("vocabulary.json", "pb/class.json", "pb/model.json", "pb/variant.json",
-         "pb/trait.json", "pb/template.json")
+         "pb/trait.json", "pb/template.json", "pb/facility.json", "pb/settlement.json",
+         "pb/rates.json", "pb/combat.json", "pb/economy.json")
 
 
 def dump(doc) -> str:
@@ -94,6 +95,8 @@ def _both(*fns):
 
 
 M = "pb/model.json"
+FA = "pb/facility.json"
+ST = "pb/settlement.json"
 V = "pb/variant.json"
 C = "pb/class.json"
 T = "pb/template.json"
@@ -135,7 +138,8 @@ MUTATIONS = [
     ("h403_unknown_pool", "C403", M, "models[0] costs gold, not a resource pool",
      _set([M, "models", 0, "cost", "gold"], 1)),
     ("h404_unknown_unit_type", "C404", T, 'a template for unit type "Cavalry"',
-     _append([T, "templates"], {"unit_type": "Cavalry",
+     _append([T, "templates"], {"unit_type": "Cavalry", "cost": {"money": 1}, "training_days": 1,
+                                "speed_km_per_day": 1,
                                 "equipment": [{"class": "pb:infantry_kit", "count": 1}]})),
     ("h501_illegal_trait", "C501", M, "the trucks carry pb:sloped_armour, not legal on pb:trucks",
      _set([M, "models", 4, "traits"], ["pb:sloped_armour"])),
@@ -152,6 +156,32 @@ MUTATIONS = [
     ("h802_shipped_unnamed", "C802", M, "models[0] (pb:infantry_kit) has no name: a PROJECT INVARIANT, "
      "refused by our gate, loaded and reported by the game",
      _del([M, "models", 0, "name"])),
+    ("h405_unknown_facility_kind", "C405", FA, 'an extra facility row of kind "Shipyard", not an engine kind',
+     _append([FA, "facilities"], {"kind": "Shipyard", "cost": {"money": 1}, "power_draw": 0,
+                                  "power_supply_per_tier": 0, "deposits": [], "output": {}})),
+    ("h406_unknown_settlement_type", "C406", ST, 'an extra settlement row of type "village", not one the map produces',
+     _append([ST, "settlements"], {"type": "village", "income": 0, "manpower": 0, "facility_slots": 0,
+                                   "training_slots": 0, "tier": 0})),
+    ("h801_linear_power", "C801", FA, "tier.step_per_mille is 0: a linear power stack. A PROJECT INVARIANT: the "
+     "authored 1930 base then browns out eight nations, so our gate refuses; the game loads it and reports",
+     _set([FA, "tier", "step_per_mille"], 0)),
+    ("h903_facility_missing_kind", "C903", FA, "no facility row for kind RailYard",
+     lambda d: d[FA].__setitem__("facilities", [f for f in d[FA]["facilities"] if f["kind"] != "RailYard"])),
+    ("h904_deposit_without_output", "C904", FA, "the Mine lists a coal deposit but its output has no coal",
+     _set([FA, "facilities", 0, "deposits"], ["iron", "coal"])),
+    ("h905_facility_rules_twice", "C905", "pb/facility.json",
+     "a second facility.json (mymod) carries the tier and repair rules",
+     lambda d: d.__setitem__("mymod/facility.json", {"format": "pb-content/facility/1",
+                                                     "tier": dict(d[FA]["tier"]),
+                                                     "repair_per_mille": d[FA]["repair_per_mille"],
+                                                     "facilities": []})),
+    ("h906_settlement_missing_type", "C906", ST, "no settlement row for type none",
+     lambda d: d[ST].__setitem__("settlements", [r for r in d[ST]["settlements"] if r["type"] != "none"])),
+    ("h907_rules_file_twice", "C907", "pb/rates.json", "a second rates.json, in mymod. Blamed on pb/: both "
+     "readers take namespaces in ordinal order and mymod sorts first (raised as a modder-facing question)",
+     lambda d: d.__setitem__("mymod/rates.json", copy.deepcopy(d["pb/rates.json"]))),
+    ("h908_rules_file_missing", "C908", "combat.json", "no namespace defines combat.json",
+     lambda d: d.pop("pb/combat.json")),
     ("h901_template_missing_unit_type", "C901", T, "no template for Armored",
      _del([T, "templates", 2])),
     ("h902_template_class_no_design", "C902", T, "a template requires pb:helicopter, a class no design belongs to",
@@ -197,8 +227,16 @@ ACCEPTED = [
                                                   "traits": [{"id": "mymod:extra_fuel", "modifiers": []}]})),
 ]
 
-# C801 base-browns-out needs the facilities balance file, whose shape is not yet
-# in the contract. Its register entry exists; its fixture lands with facilities.json.
+# READY, NOT BUILT: the two-deposit coal mine (D42 option A, ruled by Matthew in D53).
+# The engine cannot yet record which deposit a mine works, so shipping two deposits
+# now would be a file claiming a capability the engine lacks (D42 refused that). When
+# PB-SIM12 lands the instance deposit, the order parameter and the save field, move
+# this into ACCEPTED, and the shipped Mine row gains the same one-line change.
+READY_FOR_OPTION_A = [
+    ("a002_coal_mine", "the Mine extracts iron OR coal: deposits [iron, coal], output {iron: 100, coal: 100}",
+     lambda d: (_set([FA, "facilities", 0, "deposits"], ["iron", "coal"])(d),
+                _set([FA, "facilities", 0, "output"], {"iron": 100, "coal": 100})(d))),
+]
 
 
 def write_set(target: Path, docs: dict, raw: dict[str, str] | None = None):

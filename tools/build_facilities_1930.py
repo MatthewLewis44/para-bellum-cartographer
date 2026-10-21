@@ -51,38 +51,83 @@ MINE_DEPOSITS = ("iron",)
 CONFIDENCE = ("site", "approximate")
 
 # --- The power model: the coupling between the sim's stack and this base ----------
-# A plant's supply is the tier applied TWICE: its base output is
-# supply_per_tier x tier, and the global Facility-layer tier step then multiplies
-# every facility by (1000 + (tier-1) x tier_step_per_mille) / 1000. Mills and
-# mines get the step once, on output. The authored base is sized against that.
-# A linear "fix" (step 0) leaves seven nations short at the first tick.
+# Supply is the tier applied TWICE: a facility's base supply is power_supply_per_tier
+# x tier, and the global Facility-layer tier step then multiplies it by
+# (1000 + (tier-1) x step_per_mille) / 1000. The authored base is sized against
+# that; a linear "fix" (step 0) leaves seven nations short at the first tick.
 #
-# The defaults are the sim's current [P] values (GameState.cs PowerOutputFor,
-# StackFor, FacilityPowerDrawFor). Sprint 12.5 moves them into the content file
-# facilities.json; this model is then read FROM that file, so a hand-mirror
-# that could drift becomes a cross-check that recomputes the file's numbers.
+# THE SOURCE IS THE CONTENT FILE: facility.json (Sprint 12.5). PowerModel.from_facility_json
+# reads tier.step_per_mille and each kind's power_supply_per_tier and power_draw from
+# it, so this pipeline recomputes the game's own numbers. CURRENT_POWER below is the
+# former hand-mirror, kept as a CROSS-CHECK rather than a source: a test asserts it
+# equals the model read from the shipped facility.json, so a change to the file that
+# nobody carried here fails loudly instead of drifting.
+
+# The authored base's kinds (facilities_1930.csv) and the engine FacilityKind each is.
+ENGINE_KIND = {"power_plant": "PowerPlant", "steel_mill": "SteelMill", "mine": "Mine", "rail_yard": "RailYard"}
+
+
 @dataclass(frozen=True)
 class PowerModel:
-    supply_per_tier: int = 1
     tier_step_per_mille: int = 1000
+    supply_per_tier: tuple[tuple[str, int], ...] = (
+        ("power_plant", 1), ("steel_mill", 0), ("mine", 0), ("rail_yard", 0))
     draw: tuple[tuple[str, int], ...] = (
         ("power_plant", 0), ("steel_mill", 2), ("mine", 1), ("rail_yard", 1))
 
-    def supply(self, tier: int) -> int:
-        """One plant's supply, in the sim's integer per-mille arithmetic:
-        base x layer-per-mille / 1000, truncating, as StackFor applies it."""
-        base = self.supply_per_tier * tier
+    def supply(self, tier: int, kind: str = "power_plant") -> int:
+        """One facility's supply, in the sim's integer per-mille arithmetic:
+        base x layer-per-mille / 1000, truncating, as the stack applies it."""
+        base = dict(self.supply_per_tier)[kind] * tier
         return base * (1000 + (tier - 1) * self.tier_step_per_mille) // 1000
 
     def draw_of(self, kind: str) -> int:
         return dict(self.draw)[kind]
 
+    @classmethod
+    def from_facility_json(cls, doc: dict) -> "PowerModel":
+        """The power model a facility.json describes, over the authored base's kinds."""
+        rows = {r["kind"]: r for r in doc["facilities"]}
+        return cls(
+            tier_step_per_mille=doc["tier"]["step_per_mille"],
+            supply_per_tier=tuple((k, rows[e]["power_supply_per_tier"]) for k, e in ENGINE_KIND.items()),
+            draw=tuple((k, rows[e]["power_draw"]) for k, e in ENGINE_KIND.items()),
+        )
 
-CURRENT_POWER = PowerModel()
+
+CURRENT_POWER = PowerModel()   # the cross-check value: see the note above
 
 
-def power_supply(tier: int, power: PowerModel = CURRENT_POWER) -> int:
-    return power.supply(tier)
+def shipped_power_model() -> tuple[PowerModel, str]:
+    """The power model of the game's SHIPPED facility.json, and where it came from.
+
+    Reads Content/pb/facility.json from the game repository (PB_UNITY_REPO, default
+    C:/UnityProjects/ParaBellum). An outside clone of this public repository has no
+    game checkout; it then falls back to CURRENT_POWER and says so, so a check that
+    ran against the mirror can never be mistaken for one that ran against the file."""
+    import os
+    unity = Path(os.environ.get("PB_UNITY_REPO", "C:/UnityProjects/ParaBellum"))
+    f = unity / "Assets" / "StreamingAssets" / "Content" / "pb" / "facility.json"
+    if f.exists():
+        return PowerModel.from_facility_json(json.loads(f.read_text(encoding="utf-8"))), str(f)
+    return CURRENT_POWER, f"FALLBACK: {f} not found, so the hand-mirror CURRENT_POWER was used"
+
+
+def power_supply(tier: int, power: PowerModel = CURRENT_POWER, kind: str = "power_plant") -> int:
+    return power.supply(tier, kind)
+
+
+def nation_power(rows: list[dict], power: PowerModel) -> dict[str, tuple[int, int]]:
+    """Per nation (authored country), (supply, draw) of the authored base under a power
+    model. This is PB-C801's project invariant: our shipped base must not brown out
+    under our shipped facility.json. It needs no map artifact, because every authored
+    row carries its nation."""
+    out: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+    for r in rows:
+        k, t = r["kind"], int(r["tier"])
+        out[r["country"]][0] += power.supply(t, k)
+        out[r["country"]][1] += power.draw_of(k)
+    return {n: (s, d) for n, (s, d) in sorted(out.items())}
 
 
 POWER_DRAW = dict(CURRENT_POWER.draw)
@@ -298,10 +343,8 @@ def check_artifact(data: dict, rows: list[dict] | None = None,
     for h, e in placed:
         n = country(h)
         count_by_nation[n][e["kind"]] += 1
-        if e["kind"] == "power_plant":
-            supply[n] += power.supply(e["tier"])
-        else:
-            draw[n] += power.draw_of(e["kind"])
+        supply[n] += power.supply(e["tier"], e["kind"])
+        draw[n] += power.draw_of(e["kind"])
     short = sorted(f"{n} {supply[n]}<{draw[n]}" for n in draw if supply[n] < draw[n])
 
     checks = [

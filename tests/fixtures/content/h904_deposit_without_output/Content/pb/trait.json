@@ -1,0 +1,25 @@
+{
+  "format": "pb-content/trait/1",
+  "traits": [
+    {
+      "id": "pb:sloped_armour",
+      "name": "Sloped armour",
+      "modifiers": [
+        {
+          "stat": "armour_front_mm",
+          "per_mille": 300
+        }
+      ]
+    },
+    {
+      "id": "pb:unreliable_transmission",
+      "name": "Unreliable transmission",
+      "modifiers": [
+        {
+          "stat": "reliability_per_mille",
+          "per_mille": -200
+        }
+      ]
+    }
+  ]
+}

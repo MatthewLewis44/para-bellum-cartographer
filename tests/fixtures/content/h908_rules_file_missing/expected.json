@@ -1,0 +1,8 @@
+{
+  "code": "C908",
+  "rule": "rules-file-missing",
+  "file": "combat.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "no namespace defines combat.json"
+}

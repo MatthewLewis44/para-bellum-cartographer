@@ -37,6 +37,7 @@ from wargame_cartographer.hex.grid import OFFSET_NEIGHBOR_DELTAS   # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "tools"))
 from build_facilities_1930 import check_artifact as check_facilities  # noqa: E402
+from build_facilities_1930 import shipped_power_model  # noqa: E402
 
 EXPECTED_SCHEMA = "1.0.7"
 
@@ -763,7 +764,11 @@ def main() -> int:
     # hard-fail only on the shipped map: a test frame crops provinces seatless
     # (AD-M19) and can cut a plant off past the bbox edge, so there they report.
     if ver_t >= (1, 0, 7):
-        fac_checks, fac_report = check_facilities(data)
+        # The power model is READ from the game's shipped facility.json (Sprint 12.5),
+        # not hand-mirrored; the source is printed so a fallback cannot pass unnoticed.
+        power, power_source = shipped_power_model()
+        fac_checks, fac_report = check_facilities(data, power=power)
+        fac_report.insert(0, f"  power model: {power_source}")
         n_fac = sum(len(h["facilities"]) for h in hexes
                     if isinstance(h.get("facilities"), list))
         min_fac = exp.get("start_state_min_facilities")

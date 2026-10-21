@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:settlement:1",
+  "title": "Para Bellum content: settlement types",
+  "description": "What each settlement type the map produces is worth. File: Content/<namespace>/settlement.json. There is exactly one row per settlement type, listed in Content/vocabulary.json as settlement_types, INCLUDING none: a hex with no settlement gets an explicit row of zeros, so nothing in the game falls back to a silent default. A mod cannot override this file (a recorded limitation). The contract is docs/design/CONTENT_MODEL.md in the game repository.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "settlements"],
+  "properties": {
+    "format": { "const": "pb-content/settlement/1" },
+    "settlements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "income", "manpower", "facility_slots", "training_slots", "tier"],
+        "properties": {
+          "type": {
+            "description": "A settlement type the map produces: none, suburb, town, city or metropolis.",
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "income": { "description": "Money per month from a seat of this type.", "type": "integer", "minimum": 0 },
+          "manpower": { "description": "Manpower per month from a seat of this type.", "type": "integer", "minimum": 0 },
+          "facility_slots": { "description": "Facility slots a province seat of this type provides.", "type": "integer", "minimum": 0 },
+          "training_slots": { "description": "Concurrent training orders a seat of this type supports.", "type": "integer", "minimum": 0 },
+          "tier": { "description": "The settlement's rank, used where a province has no capital to choose its capture seat.", "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

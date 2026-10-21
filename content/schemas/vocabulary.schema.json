@@ -2,10 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:pb-content:vocabulary:1",
   "title": "Para Bellum content: the engine vocabulary",
-  "description": "File: Content/vocabulary.json. Lists the engine-level names content files may use: stat keys, resource pools and unit types. THE GAME NEVER READS THIS FILE TO DECIDE BEHAVIOUR. It describes the code; it does not extend it. A test in the game asserts that it equals the code exactly, so editing it cannot add a stat, a pool or a unit type. Adding one is a code change, by design.",
+  "description": "File: Content/vocabulary.json. Lists the engine-level names content files may use: stat keys, resource pools, unit types, facility kinds and settlement types. THE GAME NEVER READS THIS FILE TO DECIDE BEHAVIOUR. It describes the code; it does not extend it. A test in the game asserts that it equals the code exactly, so editing it cannot add a stat, a pool or a unit type. Adding one is a code change, by design.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["format", "_comment", "stat_keys", "pools", "unit_types"],
+  "required": ["format", "_comment", "stat_keys", "pools", "unit_types", "facility_kinds", "settlement_types"],
   "properties": {
     "format": { "const": "pb-content/vocabulary/1" },
     "_comment": {
@@ -27,6 +27,18 @@
       "type": "array",
       "uniqueItems": true,
       "items": { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]*$" }
+    },
+    "facility_kinds": {
+      "description": "The engine facility kinds, in the code's declaration order, spelled exactly as facility.json's kind values.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]*$" }
+    },
+    "settlement_types": {
+      "description": "The settlement types the map produces, none included.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
     }
   }
 }

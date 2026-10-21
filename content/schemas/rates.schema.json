@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:rates:1",
+  "title": "Para Bellum content: rates",
+  "description": "Cross-system rates and fractions. File: Content/<namespace>/rates.json, exactly ONE across every namespace: the game refuses a second copy and refuses a content set with none. A mod cannot override this file (a recorded limitation). Every figure is a whole number; ratios are per mille. The contract is docs/design/CONTENT_MODEL.md in the game repository.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "fresh_capture", "capture_damage_per_mille", "refund_per_mille", "line_efficiency",
+               "replacement_cap_strength_per_month"],
+  "properties": {
+    "format": { "const": "pb-content/rates/1" },
+    "fresh_capture": {
+      "description": "A freshly captured province's reduced output, and how long it lasts.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["output_per_mille", "months"],
+      "properties": {
+        "output_per_mille": {
+          "description": "Output while freshly captured, per mille (500 = half). Note: per MILLE, not per cent.",
+          "type": "integer", "minimum": 0
+        },
+        "months": { "description": "How many months the reduction lasts.", "type": "integer", "minimum": 0 }
+      }
+    },
+    "capture_damage_per_mille": {
+      "description": "Damage dealt to a province's facilities when it is captured, per mille.",
+      "type": "integer", "minimum": 0
+    },
+    "refund_per_mille": {
+      "description": "The share of an order's cost returned when it is cancelled, per pool group, per mille.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manpower", "money", "materiel", "equipment"],
+      "properties": {
+        "manpower": { "type": "integer", "minimum": 0 },
+        "money": { "type": "integer", "minimum": 0 },
+        "materiel": { "type": "integer", "minimum": 0 },
+        "equipment": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "line_efficiency": {
+      "description": "A production line's efficiency: where it starts after a design change, and how much it gains per month. The ceiling (1000, whole) is not a balance figure and stays in code.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["floor_per_mille", "ramp_per_mille"],
+      "properties": {
+        "floor_per_mille": { "type": "integer", "minimum": 0 },
+        "ramp_per_mille": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "replacement_cap_strength_per_month": {
+      "description": "The most strength a unit can recover from replacements in one month, in strength points.",
+      "type": "integer", "minimum": 0
+    }
+  }
+}

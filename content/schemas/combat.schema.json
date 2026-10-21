@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:combat:1",
+  "title": "Para Bellum content: combat",
+  "description": "The auto-resolve battle weights. File: Content/<namespace>/combat.json, exactly ONE across every namespace: the game refuses a second copy and refuses a content set with none. A mod cannot override this file (a recorded limitation; a total-conversion mod would want to, which is why override semantics is the first modding-API item after this sprint). Ratios are per mille, and every figure is a whole number. Integer inputs here buy auditability and one house unit, but the battle arithmetic itself remains floating point. The contract is docs/design/CONTENT_MODEL.md in the game repository.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "defense_weight_per_level_per_mille", "river_assault_penalty_per_mille", "luck_spread_per_mille",
+               "base_casualty_per_mille", "min_casualty_per_mille", "max_casualty_per_mille", "destroy_floor_strength"],
+  "properties": {
+    "format": { "const": "pb-content/combat/1" },
+    "defense_weight_per_level_per_mille": {
+      "description": "The defender's bonus per level of terrain defence, per mille.",
+      "type": "integer", "minimum": 0
+    },
+    "river_assault_penalty_per_mille": {
+      "description": "The attacker's strength multiplier when assaulting into a river hex, per mille.",
+      "type": "integer", "minimum": 0
+    },
+    "luck_spread_per_mille": {
+      "description": "The width of the random swing on each side's strength, per mille.",
+      "type": "integer", "minimum": 0
+    },
+    "base_casualty_per_mille": { "type": "integer", "minimum": 0 },
+    "min_casualty_per_mille": { "type": "integer", "minimum": 0 },
+    "max_casualty_per_mille": { "type": "integer", "minimum": 0 },
+    "destroy_floor_strength": {
+      "description": "A unit at or below this strength is destroyed, in strength points.",
+      "type": "integer", "minimum": 0
+    }
+  }
+}

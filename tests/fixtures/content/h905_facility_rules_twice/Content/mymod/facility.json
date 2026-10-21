@@ -1,0 +1,10 @@
+{
+  "format": "pb-content/facility/1",
+  "tier": {
+    "step_per_mille": 1000,
+    "cost_multiplier_per_mille": 1750,
+    "build_days": 180
+  },
+  "repair_per_mille": 400,
+  "facilities": []
+}

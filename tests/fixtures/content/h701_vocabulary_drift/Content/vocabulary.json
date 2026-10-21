@@ -1,6 +1,6 @@
 {
   "format": "pb-content/vocabulary/1",
-  "_comment": "THE GAME NEVER READS THIS FILE TO DECIDE BEHAVIOUR. It describes the code; it does not extend it. A test asserts it equals the engine's enums exactly.",
+  "_comment": "Describes the engine's code. The game NEVER reads this file to decide behaviour: stat keys, pools and unit types are fixed in C#, and a test fails (C701) if this list and the code ever disagree. It exists so the JSON Schemas and the pipeline's Python cross-check can see the engine's vocabulary. See docs/design/CONTENT_MODEL.md section 2.",
   "stat_keys": [
     "weight_kg",
     "crew",
@@ -32,5 +32,21 @@
     "Infantry",
     "Motorized",
     "Armored"
+  ],
+  "facility_kinds": [
+    "Mine",
+    "PowerPlant",
+    "SteelMill",
+    "CivilianFactory",
+    "MilitaryFactory",
+    "Refinery",
+    "RailYard"
+  ],
+  "settlement_types": [
+    "none",
+    "suburb",
+    "town",
+    "city",
+    "metropolis"
   ]
 }

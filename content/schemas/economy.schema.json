@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:economy:1",
+  "title": "Para Bellum content: economy",
+  "description": "The economy's standing figures. File: Content/<namespace>/economy.json, exactly ONE across every namespace: the game refuses a second copy and refuses a content set with none. A mod cannot override this file (a recorded limitation). Unit costs, training days and speeds are NOT here: they are properties of a unit and live on its template row. The contract is docs/design/CONTENT_MODEL.md in the game repository.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "upkeep_money_per_unit_per_month", "draft_per_mille", "dispersed_yield_per_hex", "seed_months"],
+  "properties": {
+    "format": { "const": "pb-content/economy/1" },
+    "upkeep_money_per_unit_per_month": {
+      "description": "Money each unit costs per month to keep.",
+      "type": "integer", "minimum": 0
+    },
+    "draft_per_mille": {
+      "description": "The share of a seat's manpower actually drafted, per mille.",
+      "type": "integer", "minimum": 0
+    },
+    "dispersed_yield_per_hex": {
+      "description": "Monthly yield of each resource-bearing hex, keyed by pool. The steel entry is unreachable since steel deposits retired into mills; it is kept rather than deleted, and deleting it is a separate decision.",
+      "type": "object",
+      "propertyNames": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "seed_months": {
+      "description": "How many months of income each nation's pools start with.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["money", "manpower", "resource"],
+      "properties": {
+        "money": { "type": "integer", "minimum": 0 },
+        "manpower": { "type": "integer", "minimum": 0 },
+        "resource": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

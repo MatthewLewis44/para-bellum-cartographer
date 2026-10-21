@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:pb-content:template:1",
   "title": "Para Bellum content: division templates",
-  "description": "What a division draws from the stockpile when it is trained. File: Content/<namespace>/template.json. There is exactly one row per engine unit type. A requirement names a CLASS, and it is filled by designs of that class newest-first (along supersedes, then by year), models and variants alike. The contract is docs/design/CONTENT_MODEL.md section 4 in the game repository.\n\nRecorded limitation: a requirement cannot ask for one specific model (for example, a light tank for reconnaissance).",
+  "description": "One row per engine unit type: what a division of that type costs to train, how long it takes, how fast it moves, and what it draws from the stockpile. File: Content/<namespace>/template.json. There is exactly one row per engine unit type. A requirement names a CLASS, and it is filled by designs of that class newest-first (along supersedes, then by year), models and variants alike. The contract is docs/design/CONTENT_MODEL.md section 4 in the game repository.\n\nRecorded limitation: a requirement cannot ask for one specific model (for example, a light tank for reconnaissance).",
   "type": "object",
   "additionalProperties": false,
   "required": ["format", "templates"],
@@ -22,12 +22,26 @@
     "template": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["unit_type", "equipment"],
+      "required": ["unit_type", "cost", "training_days", "speed_km_per_day", "equipment"],
       "properties": {
         "unit_type": {
           "description": "An engine unit type (for example Infantry, Motorized, Armored), listed in Content/vocabulary.json. Unit types are fixed by the game's code.",
           "type": "string",
           "pattern": "^[A-Z][A-Za-z0-9]*$"
+        },
+        "cost": {
+          "description": "What training one division costs, keyed by pool. Any engine pool may appear; an omitted pool costs none.",
+          "type": "object",
+          "propertyNames": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "training_days": {
+          "description": "How long training one division takes, in whole days.",
+          "type": "integer", "minimum": 0
+        },
+        "speed_km_per_day": {
+          "description": "How far a division of this type moves per day. This is the one source of unit speed.",
+          "type": "integer", "minimum": 0
         },
         "equipment": {
           "type": "array",

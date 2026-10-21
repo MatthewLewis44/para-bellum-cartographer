@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:facility:1",
+  "title": "Para Bellum content: facilities",
+  "description": "The figures for every buildable facility kind, and the project-wide facility rules. File: Content/<namespace>/facility.json. The facility KINDS are fixed by the game's code (listed in Content/vocabulary.json as facility_kinds) because each carries code behaviour: plants supply power, factories run lines. The NUMBERS live here. There is exactly one row per engine kind, and the tier and repair rules appear in exactly one facility.json across every namespace. A mod cannot override this file: that is a recorded limitation, and override semantics is the first modding-API item after this sprint. The contract is docs/design/CONTENT_MODEL.md in the game repository.\n\nPOWER. A facility's power supply at tier t is t x power_supply_per_tier x (1000 + (t - 1) x tier.step_per_mille) / 1000, truncating. At the shipped values (power plant 1, step 1000) that is t squared. The authored 1930 starting base is sized to that, so changing either figure can brown out a nation at the first tick; the pipeline's gate (PB-C801) checks the shipped base against whatever this file says.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "tier", "repair_per_mille", "facilities"],
+  "properties": {
+    "format": { "const": "pb-content/facility/1" },
+    "tier": {
+      "description": "The rules that vary with a facility's tier.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_per_mille", "cost_multiplier_per_mille", "build_days"],
+      "properties": {
+        "step_per_mille": {
+          "description": "The Facility-layer step per tier above 1, per mille: a tier t facility runs at (1000 + (t - 1) x step) / 1000 of its base.",
+          "type": "integer", "minimum": 0
+        },
+        "cost_multiplier_per_mille": {
+          "description": "How much more each tier costs than the one below, per mille (1750 = x1.75 per tier).",
+          "type": "integer", "minimum": 0
+        },
+        "build_days": {
+          "description": "Construction time per tier, in whole days.",
+          "type": "integer", "minimum": 0
+        }
+      }
+    },
+    "repair_per_mille": {
+      "description": "A repair's share of the facility's cost AND of its build time, per mille. It is not tier-dependent, so it is not in the tier block.",
+      "type": "integer", "minimum": 0
+    },
+    "facilities": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/facility" }
+    }
+  },
+  "$defs": {
+    "poolName": {
+      "description": "A resource pool name, listed in Content/vocabulary.json.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "poolMap": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/poolName" },
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "facility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "cost", "power_draw", "power_supply_per_tier", "deposits", "output"],
+      "properties": {
+        "kind": {
+          "description": "An engine facility kind, spelled exactly as the code names it (Mine, PowerPlant, SteelMill, ...). Listed in Content/vocabulary.json as facility_kinds.",
+          "type": "string",
+          "pattern": "^[A-Z][A-Za-z0-9]*$"
+        },
+        "cost": {
+          "description": "The tier-1 build cost, keyed by pool. Higher tiers multiply it by tier.cost_multiplier_per_mille per tier.",
+          "$ref": "#/$defs/poolMap"
+        },
+        "power_draw": {
+          "description": "Power units this facility draws to run at full output. A plant draws 0.",
+          "type": "integer", "minimum": 0
+        },
+        "power_supply_per_tier": {
+          "description": "Power units supplied per tier, before the tier step. Non-zero only for a power plant today.",
+          "type": "integer", "minimum": 0
+        },
+        "deposits": {
+          "description": "For an extraction facility, the pools it can be built to extract; every one must also appear in output. Empty for everything else.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/poolName" }
+        },
+        "output": {
+          "description": "What the facility produces per month at tier 1, keyed by pool. Empty for a facility whose output is not a pool (power, construction, production lines, movement).",
+          "$ref": "#/$defs/poolMap"
+        }
+      }
+    }
+  }
+}

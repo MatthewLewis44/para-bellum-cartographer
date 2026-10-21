@@ -3,6 +3,12 @@
   "templates": [
     {
       "unit_type": "Infantry",
+      "cost": {
+        "money": 25,
+        "manpower": 14000
+      },
+      "training_days": 90,
+      "speed_km_per_day": 20,
       "equipment": [
         {
           "class": "pb:infantry_kit",
@@ -20,6 +26,12 @@
     },
     {
       "unit_type": "Motorized",
+      "cost": {
+        "money": 60,
+        "manpower": 12000
+      },
+      "training_days": 120,
+      "speed_km_per_day": 50,
       "equipment": [
         {
           "class": "pb:infantry_kit",
@@ -37,6 +49,12 @@
     },
     {
       "unit_type": "Armored",
+      "cost": {
+        "money": 90,
+        "manpower": 10000
+      },
+      "training_days": 150,
+      "speed_km_per_day": 40,
       "equipment": [
         {
           "class": "pb:infantry_kit",

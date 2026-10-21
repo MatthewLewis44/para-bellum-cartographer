@@ -1,0 +1,8 @@
+{
+  "code": "C406",
+  "rule": "unknown-settlement-type",
+  "file": "pb/settlement.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "an extra settlement row of type \"village\", not one the map produces"
+}
