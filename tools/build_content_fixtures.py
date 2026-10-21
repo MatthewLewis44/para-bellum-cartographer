@@ -178,7 +178,8 @@ MUTATIONS = [
      _append([ST, "settlements"], {"type": "village", "income": 0, "manpower": 0, "facility_slots": 0,
                                    "training_slots": 0, "tier": 0})),
     ("h801_linear_power", "C801", FA, "tier.step_per_mille is 0: a linear power stack. A PROJECT INVARIANT: the "
-     "authored 1930 base then browns out eight nations, so our gate refuses; the game loads it and reports",
+     "authored 1930 base then browns out eight nations, so our gate refuses. The C# content READER accepts it "
+     "(it has no map); the C# START STATE reports it, which is a different layer (register csharp_elsewhere)",
      _set([FA, "tier", "step_per_mille"], 0)),
     ("h903_facility_missing_kind", "C903", FA, "no facility row for kind RailYard",
      lambda d: d[FA].__setitem__("facilities", [f for f in d[FA]["facilities"] if f["kind"] != "RailYard"])),

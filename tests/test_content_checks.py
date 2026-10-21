@@ -136,6 +136,15 @@ def main() -> int:
           len(codes) == len(set(codes)) and all(len(c) == 4 and c[0] == "C" and c[1:].isdigit() for c in codes))
     check("rule_codes.json: every entry declares layer, python and csharp behaviour",
           all({"rule", "layer", "python", "csharp", "summary"} <= set(c) for c in cc.REGISTER))
+    modes = {"refuse", "report", "accept", "n/a"}
+    check("rule_codes.json: python/csharp are reader modes, and csharp_elsewhere names a layer, a mode and a status",
+          all(c["python"] in modes and c["csharp"] in modes for c in cc.REGISTER)
+          and all({"layer", "does", "status"} <= set(c["csharp_elsewhere"]) and c["csharp_elsewhere"]["does"] in modes
+                  for c in cc.REGISTER if "csharp_elsewhere" in c))
+    c801 = next(c for c in cc.REGISTER if c["code"] == "C801")
+    check("C801: the C# READER accepts, the C# START STATE reports, and D38's line is carried",
+          c801["csharp"] == "accept" and c801.get("csharp_elsewhere", {}).get("layer") == "start_state"
+          and "C#'s synthetic test proves the mechanism; the pipeline gate proves the shipped base." in c801["summary"])
     check("the checker's RULES are exactly the register (no copy in code)",
           cc.RULES == {c["code"]: c["rule"] for c in cc.REGISTER})
     reg = {c["code"]: c for c in cc.REGISTER}
