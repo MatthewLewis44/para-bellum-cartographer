@@ -1,0 +1,15 @@
+{
+  "format": "pb-content/trait/1",
+  "traits": [
+    {
+      "id": "mymod:wet_stowage",
+      "name": "Wet stowage",
+      "modifiers": [
+        {
+          "stat": "reliability_per_mille",
+          "per_mille": 50
+        }
+      ]
+    }
+  ]
+}

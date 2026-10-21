@@ -240,6 +240,34 @@ def main() -> int:
     check("a linear stack browns out the eight nations the coupling predicts",
           short == ["AUT", "BEL", "CSK", "DEU", "HUN", "LUX", "POL", "SAA"], f"{short}")
 
+    # 5d. Class extensions (D28 gap 2): the shipped class gains the mod's trait AFTER its
+    #     own; the same set without the extension is refused with C501 (so a003 can fail);
+    #     and two mods adding the same trait yield it once, whichever folder sorts first.
+    a003 = FIXTURES / "a003_class_extension" / "Content"
+    ext = cc.ContentSet(a003)
+    tank = ext.by_id["class"]["pb:tank"]["traits"] if not ext.problems else []
+    check("an extension appends the mod's trait after the class's own",
+          tank == ["pb:sloped_armour", "pb:unreliable_transmission", "mymod:wet_stowage"], f"{tank}")
+    with tempfile.TemporaryDirectory() as td:
+        import shutil
+        shutil.copytree(a003, Path(td) / "Content")
+        (Path(td) / "Content" / "mymod" / "class.json").unlink()
+        no_ext = [(p.code, p.file) for p in cc.ContentSet(Path(td) / "Content").problems]
+        check("WITHOUT the extension the same mod is refused with C501 (a003 discriminates)",
+              no_ext == [("C501", "mymod/model.json")], f"{no_ext}")
+        for other in ("amod", "zmod"):
+            shutil.copytree(Path(td) / "Content" / "mymod", Path(td) / "Content" / other)
+            for f in ("model.json", "trait.json"):
+                (Path(td) / "Content" / other / f).unlink()
+            (Path(td) / "Content" / other / "class.json").write_text(json.dumps(
+                {"format": "pb-content/class/1", "classes": [{"extends": "pb:tank", "traits": ["mymod:wet_stowage"]}]}),
+                encoding="utf-8")
+        both = cc.ContentSet(Path(td) / "Content")
+        tank2 = both.by_id["class"]["pb:tank"]["traits"] if not both.problems else [str(p) for p in both.problems]
+        check("two mods adding the same trait yield it ONCE, after the class's own, from folders sorting "
+              "before AND after the defining mod", tank2 == ["pb:sloped_armour", "pb:unreliable_transmission",
+                                                            "mymod:wet_stowage"], f"{tank2}")
+
     # 6. The hash pin.
     check("content/SHA256SUMS matches the schemas and fixtures",
           PIN.exists() and _lf(PIN.read_bytes()).decode("utf-8") == pin_text(),

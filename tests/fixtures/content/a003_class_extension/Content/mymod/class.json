@@ -1,0 +1,11 @@
+{
+  "format": "pb-content/class/1",
+  "classes": [
+    {
+      "extends": "pb:tank",
+      "traits": [
+        "mymod:wet_stowage"
+      ]
+    }
+  ]
+}

@@ -12,8 +12,13 @@
       "const": "pb-content/class/1"
     },
     "classes": {
+      "description": "Each entry is either a CLASS, or an EXTENSION of a class defined elsewhere (an entry carrying \"extends\").",
       "type": "array",
-      "items": { "$ref": "#/$defs/class" }
+      "items": {
+        "if": { "type": "object", "required": ["extends"] },
+        "then": { "$ref": "#/$defs/extension" },
+        "else": { "$ref": "#/$defs/class" }
+      }
     }
   },
   "$defs": {
@@ -26,6 +31,24 @@
       "description": "An engine stat key. Measures carry their unit in the name (_mm, _kph, _kg, _per_mille); count keys are plain nouns (crew, transport_passengers). Stat keys are fixed by the game's code and listed in Content/vocabulary.json. A content file cannot add one.",
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "extension": {
+      "description": "Adds legal traits to a class defined elsewhere, typically a shipped one: { \"extends\": \"pb:tank\", \"traits\": [\"mymod:wet_stowage\"] }. It ADDS legal traits and nothing else: it cannot add stats (stat keys are the engine's) and cannot remove anything. Adding traits is a set union, so the result does not depend on which folder loads first: the class's own traits come first, then every extension's additions in sorted order. A mistake in an extension is reported against the extension's own file, never the base game's.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["extends", "traits"],
+      "properties": {
+        "extends": {
+          "description": "The class being extended, by class id.",
+          "$ref": "#/$defs/id"
+        },
+        "traits": {
+          "description": "Traits to make legal on that class, by id. Each must exist, and every stat it modifies must be on the class.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
     },
     "class": {
       "type": "object",

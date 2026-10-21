@@ -1,0 +1,8 @@
+{
+  "code": "C105",
+  "rule": "unknown-key",
+  "file": "mymod/class.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "a class extension that also tries to add stats, which only the engine may define"
+}

@@ -1,0 +1,19 @@
+{
+  "format": "pb-content/rates/1",
+  "fresh_capture": {
+    "output_per_mille": 500,
+    "months": 6
+  },
+  "capture_damage_per_mille": 300,
+  "refund_per_mille": {
+    "manpower": 1000,
+    "money": 500,
+    "materiel": 500,
+    "equipment": 1000
+  },
+  "line_efficiency": {
+    "floor_per_mille": 300,
+    "ramp_per_mille": 100
+  },
+  "replacement_cap_strength_per_month": 25
+}

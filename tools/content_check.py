@@ -187,6 +187,7 @@ class ContentSet:
         self.entries: dict[str, list[tuple[str, str, int, dict]]] = {s: [] for s, _ in TYPES}
         self.singletons: dict[str, list[tuple[str, dict]]] = {t: [] for t in SINGLETONS}
         self.facility_headers: list[tuple[str, dict]] = []
+        self.extensions: list[tuple[str, str, int, dict]] = []   # class.json entries carrying "extends"
         self.namespaces: set[str] = set()
         self._load()
         # Structure first. If ANY file fails the schema layer, its entries are
@@ -225,6 +226,17 @@ class ContentSet:
             if ns == SCHEMAS_FOLDER:
                 continue
             self.namespaces.add(ns)
+            # D28 gap 1: nothing in a namespace folder is silently ignored. A misnamed
+            # file (models.json) used to load nothing and say nothing (C109); a folder
+            # with no content file at all defines nothing (C110). Non-JSON files
+            # (README.md, Unity's .meta) are not content and stay ignored.
+            jsons = sorted(f.name for f in ns_dir.iterdir() if f.is_file() and f.suffix == ".json")
+            for name in jsons:
+                if name not in CONTENT_FILES:
+                    self.problems.append(Problem(f"{ns}/{name}", "C109", "$",
+                                                 f'"{name}" is not a content file: the names are {", ".join(CONTENT_FILES)}'))
+            if not any(n in CONTENT_FILES for n in jsons):
+                self.problems.append(Problem(f"{ns}/", "C110", "$", f"Content/{ns}/ holds no content file, so it defines nothing"))
             for stem, key in TYPES:
                 f = ns_dir / f"{stem}.json"
                 if not f.exists():
@@ -235,7 +247,10 @@ class ContentSet:
                 if stem == "facility":
                     self.facility_headers.append((rel, doc))
                 for i, e in enumerate(doc[key]):
-                    self.entries[stem].append((rel, ns, i, e))
+                    if stem == "class" and "extends" in e:
+                        self.extensions.append((rel, ns, i, e))
+                    else:
+                        self.entries[stem].append((rel, ns, i, e))
             for stem in SINGLETONS:
                 f = ns_dir / f"{stem}.json"
                 if f.exists():
@@ -311,6 +326,26 @@ class ContentSet:
                         if m["stat"] not in c["stats"]:
                             self._add(rel, "C502", where("class", i, "traits", j),
                                       f'trait "{t}" modifies "{m["stat"]}", which class "{c["id"]}" does not have')
+
+        # Class EXTENSIONS (D28 gap 2): checked against their OWN file, then every class
+        # gains the union of its extensions' traits after its own, in sorted order, so
+        # the result does not depend on which folder loaded first.
+        extra: dict[str, set[str]] = {}
+        for rel, _, i, x in self.extensions:
+            target = x["extends"]
+            if not ref(rel, where("class", i, "extends"), target, "class"):
+                continue
+            for j, t in enumerate(x["traits"]):
+                if not ref(rel, where("class", i, "traits", j), t, "trait"):
+                    continue
+                for m in traits[t]["modifiers"]:
+                    if m["stat"] not in classes[target]["stats"]:
+                        self._add(rel, "C502", where("class", i, "traits", j),
+                                  f'trait "{t}" modifies "{m["stat"]}", which class "{target}" does not have')
+                extra.setdefault(target, set()).add(t)
+        for cid, adds in extra.items():
+            own = classes[cid]["traits"]
+            classes[cid]["traits"] = list(own) + sorted(t for t in adds if t not in own)
 
         # Traits: every modified stat is an engine stat key.
         for rel, _, i, t in self.entries["trait"]:

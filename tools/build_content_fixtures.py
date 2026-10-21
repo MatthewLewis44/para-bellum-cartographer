@@ -114,6 +114,14 @@ MUTATIONS = [
      _set([M, "models", 0, "id"], "Tiger")),
     ("h107_bad_format", "C107", M, 'model.json declares format "pb-content/model/2"',
      _set([M, "format"], "pb-content/model/2")),
+    ("h109_unknown_content_file", "C109", "pb/models.json", "a misnamed pb/models.json beside the real model.json",
+     lambda d: d.__setitem__("pb/models.json", copy.deepcopy(d[M]))),
+    ("h110_namespace_without_content", "C110", "mymod/", "a mymod/ folder holding only a README.md",
+     lambda d: {"mymod/README.md": "# My mod" + chr(10) + chr(10) + "Nothing here yet." + chr(10)}),
+    ("h105b_extension_unknown_key", "C105", "mymod/class.json",
+     "a class extension that also tries to add stats, which only the engine may define",
+     lambda d: d.__setitem__("mymod/class.json", {"format": "pb-content/class/1", "classes": [
+         {"extends": "pb:tank", "traits": ["pb:sloped_armour"], "stats": {"weight_kg": 0}}]})),
     ("h201_unknown_namespace", "C201", M, 'models[2] carries trait "mymod:extra_fuel"; no Content/mymod/ exists',
      _append([M, "models", 2, "traits"], "mymod:extra_fuel")),
     ("h202_id_outside_namespace", "C202", M, 'models[0].id is "mymod:infantry_kit" inside the pb folder',
@@ -125,6 +133,9 @@ MUTATIONS = [
      _set([V, "variants", 0, "id"], "pb:light_tank")),
     ("h301_dangling_reference", "C301", V, 'variants[1].model is "pb:light_tnak"',
      _set([V, "variants", 1, "model"], "pb:light_tnak")),
+    ("h301b_extends_dangling", "C301", "mymod/class.json", 'a class extension of "pb:tnak", which is not a class',
+     lambda d: d.__setitem__("mymod/class.json", {"format": "pb-content/class/1", "classes": [
+         {"extends": "pb:tnak", "traits": ["pb:sloped_armour"]}]})),
     ("h302_cyclic_supersedes", "C302", M, "the light tank supersedes the medium tank, which supersedes it",
      _set([M, "models", 2, "supersedes"], "pb:medium_tank")),
     ("h302b_self_supersedes", "C302", M, "the medium tank supersedes itself",
@@ -145,6 +156,10 @@ MUTATIONS = [
      _set([M, "models", 4, "traits"], ["pb:sloped_armour"])),
     ("h502_trait_absent_stat", "C502", C, "pb:trucks lists pb:sloped_armour as legal, but has no armour_front_mm",
      _set([C, "classes", 3, "traits"], ["pb:sloped_armour"])),
+    ("h502b_extension_absent_stat", "C502", "mymod/class.json",
+     "a mod extends pb:trucks with sloped armour, but trucks have no armour_front_mm: blamed on the mod, not on pb",
+     lambda d: d.__setitem__("mymod/class.json", {"format": "pb-content/class/1", "classes": [
+         {"extends": "pb:trucks", "traits": ["pb:sloped_armour"]}]})),
     ("h503_remove_absent_trait", "C503", V, "variants[0] removes pb:unreliable_transmission, which its model lacks",
      _set([V, "variants", 0, "traits_remove"], ["pb:unreliable_transmission"])),
     ("h601_variant_of_variant", "C601", V, "variants[1].model is a variant (pb:medium_tank_late)",
@@ -181,7 +196,7 @@ MUTATIONS = [
      "readers take namespaces in ordinal order and mymod sorts first (raised as a modder-facing question)",
      lambda d: d.__setitem__("mymod/rates.json", copy.deepcopy(d["pb/rates.json"]))),
     ("h908_rules_file_missing", "C908", "combat.json", "no namespace defines combat.json",
-     lambda d: d.pop("pb/combat.json")),
+     lambda d: d.pop("pb/combat.json") and None),
     ("h901_template_missing_unit_type", "C901", T, "no template for Armored",
      _del([T, "templates", 2])),
     ("h902_template_class_no_design", "C902", T, "a template requires pb:helicopter, a class no design belongs to",
@@ -215,7 +230,24 @@ def _layer_arithmetic(d):
     light["traits"] += ["pb:plus_a", "pb:plus_b", "pb:minus_a", "pb:minus_b"]
 
 
+def _class_extension(d):
+    """a003: a MOD adds a trait to the SHIPPED class pb:tank and builds a tank that carries it.
+    Without the extension this set is refused with C501; with it, it loads."""
+    d["mymod/trait.json"] = {"format": "pb-content/trait/1", "traits": [
+        {"id": "mymod:wet_stowage", "name": "Wet stowage",
+         "modifiers": [{"stat": "reliability_per_mille", "per_mille": 50}]}]}
+    d["mymod/class.json"] = {"format": "pb-content/class/1", "classes": [
+        {"extends": "pb:tank", "traits": ["mymod:wet_stowage"]}]}
+    d["mymod/model.json"] = {"format": "pb-content/model/1", "models": [
+        {"id": "mymod:t34_85", "class": "pb:tank", "name": "T-34-85", "year": 1944, "unlock": None,
+         "supersedes": None, "stats": {"armour_front_mm": 90, "main_gun_mm": 85, "speed_road_kph": 54, "crew": 5},
+         "traits": ["mymod:wet_stowage", "pb:sloped_armour"], "cost": {"steel": 6, "oil": 1},
+         "production": {"units_per_factory_per_month": 2}}]}
+
+
 ACCEPTED = [
+    ("a003_class_extension", "a mod makes its own trait legal on the shipped pb:tank with { extends, traits } "
+     "and builds a tank carrying it; refused with C501 without the extension", _class_extension),
     ("a001_layer_arithmetic",
      "ONE truncating division per layer after summing: two +150 traits on armour 13 give 13 x 1300/1000 = 16 "
      "(per-contribution rounding would give 15). And the VISIBLE clamp: reliability penalties summing to -1400 "
@@ -266,7 +298,10 @@ def build(root: Path = FIXTURES) -> list[str]:
         elif fn == "DUP_MODEL0":
             docs[M]["models"].append(copy.deepcopy(docs[M]["models"][0]))
         else:
-            fn(docs)
+            out = fn(docs)
+            if isinstance(out, dict):      # a mutation may add non-JSON files (raw text)
+                raw = out
+                docs.update({k: None for k in out})
         write_set(root / name, docs, raw)
         exp = {"code": code, "rule": RULES[code], "file": file,
                **SIDES[code], "seeded": seeded}

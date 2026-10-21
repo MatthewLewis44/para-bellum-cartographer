@@ -1,0 +1,14 @@
+{
+  "format": "pb-content/class/1",
+  "classes": [
+    {
+      "extends": "pb:tank",
+      "traits": [
+        "pb:sloped_armour"
+      ],
+      "stats": {
+        "weight_kg": 0
+      }
+    }
+  ]
+}

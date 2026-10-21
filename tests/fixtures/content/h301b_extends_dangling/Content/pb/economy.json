@@ -1,0 +1,17 @@
+{
+  "format": "pb-content/economy/1",
+  "upkeep_money_per_unit_per_month": 1,
+  "draft_per_mille": 1000,
+  "dispersed_yield_per_hex": {
+    "coal": 100,
+    "iron": 100,
+    "steel": 150,
+    "oil": 150,
+    "agriculture": 10
+  },
+  "seed_months": {
+    "money": 10,
+    "manpower": 10,
+    "resource": 6
+  }
+}

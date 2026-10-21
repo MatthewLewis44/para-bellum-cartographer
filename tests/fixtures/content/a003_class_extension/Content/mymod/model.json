@@ -1,0 +1,30 @@
+{
+  "format": "pb-content/model/1",
+  "models": [
+    {
+      "id": "mymod:t34_85",
+      "class": "pb:tank",
+      "name": "T-34-85",
+      "year": 1944,
+      "unlock": null,
+      "supersedes": null,
+      "stats": {
+        "armour_front_mm": 90,
+        "main_gun_mm": 85,
+        "speed_road_kph": 54,
+        "crew": 5
+      },
+      "traits": [
+        "mymod:wet_stowage",
+        "pb:sloped_armour"
+      ],
+      "cost": {
+        "steel": 6,
+        "oil": 1
+      },
+      "production": {
+        "units_per_factory_per_month": 2
+      }
+    }
+  ]
+}

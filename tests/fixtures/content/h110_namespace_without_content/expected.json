@@ -1,0 +1,8 @@
+{
+  "code": "C110",
+  "rule": "namespace-without-content",
+  "file": "mymod/",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "a mymod/ folder holding only a README.md"
+}

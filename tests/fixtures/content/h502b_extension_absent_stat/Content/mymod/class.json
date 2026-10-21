@@ -1,0 +1,11 @@
+{
+  "format": "pb-content/class/1",
+  "classes": [
+    {
+      "extends": "pb:trucks",
+      "traits": [
+        "pb:sloped_armour"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "code": "C109",
+  "rule": "unknown-content-file",
+  "file": "pb/models.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "a misnamed pb/models.json beside the real model.json"
+}

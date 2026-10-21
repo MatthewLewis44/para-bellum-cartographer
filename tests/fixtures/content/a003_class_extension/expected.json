@@ -1,0 +1,6 @@
+{
+  "code": null,
+  "python": "accept",
+  "csharp": "accept",
+  "seeded": "a mod makes its own trait legal on the shipped pb:tank with { extends, traits } and builds a tank carrying it; refused with C501 without the extension"
+}
