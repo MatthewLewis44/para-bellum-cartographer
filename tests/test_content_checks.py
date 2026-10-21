@@ -28,7 +28,11 @@ cross-check: both implementations must agree on WHY each file is wrong.
      default C:/UnityProjects/ParaBellum), its Content/schemas/ and its vendored
      hostile set (Assets/Tests/EditMode/Fixtures/content, .meta ignored) must
      equal ours byte for byte (line endings normalised), and its real Content/
-     must pass the checker. Both trees are printed with their SHA and whether the
+     must pass the checker. When both measured trees are clean it compares the
+     EXACT COMMITTED BLOBS at each HEAD (ls-tree + cat-file), with no line-ending
+     normalisation: git archive and the working tree both convert line endings, so
+     neither is the bytes the repositories hold. Only a dirty tree falls back to
+     normalised working-tree reads, and the method is printed. Both trees are printed with their SHA and whether the
      working tree differs from it (D24), so a red result during a handover is
      readable as a pending handover rather than a broken instrument. If the game repository is absent, or has not vendored the
      schemas yet, this prints a LOUD SKIP rather than a silent pass.
@@ -74,6 +78,32 @@ def tree_of(path: Path, *scope: str) -> str:
     n = len([ln for ln in dirty.splitlines() if ln.strip()])
     state = "clean" if not n else f"WORKING TREE differs from HEAD in {n} path(s)"
     return f"{path} @ {sha} ({state}{' under ' + ', '.join(scope) if scope else ''})"
+
+
+def _git(repo: Path, *args, binary=False):
+    r = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=not binary,
+                       **({} if binary else {"encoding": "utf-8"}))
+    return r.stdout if r.returncode == 0 else None
+
+
+def _is_clean(repo: Path, *scope: str) -> bool:
+    out = _git(repo, "status", "--porcelain", "--", *scope)
+    return out is not None and not out.strip()
+
+
+def committed_blobs(repo: Path, prefix: str) -> dict[str, bytes]:
+    """Every file under prefix AT HEAD, as the COMMITTED BLOB (ls-tree + cat-file).
+    Not git archive and not the working tree: both of those apply line-ending
+    conversion (core.autocrlf, .gitattributes eol), so their bytes are not what the
+    repository holds. Unity's .meta sidecars are ignored."""
+    out = _git(repo, "ls-tree", "-r", "HEAD", "--", prefix) or ""
+    files = {}
+    for line in out.splitlines():
+        meta, path = line.split("\t", 1)
+        _, kind, sha = meta.split()
+        if kind == "blob" and not path.endswith(".meta"):
+            files[path[len(prefix):].lstrip("/")] = _git(repo, "cat-file", "blob", sha, binary=True)
+    return files
 
 
 def _tree_files(root: Path) -> dict[str, bytes]:
@@ -296,16 +326,36 @@ def main() -> int:
         print(f"  SKIP  !!! {game_schemas} does not exist yet: the schemas are not vendored into "
               f"the game. NO DRIFT CHECK RAN.")
     else:
-        mine = {p.name: _lf(p.read_bytes()) for p in contract_files()}
-        theirs = {p.name: _lf(p.read_bytes()) for p in game_schemas.iterdir() if p.is_file()
-                  and (p.name.endswith(".schema.json") or p.name == cc.RULE_CODES_FILE.name)}
+        # EXACT COMMITTED BYTES when both measured trees are clean: the blobs at each
+        # HEAD, compared with NO normalisation. Only a dirty tree (a handover in flight,
+        # uncommitted work) falls back to working-tree reads with line endings
+        # normalised, and the method used is printed either way.
+        mine_scope = ("content", "tests/fixtures/content")
+        game_scope = ("Assets/StreamingAssets/Content", "Assets/Tests/EditMode/Fixtures/content")
+        exact = _is_clean(ROOT, *mine_scope) and _is_clean(unity, *game_scope)
+        print("  METHOD " + ("EXACT committed blobs at both HEADs (ls-tree + cat-file), no line-ending "
+                             "normalisation" if exact else
+                             "working-tree files, line endings normalised (a measured tree is dirty)"))
+        names = {p.name for p in contract_files()}
+        if exact:
+            mine = {k: v for k, v in committed_blobs(ROOT, "content/schemas").items() if k in names}
+            theirs = {k: v for k, v in committed_blobs(unity, "Assets/StreamingAssets/Content/schemas").items()
+                      if k.endswith(".schema.json") or k == cc.RULE_CODES_FILE.name}
+        else:
+            mine = {p.name: _lf(p.read_bytes()) for p in contract_files()}
+            theirs = {p.name: _lf(p.read_bytes()) for p in game_schemas.iterdir() if p.is_file()
+                      and (p.name.endswith(".schema.json") or p.name == cc.RULE_CODES_FILE.name)}
         print(f"  TREE  compared (the game): "
               f"{tree_of(unity, 'Assets/StreamingAssets/Content', 'Assets/Tests/EditMode/Fixtures/content')}")
         drift = sorted(k for k in mine.keys() | theirs.keys() if mine.get(k) != theirs.get(k))
         check("the game's Content/schemas/ (schemas + rule_codes.json) equals the pinned copy",
               not drift, f"{drift}")
         if game_fixtures.exists():
-            mine_f, theirs_f = _tree_files(FIXTURES), _tree_files(game_fixtures)
+            if exact:
+                mine_f = committed_blobs(ROOT, "tests/fixtures/content")
+                theirs_f = committed_blobs(unity, "Assets/Tests/EditMode/Fixtures/content")
+            else:
+                mine_f, theirs_f = _tree_files(FIXTURES), _tree_files(game_fixtures)
             fdrift = sorted(k for k in mine_f.keys() | theirs_f.keys() if mine_f.get(k) != theirs_f.get(k))
             check("the game's vendored hostile set (EditMode Fixtures/content) equals ours",
                   not fdrift, f"{len(fdrift)} file(s) differ, e.g. {fdrift[:3]}")
