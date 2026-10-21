@@ -1,0 +1,6 @@
+{
+  "code": null,
+  "python": "accept",
+  "csharp": "accept",
+  "seeded": "the Mine extracts iron OR coal: deposits [iron, coal], output {iron: 100, coal: 100}. Each deposit names what it produces, so C904 holds"
+}

@@ -236,6 +236,17 @@ def _layer_arithmetic(d):
     light["traits"] += ["pb:plus_a", "pb:plus_b", "pb:minus_a", "pb:minus_b"]
 
 
+# The two-deposit coal mine (D42 option A, ruled by Matthew in D53) is BUILT now that the
+# engine records which deposit each mine works (Unity 0074cd3) and M has vendored
+# (3fc9e28). It is an ACCEPTED fixture (a002_coal_mine, below), not a change to
+# h000_valid's Mine row: the shipped Mine row is the game's file to change (one line),
+# and changing the control set would churn all 50 fixture directories for one row.
+def _coal_mine(d):
+    mine = next(f for f in d[FA]["facilities"] if f["kind"] == "Mine")
+    mine["deposits"] = ["iron", "coal"]
+    mine["output"] = {"iron": 100, "coal": 100}
+
+
 def _class_extension(d):
     """a003: a MOD adds a trait to the SHIPPED class pb:tank and builds a tank that carries it.
     Without the extension this set is refused with C501; with it, it loads."""
@@ -252,6 +263,8 @@ def _class_extension(d):
 
 
 ACCEPTED = [
+    ("a002_coal_mine", "the Mine extracts iron OR coal: deposits [iron, coal], output {iron: 100, coal: 100}. "
+     "Each deposit names what it produces, so C904 holds", _coal_mine),
     ("a003_class_extension", "a mod makes its own trait legal on the shipped pb:tank with { extends, traits } "
      "and builds a tank carrying it; refused with C501 without the extension", _class_extension),
     ("a001_layer_arithmetic",
@@ -265,16 +278,6 @@ ACCEPTED = [
                                                   "traits": [{"id": "mymod:extra_fuel", "modifiers": []}]})),
 ]
 
-# READY, NOT BUILT: the two-deposit coal mine (D42 option A, ruled by Matthew in D53).
-# The engine cannot yet record which deposit a mine works, so shipping two deposits
-# now would be a file claiming a capability the engine lacks (D42 refused that). When
-# PB-SIM12 lands the instance deposit, the order parameter and the save field, move
-# this into ACCEPTED, and the shipped Mine row gains the same one-line change.
-READY_FOR_OPTION_A = [
-    ("a002_coal_mine", "the Mine extracts iron OR coal: deposits [iron, coal], output {iron: 100, coal: 100}",
-     lambda d: (_set([FA, "facilities", 0, "deposits"], ["iron", "coal"])(d),
-                _set([FA, "facilities", 0, "output"], {"iron": 100, "coal": 100})(d))),
-]
 
 
 def write_set(target: Path, docs: dict, raw: dict[str, str] | None = None):
