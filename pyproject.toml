@@ -47,4 +47,5 @@ packages = ["src/wargame_cartographer"]
 [dependency-groups]
 dev = [
     "check-jsonschema<0.38",
+    "openpyxl>=3.1",
 ]
