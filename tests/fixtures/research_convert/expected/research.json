@@ -43,7 +43,10 @@
       "prerequisites_source": null,
       "cost_reducers": [],
       "cost_reducers_source": null,
-      "effect": null,
+      "effect": {
+        "gate_only": true,
+        "modifiers": []
+      },
       "cost": [
         {
           "currency": "research",
@@ -233,7 +236,10 @@
       "exclusive_with": [
         "pb:ql_01"
       ],
-      "effect": null,
+      "effect": {
+        "gate_only": true,
+        "modifiers": []
+      },
       "cost": [
         {
           "currency": "doctrine",
@@ -264,7 +270,10 @@
       "prerequisites": [],
       "prerequisites_source": null,
       "exclusive_with": [],
-      "effect": null,
+      "effect": {
+        "gate_only": true,
+        "modifiers": []
+      },
       "cost": [
         {
           "currency": "doctrine",
@@ -300,7 +309,17 @@
       ],
       "prerequisites_source": "QL-01, focus:test_plan",
       "exclusive_with": [],
-      "effect": null,
+      "effect": {
+        "gate_only": false,
+        "modifiers": [
+          {
+            "target": "facility_output",
+            "scope": "SteelMill",
+            "pool": "steel",
+            "per_mille": 50
+          }
+        ]
+      },
       "cost": [
         {
           "currency": "doctrine",

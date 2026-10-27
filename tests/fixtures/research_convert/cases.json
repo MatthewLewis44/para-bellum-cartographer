@@ -124,6 +124,10 @@
     "effects": {"format": "pb-research-effects/1",
                 "effects": {"AAA-02": {"gate_only": false, "modifiers": [{"target": "design_stat", "scope": "pb:tank", "stat": "armour_front_mm", "per_mille": 100}]},
                             "QL-01": {"gate_only": true, "modifiers": []},
+                            "AAA-01": {"gate_only": true, "modifiers": []},
+                            "QL-02": {"gate_only": true, "modifiers": []},
+                            "BBB-90": {"gate_only": true, "modifiers": []},
+                            "QL-03": {"gate_only": false, "modifiers": [{"target": "facility_output", "scope": "SteelMill", "pool": "steel", "per_mille": 50}]},
                             "BBB-01": {"no_target": {"needs": "test_writer", "reason": "synthetic: no writer target exists for this yet"}}}}
   },
   "refuse": [
