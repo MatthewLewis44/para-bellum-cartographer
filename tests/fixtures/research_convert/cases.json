@@ -84,6 +84,7 @@
     "overlay": {
       "format": "pb-research-overlay/1",
       "nations": {"Northland": {"tag": "NTH", "code": "NO"}, "Southland": {"tag": "STH", "code": "SO"}, "Westland": {"tag": "WST", "code": "WE"}, "Eastland": {"tag": "EST", "code": "EA"}, "Upland": {"tag": "UPL", "code": "UP"}, "Lowland": {"tag": "LOW", "code": "LO"}, "Midland": {"tag": "MID", "code": "MI"}},
+      "design_roles": ["Light tank", "Fighter", "Submarine", "Captured"],
       "category_fold": {"SSS": "BBB"},
       "category_fallback": {"CCC": "AAA"},
       "flags": [{"id": "test_covert_two", "type": "Covert channel"}],
@@ -125,6 +126,10 @@
     {"id": "x113_nations_missing", "code": "X113", "patch": [{"overlay": {"nations": {}}}]},
     {"id": "x113_nation_tag_malformed", "code": "X113", "patch": [{"overlay": {"nations": {"Northland": {"tag": "nth", "code": "NO"}}}}]},
     {"id": "x106_nation_tag_shared", "code": "X106", "patch": [{"overlay": {"nations": {"Northland": {"tag": "NTH", "code": "NO"}, "Southland": {"tag": "NTH", "code": "SO"}, "Westland": {"tag": "WST", "code": "WE"}, "Eastland": {"tag": "EST", "code": "EA"}, "Upland": {"tag": "UPL", "code": "UP"}, "Lowland": {"tag": "LOW", "code": "LO"}, "Midland": {"tag": "MID", "code": "MI"}}}}]},
+    {"id": "x113_design_roles_missing", "code": "X113", "patch": [{"overlay": {"design_roles": []}}]},
+    {"id": "x114_role_reworded_on_one_row", "code": "X114", "patch": [{"set": ["Designs", "Lancer Mk II", "Type / role", "Light Tank"]}]},
+    {"id": "x112_role_declared_unused", "code": "X112", "patch": [{"overlay": {"design_roles": ["Light tank", "Fighter", "Submarine", "Captured", "Airship"]}}]},
+    {"id": "x106_role_declared_twice", "code": "X106", "patch": [{"overlay": {"design_roles": ["Light tank", "Fighter", "Submarine", "Captured", "Fighter"]}}]},
     {"id": "x113_overlay_unknown_key", "code": "X113", "patch": [{"overlay": {"bogus_key": {}}}]},
     {"id": "x113_overlay_format", "code": "X113", "patch": [{"overlay": {"format": "pb-research-overlay/2"}}]},
     {"id": "x113_effect_shape", "code": "X113", "patch": [{"overlay": {"effects": {"AAA-02": {"modifiers": []}}}}]},

@@ -79,7 +79,7 @@ COLUMNS = {
     "Treaties 1930": ("Nation",),
 }
 OVERLAY_FORMAT = "pb-research-overlay/1"
-OVERLAY_KEYS = {"format", "_comment", "nations", "category_fold", "category_fallback", "flags", "flags_held",
+OVERLAY_KEYS = {"format", "_comment", "nations", "design_roles", "category_fold", "category_fallback", "flags", "flags_held",
                 "restrictions", "bureaus", "effects", "readings"}
 LEDGER_FORMAT = "pb-research-ledger/1"
 LEDGER_KINDS = {"designs": "design", "vendors": "vendor"}   # section -> id stem
@@ -453,6 +453,25 @@ class Convert:
             vendors=frozenset(self.vendor_ids), nations=frozenset(self.nations))
         if bad.items:
             return {}
+
+        # The design role vocabulary is CLOSED (D20 follow-up, PB-SIM13): a restriction scopes
+        # on exact role strings, so a role reworded on one row would silently lift it there.
+        # Every row's role must be declared, and every declared role must be used.
+        roles = ov.get("design_roles")
+        if not (isinstance(roles, list) and roles and all(isinstance(x, str) for x in roles)):
+            bad.add("X113", "overlay.design_roles", roles, "a non-empty list of role strings is required")
+            return {}
+        declared = set(roles)
+        used = set()
+        for where, r in sheets["Designs"]:
+            used.add(r["Type / role"])
+            if r["Type / role"] not in declared:
+                bad.add("X114", f"{where} Type / role", r["Type / role"], "not in overlay.design_roles")
+        for x in sorted(declared - used):
+            bad.add("X112", "overlay.design_roles", x, "declared but no design has this role")
+        if len(roles) != len(declared):
+            bad.add("X106", "overlay.design_roles", sorted(x for x in declared if roles.count(x) > 1),
+                    "role declared twice")
 
         readings = ov.get("readings", {})
         effects = ov.get("effects", {})

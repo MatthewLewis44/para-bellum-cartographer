@@ -158,7 +158,7 @@ def main() -> int:
         ids_before = {p["name"]: p["id"] for p in research["projects"] if p["kind"] == "design"}
 
         # 3. append-only mint
-        grown = apply(CASES["base"], [{"add_row": ["Designs", ["Midland", "Armour", "Tankette", "Wren A",
+        grown = apply(CASES["base"], [{"add_row": ["Designs", ["Midland", "Armour", "Light tank", "Wren A",
                                                               None, 1932, "import:Oakfield-Marsh", None, None,
                                                               None, None, "COND", "prose"]]}])
         d3 = d / "grow"
