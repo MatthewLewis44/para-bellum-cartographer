@@ -215,6 +215,9 @@ def main() -> int:
               json.dumps(kinds))
         check("ships/year declared, never coerced", projects["AAA-01"]["year"] is None
               and projects["AAA-01"]["year_declared"] == "base")
+        no_route = [x for x in research["restrictions"] if x["nation"] == "MID"]
+        check("ships/a restriction with no covert route ships lifted_by null", no_route ==
+              [{"nation": "MID", "scope": {"category": "pb:aaa"}, "lifted_by": None}], json.dumps(no_route))
         bureaus = {b["authored_id"]: b for b in json.loads(produced["bureau.json"])["bureaus"]}
         check("ships/roster cut is a flag", len(bureaus) == 4 and bureaus["DE_OSTWERK"]["capacity"] == 2
               and bureaus["DE_KESSEL"]["active"] is False and bureaus["DE_KESSEL"]["capacity"] is None)

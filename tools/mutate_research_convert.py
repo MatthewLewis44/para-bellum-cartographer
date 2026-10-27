@@ -64,6 +64,10 @@ MUTATIONS = (
     ("M13 the design role vocabulary left open",
      'if r["Type / role"] not in declared:',
      "if False:"),
+    ("M14 a restriction with no covert route dropped as if nothing restricted",
+     "            out.append({\"nation\": self.nations[x[\"nation\"]][0], \"scope\": scope,",
+     "            if lifted is None:\n                continue\n"
+     "            out.append({\"nation\": self.nations[x[\"nation\"]][0], \"scope\": scope,"),
     ("M12 a refused run still writes its files",
      "    if bad.items:\n        print(f\"REFUSED",
      "    if bad.items and not files:\n        print(f\"REFUSED"),

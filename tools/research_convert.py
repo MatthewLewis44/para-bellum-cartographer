@@ -673,10 +673,13 @@ class Convert:
             else:
                 bad.add("X113", where, kind, "scope is category or design_types")
                 continue
-            if x["lifted_by"] not in known_flags:
-                bad.add("X112", where, x["lifted_by"], "not a declared flag")
+            # null = no covert channel exists: only the treaty's end lifts it (a deferred Focus)
+            lifted = x["lifted_by"]
+            if lifted is not None and lifted not in known_flags:
+                bad.add("X112", where, lifted, "not a declared flag (null if no covert channel exists)")
                 continue
-            out.append({"nation": self.nations[x["nation"]][0], "scope": scope, "lifted_by": qualify(x["lifted_by"])})
+            out.append({"nation": self.nations[x["nation"]][0], "scope": scope,
+                        "lifted_by": qualify(lifted) if lifted is not None else None})
         return out
 
 

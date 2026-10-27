@@ -91,7 +91,8 @@
       "flags_held": {"Northland": ["test_covert"]},
       "restrictions": [
         {"nation": "Northland", "scope": {"category": "SSS"}, "lifted_by": "test_covert"},
-        {"nation": "Northland", "scope": {"design_types": ["Submarine", "Light tank"]}, "lifted_by": "test_covert_two"}
+        {"nation": "Northland", "scope": {"design_types": ["Submarine", "Light tank"]}, "lifted_by": "test_covert_two"},
+        {"nation": "Midland", "scope": {"category": "AAA"}, "lifted_by": null}
       ],
       "bureaus": {"DE_OSTWERK": {"active": true, "capacity": 2}, "DE_KESSEL": {"active": false}},
       "effects": {"AAA-02": {"gate_only": false, "modifiers": [{"target": "design_stat", "scope": "pb:tank", "stat": "armour_front_mm", "per_mille": 100}]},
@@ -121,6 +122,7 @@
     {"id": "x111_capacity_zero", "code": "X111", "patch": [{"overlay": {"bureaus": {"DE_OSTWERK": {"active": true, "capacity": 0}}}}]},
     {"id": "x112_overlay_unknown_bureau", "code": "X112", "patch": [{"overlay": {"bureaus": {"DE_NOBODY": {"active": false}}}}]},
     {"id": "x112_restriction_unknown_type", "code": "X112", "patch": [{"overlay": {"restrictions": [{"nation": "Northland", "scope": {"design_types": ["Airship"]}, "lifted_by": "test_covert"}]}}]},
+    {"id": "x112_restriction_unknown_flag", "code": "X112", "patch": [{"overlay": {"restrictions": [{"nation": "Northland", "scope": {"category": "AAA"}, "lifted_by": "test_nothing"}]}}]},
     {"id": "x112_flags_held_unknown_flag", "code": "X112", "patch": [{"overlay": {"flags_held": {"Northland": ["test_nothing"]}}}]},
     {"id": "x112_effect_unknown_id", "code": "X112", "patch": [{"overlay": {"effects": {"ZZ-99": {"gate_only": true, "modifiers": []}}}}]},
     {"id": "x113_nations_missing", "code": "X113", "patch": [{"overlay": {"nations": {}}}]},

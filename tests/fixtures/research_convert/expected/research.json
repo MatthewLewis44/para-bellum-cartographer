@@ -584,6 +584,13 @@
         ]
       },
       "lifted_by": "pb:test_covert_two"
+    },
+    {
+      "nation": "MID",
+      "scope": {
+        "category": "pb:aaa"
+      },
+      "lifted_by": null
     }
   ]
 }
