@@ -23,6 +23,8 @@
       "summary": "A .json file in a namespace folder is not a content file name (e.g. models.json for model.json). Structural: nothing in a namespace folder is silently ignored." },
     { "code": "C110", "rule": "namespace-without-content", "layer": "schema", "python": "refuse", "csharp": "refuse",
       "summary": "A namespace folder holds no content file, so it defines nothing. Structural." },
+    { "code": "C111", "rule": "atom-value-whitespace", "layer": "schema", "python": "refuse", "csharp": "refuse",
+      "summary": "A research atom's value (or an xp atom's branch) has leading or trailing whitespace, by Unicode's definition. Checked on the VALUE, for every atom kind, ahead of resolution, and reported INSTEAD of the C106 or C301 the padded value would otherwise cause: atom values are matched exactly and never trimmed, so the refusal names the real cause (D9, ruled for every kind). Structural." },
     { "code": "C201", "rule": "unknown-namespace", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
       "summary": "A reference names a namespace that no Content/<namespace>/ folder declares." },
     { "code": "C202", "rule": "id-outside-namespace", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
@@ -39,6 +41,8 @@
       "summary": "The supersedes chain loops, including a model superseding itself." },
     { "code": "C303", "rule": "supersedes-across-class", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
       "summary": "A model supersedes a model of a different class." },
+    { "code": "C304", "rule": "exclusive-pair-asymmetric", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
+      "summary": "A doctrine lists another in exclusive_with that does not list it back, or lists itself. Exclusive pairs displace each other on adoption, so a one-sided pair would displace in one direction only (validator R7)." },
     { "code": "C401", "rule": "stat-not-on-class", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
       "summary": "A stat key is not on the stat surface of the entry's class." },
     { "code": "C402", "rule": "unknown-stat-key", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
@@ -68,6 +72,9 @@
       "summary": "Under the shipped power model, the authored 1930 base leaves a nation with supply below draw. The C# content READER accepts it: it has no map and cannot compute this. Brownout is a legal modelled state, so the C# START STATE loads and reports it. The pipeline gate refuses it for OUR shipped files. C#'s synthetic test proves the mechanism; the pipeline gate proves the shipped base." },
     { "code": "C802", "rule": "shipped-content-unnamed", "layer": "project-invariant", "python": "refuse", "csharp": "report",
       "summary": "A pb: entry has no name, or a blank one. Mods may omit names; shipped content may not." },
+    { "code": "C803", "rule": "line-design-not-held", "layer": "engine", "python": "n/a", "csharp": "accept",
+      "csharp_elsewhere": { "layer": "start_state", "does": "report", "status": "specified (D19), wired by PB-SIM13 with the vendoring round: GameState.StartStateReports, file pb/research.json, path $" },
+      "summary": "A v9 save loads a production line whose design the nation does not hold (research holdings load empty from v9). The load REPORTS it and never refuses: the save stays playable. It concerns a save, not a content file, so no content fixture can express it and the Python checker cannot see it." },
     { "code": "C901", "rule": "template-missing-unit-type", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
       "summary": "An engine unit type has no template row." },
     { "code": "C902", "rule": "template-class-has-no-design", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
@@ -83,6 +90,8 @@
     { "code": "C907", "rule": "rules-file-defined-twice", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
       "summary": "rates.json, combat.json or economy.json is defined in a second namespace." },
     { "code": "C908", "rule": "rules-file-missing", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
-      "summary": "rates.json, combat.json or economy.json is absent from every namespace." }
+      "summary": "rates.json, combat.json or economy.json is absent from every namespace." },
+    { "code": "C909", "rule": "slice-row-unencoded", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
+      "summary": "A technology or doctrine in the R11 subject has a null effect. The subject: the prerequisite closure of every model whose unlock is a design study (technology, doctrine and design atoms, plus variant_of, recursively), plus every start holding, plus every doctrine with a non-empty exclusive_with. A declared gate_only or no_target IS encoded; only null is refused. The detail names the subject size, so an empty subject is visible (D32). The load-time backstop for validator R11 (D33, D37)." }
   ]
 }

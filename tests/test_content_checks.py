@@ -61,7 +61,10 @@ PIN = ROOT / "content" / "SHA256SUMS"
 SNAPSHOT = FIXTURES / "h000_valid.resolved.txt"
 # Codes with a register entry but no fixture yet, and why. Anything else
 # uncovered fails check 2.
-PENDING: dict[str, str] = {}   # every code in the register now has a fixture
+PENDING: dict[str, str] = {
+    "C803": "it concerns a SAVE (a v9 production line on a design the nation does not hold), not a content "
+            "file, so no content fixture can express it; the C# start-state test proves it",
+}
 
 
 def tree_of(path: Path, *scope: str) -> str:
@@ -221,6 +224,8 @@ def main() -> int:
     ok = cli("--schemafile", str(SCHEMAS / "vocabulary.schema.json"), str(content / "vocabulary.json"))
     for stem, _ in cc.TYPES:
         ok &= cli("--schemafile", str(SCHEMAS / f"{stem}.schema.json"), str(content / "pb" / f"{stem}.json"))
+    ok &= cli("--schemafile", str(SCHEMAS / "research.schema.json"), str(content / "pb" / "research.json"))
+    ok &= cli("--schemafile", str(SCHEMAS / "model.schema.json"), str(content / "pb" / "design_model.json"))
     check("check-jsonschema accepts the control set, file by file", ok)
     bad = FIXTURES / "h101_missing_key" / "Content" / "pb" / "model.json"
     check("check-jsonschema REFUSES the missing-key fixture",

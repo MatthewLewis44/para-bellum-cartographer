@@ -46,12 +46,16 @@ SCHEMA_DIR = ROOT / "content" / "schemas"
 # Content types: (file stem, collection key). Content/<namespace>/<stem>.json.
 TYPES = (("class", "classes"), ("model", "models"), ("variant", "variants"),
          ("trait", "traits"), ("template", "templates"),
-         ("facility", "facilities"), ("settlement", "settlements"))
+         ("facility", "facilities"), ("settlement", "settlements"),
+         ("bureau", "bureaus"), ("vendor", "vendors"))
 # Singleton rules files: flat objects, exactly ONE across every namespace (C907, C908).
 SINGLETONS = ("rates", "combat", "economy")
 # Types whose rows are keyed on an engine name (unit type, facility kind, settlement type), not an id.
 UNKEYED_TYPES = ("template", "facility", "settlement")
-CONTENT_FILES = tuple(f"{t}.json" for t, _ in TYPES) + tuple(f"{t}.json" for t in SINGLETONS)
+# Sprint 13: the research database (research.json, ONE per content set: C907) and the GENERATED models
+# (design_model.json, D28: model rows written by the pipeline, kept apart from the hand-authored model.json).
+RESEARCH_FILE, DESIGN_MODEL_FILE = "research.json", "design_model.json"
+CONTENT_FILES = tuple(f"{t}.json" for t, _ in TYPES) + tuple(f"{t}.json" for t in SINGLETONS)     + (RESEARCH_FILE, DESIGN_MODEL_FILE)
 SCHEMAS_FOLDER = "schemas"   # Content/schemas/ is the contract's machine form, not a namespace
 VOCABULARY_FILE = "vocabulary.json"
 RESERVED_NAMESPACE = "player"   # player designs live in the save, never on disk
@@ -171,6 +175,38 @@ def _schema_problems(rel: str, stem: str, doc) -> list[Problem]:
     return out
 
 
+ATOM_FIELDS = ("prerequisites", "cost_reducers", "acquisition", "doctrine_role")
+
+
+def _padded(s) -> bool:
+    return isinstance(s, str) and s != "" and (s[0].isspace() or s[-1].isspace())
+
+
+def _whitespace_first(rel: str, doc, errs: list[Problem]) -> list[Problem]:
+    """D9, ruled for EVERY atom kind: an atom value (or an xp branch) with leading or trailing whitespace
+    is refused by its own code, C111, AHEAD of resolution, and that is the only problem reported for the
+    value. A padded id would otherwise read as a malformed id (C106) and a padded nation tag as an unknown
+    nation (C301): correct refusals, wrong diagnoses. Walks the raw document defensively, since it may
+    have failed the schema elsewhere."""
+    padded = []
+    projects = doc.get("projects") if isinstance(doc, dict) else None
+    for i, p in enumerate(projects if isinstance(projects, list) else []):
+        for f in ATOM_FIELDS:
+            clauses = p.get(f) if isinstance(p, dict) else None
+            for c, clause in enumerate(clauses if isinstance(clauses, list) else []):
+                for a, atom in enumerate(clause if isinstance(clause, list) else []):
+                    v = atom.get("value") if isinstance(atom, dict) else None
+                    if _padded(v):
+                        padded.append(_json_path(["projects", i, f, c, a, "value"]))
+                    elif isinstance(v, dict) and _padded(v.get("branch")):
+                        padded.append(_json_path(["projects", i, f, c, a, "value", "branch"]))
+    if not padded:
+        return errs
+    kept = [e for e in errs if e.path not in padded]
+    return kept + [Problem(rel, "C111", path, "leading or trailing whitespace: atom values are matched exactly, "
+                                             "never trimmed") for path in padded]
+
+
 def _ns(id_: str) -> str:
     return id_.split(":", 1)[0]
 
@@ -189,6 +225,7 @@ class ContentSet:
         self.facility_headers: list[tuple[str, dict]] = []
         self.extensions: list[tuple[str, str, int, dict]] = []   # class.json entries carrying "extends"
         self.namespaces: set[str] = set()
+        self.research: list[tuple[str, str, dict]] = []   # (file, namespace, research.json document)
         self._load()
         # Structure first. If ANY file fails the schema layer, its entries are
         # missing from the set, and every cross-file rule would cascade from that
@@ -209,8 +246,40 @@ class ContentSet:
             self.problems.append(Problem(rel, "C108", "$", str(e)))
             return rel, None
         errs = _schema_problems(rel, stem, doc)
+        if stem == "research":
+            errs = _whitespace_first(rel, doc, errs)
         self.problems += errs
         return rel, (None if errs else doc)
+
+    def _research_shape(self, rel: str, doc: dict) -> None:
+        """research.json rules a schema cannot express, checked in the STRUCTURAL phase (C1xx) exactly
+        where the game's reader checks them (ContentReader.Research.cs): a cost reason that matches its
+        source (D19), an effect whose form agrees with itself (E5, and no_target's one-line reason and
+        needed target), and the era multiplier's floor and ordering (D24)."""
+        def add(code, path, detail):
+            self.problems.append(Problem(rel, code, _json_path(path), detail))
+        for i, p in enumerate(doc["projects"]):
+            src, reason = p["cost_source"], p["cost_reason"]
+            if src == "override" and not reason:
+                add("C101", ["projects", i, "cost_reason"], "an overridden cost carries its one-line reason")
+            elif src == "rule" and reason is not None:
+                add("C102", ["projects", i, "cost_reason"], "a rule-costed row carries no reason")
+            e = p.get("effect")
+            if isinstance(e, dict) and "no_target" in e:
+                for k in ("needs", "reason"):
+                    if not e["no_target"][k].strip():
+                        add("C101", ["projects", i, "effect", "no_target", k], f"a no_target effect names its {k}")
+            elif isinstance(e, dict):
+                if e["gate_only"] and e["modifiers"]:
+                    add("C102", ["projects", i, "effect", "modifiers"], "a gate-only effect writes no modifiers")
+                elif not e["gate_only"] and not e["modifiers"]:
+                    add("C102", ["projects", i, "effect", "modifiers"],
+                        "an effect that is not gate-only writes at least one modifier")
+        g, c = doc["era_multiplier"]["growth_per_year_per_mille"], doc["era_multiplier"]["cap_per_mille"]
+        if g < 1000:
+            add("C102", ["era_multiplier", "growth_per_year_per_mille"], f"{g} is below 1000: M(era) never discounts")
+        elif c < g:
+            add("C102", ["era_multiplier", "cap_per_mille"], f"{c} is below the growth {g}")
 
     def _load(self):
         vpath = self.root / VOCABULARY_FILE
@@ -247,6 +316,12 @@ class ContentSet:
                 if stem == "facility":
                     self.facility_headers.append((rel, doc))
                 for i, e in enumerate(doc[key]):
+                    if stem == "model" and "production_template" in e:
+                        self.problems.append(Problem(rel, "C105", _json_path(["models", i, "production_template"]),
+                                                     "only a generated model (design_model.json) names a template"))
+                    if stem == "bureau" and e["active"] and e["capacity"] is None:
+                        self.problems.append(Problem(rel, "C101", _json_path(["bureaus", i, "capacity"]),
+                                                     "an active bureau carries its capacity (D3)"))
                     if stem == "class" and "extends" in e:
                         self.extensions.append((rel, ns, i, e))
                     else:
@@ -257,6 +332,21 @@ class ContentSet:
                     rel, doc = self._read(f, stem)
                     if doc is not None:
                         self.singletons[stem].append((rel, doc))
+            f = ns_dir / DESIGN_MODEL_FILE
+            if f.exists():
+                rel, doc = self._read(f, "model")   # the same rows as model.json (D28)
+                if doc is not None:
+                    for i, e in enumerate(doc["models"]):
+                        if "production_template" not in e:
+                            self.problems.append(Problem(rel, "C101", _json_path(["models", i, "production_template"]),
+                                                         "a generated model names the template it copied (D29)"))
+                        self.entries["model"].append((rel, ns, i, e))
+            f = ns_dir / RESEARCH_FILE
+            if f.exists():
+                rel, doc = self._read(f, "research")
+                if doc is not None:
+                    self._research_shape(rel, doc)
+                    self.research.append((rel, ns, doc))
 
     # -- the cross-file layer ----------------------------------------------------------
 
@@ -314,6 +404,8 @@ class ContentSet:
             return False
 
         classes, models, variants, traits = (self.by_id[s] for s in ("class", "model", "variant", "trait"))
+        # A model's unlock resolves against the research projects of ANY kind (D28).
+        self.by_id["research"] = self._research_identity()
 
         # Classes: stat surface in the vocabulary; legal traits exist and fit the surface.
         for rel, _, i, c in self.entries["class"]:
@@ -464,6 +556,225 @@ class ContentSet:
                 self._add(any_template_file or "template.json", "C901", "$.templates",
                           f'no template for unit type "{ut}"')
         self._facilities_and_settlements(pools)
+        self._research_graph(pools)
+
+    # -- the research database (Sprint 13), mirroring ContentReader.Research.cs -----------
+
+    def _research_identity(self) -> dict[str, dict]:
+        """research.json's own ids (categories, projects, flags, treaties): well formed (schema, C106), in
+        the file's namespace (C202), not reserved (C204), defined once (C203). Returns the projects by id."""
+        self.r_categories, self.r_projects, self.r_flags, self.r_treaties = {}, {}, {}, {}
+        for rel, ns, doc in self.research:
+            for table, key, what in ((self.r_categories, "categories", "category"), (self.r_projects, "projects", "project")):
+                for i, e in enumerate(doc[key]):
+                    self._own_id(rel, ns, [key, i], e, table, what)
+            for table, key, what in ((self.r_flags, "flags", "flag"), (self.r_treaties, "treaties", "treaty")):
+                for i, e in enumerate(doc["registries"][key]):
+                    self._own_id(rel, ns, ["registries", key, i], e, table, what)
+        return self.r_projects
+
+    def _own_id(self, rel, ns, path, e, table, what):
+        id_ = e["id"]
+        if _ns(id_) == RESERVED_NAMESPACE or ns == RESERVED_NAMESPACE:
+            self._add(rel, "C204", _json_path([*path, "id"]), f'"{id_}": the player namespace is reserved for the save')
+        elif _ns(id_) != ns:
+            self._add(rel, "C202", _json_path([*path, "id"]), f'"{id_}" is defined in Content/{ns}/')
+        if id_ in table:
+            self._add(rel, "C203", _json_path([*path, "id"]), f'{what} "{id_}" is defined twice')
+            return
+        table[id_] = e
+
+    def _research_graph(self, pools: set[str]) -> None:
+        """Every research reference resolves to the registry its kind names (C301, or C201 first for an
+        undeclared namespace); costs name research, doctrine or an engine pool (C403), each once (C203);
+        exclusive doctrine pairs are symmetric (C304); one research.json per content set (C907)."""
+        if not self.research:
+            return
+        bureaus, vendors = self.by_id["bureau"], self.by_id["vendor"]
+        cats, projects, flags, treaties = self.r_categories, self.r_projects, self.r_flags, self.r_treaties
+        fielded, focus, xp, start = set(), set(), set(), {}
+        for _, _, doc in self.research:
+            reg = doc["registries"]
+            fielded |= set(reg["fielded"])
+            focus |= set(reg["focus"])
+            xp |= {(x["branch"], x["tier"]) for x in reg["xp"]}
+            for s in doc["start"]:
+                start.setdefault(s["nation"], s)
+
+        def ref(rel, path, id_, exists, what) -> bool:
+            if exists:
+                return True
+            if _ns(id_) not in self.namespaces:
+                self._add(rel, "C201", _json_path(path),
+                          f'"{id_}": no Content/{_ns(id_)}/ folder declares namespace {_ns(id_)}')
+            else:
+                self._add(rel, "C301", _json_path(path), f'"{id_}" is not a defined {what}')
+            return False
+
+        def is_kind(id_, kind):
+            return id_ in projects and projects[id_]["kind"] == kind
+
+        def atoms(rel, path, cnf):
+            for c, clause in enumerate(cnf):
+                for a, atom in enumerate(clause):
+                    k, v, at = atom["kind"], atom["value"], [*path, c, a, "value"]
+                    if k in ("technology", "doctrine", "design"):
+                        ref(rel, at, v, is_kind(v, k), k)
+                    elif k == "flag":
+                        ref(rel, at, v, v in flags, "flag")
+                    elif k == "fielded":
+                        ref(rel, at, v, v in fielded, "fielded entry")
+                    elif k == "focus":
+                        ref(rel, at, v, v in focus, "focus")
+                    elif k in ("bureau", "seized"):
+                        ref(rel, at, v, v in bureaus, "bureau")
+                    elif k in ("licence", "import"):
+                        ref(rel, at, v, v in bureaus or v in vendors, "bureau or vendor")
+                    elif k == "captured":
+                        if v not in start:
+                            self._add(rel, "C301", _json_path(at), f'"{v}" is not a nation with a start row')
+                    elif k == "xp":
+                        if (v["branch"], v["tier"]) not in xp:
+                            self._add(rel, "C301", _json_path(at), f"{v['branch']}:{v['tier']} is not a defined xp tier")
+
+        for rel, ns, doc in self.research:
+            for i, c in enumerate(doc["categories"]):
+                for k in ("folded_into", "fallback_into"):
+                    if c[k] is not None:
+                        ref(rel, ["categories", i, k], c[k], c[k] in cats, "category")
+            for i, p in enumerate(doc["projects"]):
+                base = ["projects", i]
+                atoms(rel, [*base, "prerequisites"], p["prerequisites"])
+                if p["kind"] != "doctrine":
+                    atoms(rel, [*base, "cost_reducers"], p["cost_reducers"])
+                seen = set()
+                for j, cost in enumerate(p["cost"]):
+                    cur = cost["currency"]
+                    if cur not in ("research", "doctrine") and cur not in pools:
+                        self._add(rel, "C403", _json_path([*base, "cost", j, "currency"]),
+                                  f'"{cur}" is neither research, doctrine nor an engine pool')
+                    elif cur in seen:
+                        self._add(rel, "C203", _json_path([*base, "cost", j, "currency"]), f'"{cur}" is listed twice')
+                    seen.add(cur)
+                if p["kind"] == "technology":
+                    ref(rel, [*base, "category"], p["category"], p["category"] in cats, "category")
+                elif p["kind"] == "doctrine":
+                    for j, x in enumerate(p["exclusive_with"]):
+                        if ref(rel, [*base, "exclusive_with", j], x, is_kind(x, "doctrine"), "doctrine"):
+                            if x == p["id"]:
+                                self._add(rel, "C304", _json_path([*base, "exclusive_with", j]),
+                                          f'"{x}" is exclusive with itself')
+                            elif p["id"] not in projects[x]["exclusive_with"]:
+                                self._add(rel, "C304", _json_path([*base, "exclusive_with", j]),
+                                          f'"{p["id"]}" is exclusive with "{x}", which does not name it back')
+                else:
+                    atoms(rel, [*base, "acquisition"], p["acquisition"])
+                    atoms(rel, [*base, "doctrine_role"], p["doctrine_role"])
+                    if p["variant_of"] is not None:
+                        ref(rel, [*base, "variant_of"], p["variant_of"], is_kind(p["variant_of"], "design"), "design")
+                    if p["lead"] is not None:
+                        ref(rel, [*base, "lead"], p["lead"], p["lead"] in bureaus, "bureau")
+                    for j, b in enumerate(p["producers"]):
+                        ref(rel, [*base, "producers", j], b, b in bureaus, "bureau")
+            for i, s in enumerate(doc["start"]):
+                for key, kind in (("technologies", "technology"), ("doctrines", "doctrine"), ("designs", "design")):
+                    for j, x in enumerate(s[key]):
+                        ref(rel, ["start", i, key, j], x, is_kind(x, kind), kind)
+                for j, x in enumerate(s["flags"]):
+                    ref(rel, ["start", i, "flags", j], x, x in flags, "flag")
+            for i, r in enumerate(doc["restrictions"]):
+                ref(rel, ["restrictions", i, "treaty"], r["treaty"], r["treaty"] in treaties, "treaty")
+                if "category" in r["scope"]:
+                    ref(rel, ["restrictions", i, "scope", "category"], r["scope"]["category"],
+                        r["scope"]["category"] in cats, "category")
+                if r["lifted_by"] is not None:
+                    ref(rel, ["restrictions", i, "lifted_by"], r["lifted_by"], r["lifted_by"] in flags, "flag")
+        self._effect_targets(ref)
+        self._slice_encoded()
+        for rel, _, i, b in self.entries["bureau"]:
+            ref(rel, ["bureaus", i, "primary"], b["primary"], b["primary"] in cats, "category")
+            for j, c in enumerate(b["secondary"]):
+                ref(rel, ["bureaus", i, "secondary", j], c, c in cats, "category")
+        for rel, _, i, v in self.entries["vendor"]:
+            for j, c in enumerate(v["fields"]):
+                ref(rel, ["vendors", i, "fields", j], c, c in cats, "category")
+        self._blame_duplicates([r for r, _, _ in self.research], "C907", "$",
+                               lambda others: f"research.json is also defined in {', '.join(others)}: "
+                                              f"there is one per content set")
+
+    def _effect_targets(self, ref) -> None:
+        """TARGET VALIDITY (D37): R11 is "non-null AND target-valid". An effect naming a stat its class lacks
+        resolves, passes a non-null check, never lands, and says nothing. So every modifier's target must exist:
+        the class (C106, C201/C301) and a stat on its surface (C402, C401); or an engine facility kind (C405)
+        with a pool it outputs (C403), or, for power_supply, a kind that supplies power (C405). The order and
+        codes are the game reader's (ContentReader.Research.cs, Unity 93bed30)."""
+        classes, stat_keys = self.by_id["class"], set(self.vocab.get("stat_keys", []))
+        kinds, pools = set(self.vocab.get("facility_kinds", [])), set(self.vocab.get("pools", []))
+        rows = {f["kind"]: f for _, _, _, f in self.entries["facility"]}
+        id_re = re.compile(r"^[a-z0-9_]+:[a-z0-9_]+$")
+        for rel, _, doc in self.research:
+            for i, pr in enumerate(doc["projects"]):
+                e = pr.get("effect")
+                if not isinstance(e, dict) or "modifiers" not in e:
+                    continue
+                for j, m in enumerate(e["modifiers"]):
+                    at = ["projects", i, "effect", "modifiers", j]
+                    if m["target"] == "design_stat":
+                        if not id_re.match(m["scope"]):
+                            self._add(rel, "C106", _json_path([*at, "scope"]), f'"{m["scope"]}" is not namespace:name')
+                            continue
+                        if not ref(rel, [*at, "scope"], m["scope"], m["scope"] in classes, "class"):
+                            continue
+                        if m["stat"] not in stat_keys:
+                            self._add(rel, "C402", _json_path([*at, "stat"]), f'"{m["stat"]}" is not an engine stat key')
+                        elif m["stat"] not in classes[m["scope"]]["stats"]:
+                            self._add(rel, "C401", _json_path([*at, "stat"]), f'"{m["stat"]}" is not on class "{m["scope"]}"')
+                        continue
+                    if m["scope"] not in kinds:
+                        self._add(rel, "C405", _json_path([*at, "scope"]), f'"{m["scope"]}" is not an engine facility kind')
+                        continue
+                    row = rows.get(m["scope"])
+                    if row is None:
+                        continue   # C903 reports the missing row
+                    if m["target"] == "facility_output":
+                        if m["pool"] not in pools:
+                            self._add(rel, "C403", _json_path([*at, "pool"]), f'"{m["pool"]}" is not an engine pool')
+                        elif m["pool"] not in row["output"]:
+                            self._add(rel, "C403", _json_path([*at, "pool"]), f'{m["scope"]} does not output {m["pool"]}')
+                    elif row["power_supply_per_tier"] <= 0:
+                        self._add(rel, "C405", _json_path([*at, "scope"]), f'{m["scope"]} supplies no power')
+
+    def _slice_encoded(self) -> None:
+        """C909, the load-time backstop for R11 (D33, D37): every technology or doctrine in the R11 SUBJECT has an
+        effect. The subject, as ruled: the prerequisite closure of every model whose unlock is a design study
+        (technology, doctrine and design atoms in prerequisites, plus variant_of, recursively), plus every start
+        holding, plus every doctrine with a non-empty exclusive_with. A declared gate_only or no_target IS encoded;
+        only null is refused. Each refusal names the subject size, so an empty subject is visible (D32)."""
+        projects = self.r_projects
+        seen, stack = set(), [m["unlock"] for m in self.by_id["model"].values()
+                              if m["unlock"] in projects and projects[m["unlock"]]["kind"] == "design"]
+        while stack:
+            pid = stack.pop()
+            if pid in seen or pid not in projects:
+                continue
+            seen.add(pid)
+            p = projects[pid]
+            stack += [a["value"] for c in p["prerequisites"] for a in c if a["kind"] in ("technology", "doctrine", "design")]
+            if p.get("variant_of"):
+                stack.append(p["variant_of"])
+        subject = {pid for pid in seen if projects[pid]["kind"] in ("technology", "doctrine")}
+        for _, _, doc in self.research:
+            for s in doc["start"]:
+                subject |= set(s["technologies"]) | set(s["doctrines"])
+        subject |= {pid for pid, p in projects.items() if p["kind"] == "doctrine" and p["exclusive_with"]}
+        subject &= set(projects)
+        unencoded = sorted(pid for pid in subject if projects[pid]["effect"] is None)
+        self.slice_size, self.slice_unencoded = len(subject), len(unencoded)
+        for rel, _, doc in self.research:
+            for i, p in enumerate(doc["projects"]):
+                if p["id"] in unencoded:
+                    self._add(rel, "C909", _json_path(["projects", i, "effect"]),
+                              f'{len(unencoded)} of {len(subject)} slice rows has no effect: {p["id"]}')
 
     def _blame_duplicates(self, files: list[str], code: str, path: str, detail):
         """A project-wide file defined more than once (C905, C907). ERROR ATTRIBUTION

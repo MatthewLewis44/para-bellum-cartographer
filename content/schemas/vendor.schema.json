@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:vendor:1",
+  "title": "Para Bellum content: off-map vendors",
+  "description": "File: Content/<namespace>/vendor.json. Sellers outside the map that an import: or licence: acquisition may name. Their ids are generated and pinned by the converter's append-only ledger.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "vendors"],
+  "properties": {
+    "format": { "const": "pb-content/vendor/1" },
+    "vendors": { "type": "array", "items": { "$ref": "#/$defs/vendor" } }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9_]+:[a-z0-9_]+$" },
+    "vendor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "country", "fields"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string" },
+        "country": { "type": "string" },
+        "fields": { "description": "Category ids.", "type": "array", "items": { "$ref": "#/$defs/id" } }
+      }
+    }
+  }
+}

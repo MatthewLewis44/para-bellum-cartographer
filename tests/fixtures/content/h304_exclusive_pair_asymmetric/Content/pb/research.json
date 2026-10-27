@@ -1,0 +1,900 @@
+{
+  "format": "pb-content/research/1",
+  "categories": [
+    {
+      "id": "pb:aaa",
+      "authored_id": "AAA",
+      "name": "Alpha works",
+      "folded_into": null,
+      "fallback_into": null
+    },
+    {
+      "id": "pb:bbb",
+      "authored_id": "BBB",
+      "name": "Beta works",
+      "folded_into": null,
+      "fallback_into": null
+    },
+    {
+      "id": "pb:ccc",
+      "authored_id": "CCC",
+      "name": "Gamma works",
+      "folded_into": null,
+      "fallback_into": "pb:aaa"
+    },
+    {
+      "id": "pb:sss",
+      "authored_id": "SSS",
+      "name": "Sigma works",
+      "folded_into": "pb:bbb",
+      "fallback_into": null
+    }
+  ],
+  "projects": [
+    {
+      "id": "pb:aaa_01",
+      "authored_id": "AAA-01",
+      "kind": "technology",
+      "name": "First alpha",
+      "category": "pb:aaa",
+      "year": null,
+      "year_declared": "base",
+      "prerequisites": [],
+      "prerequisites_source": null,
+      "cost_reducers": [],
+      "cost_reducers_source": null,
+      "effect": {
+        "gate_only": true,
+        "modifiers": []
+      },
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 100
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
+    },
+    {
+      "id": "pb:aaa_02",
+      "authored_id": "AAA-02",
+      "kind": "technology",
+      "name": "Second alpha",
+      "category": "pb:aaa",
+      "year": 1931,
+      "year_declared": null,
+      "prerequisites": [
+        [
+          {
+            "kind": "technology",
+            "value": "pb:aaa_01"
+          }
+        ],
+        [
+          {
+            "kind": "doctrine",
+            "value": "pb:bbb_90"
+          }
+        ]
+      ],
+      "prerequisites_source": "AAA-01, BBB-90",
+      "cost_reducers": [],
+      "cost_reducers_source": null,
+      "effect": {
+        "gate_only": false,
+        "modifiers": [
+          {
+            "target": "design_stat",
+            "scope": "pb:tank",
+            "stat": "armour_front_mm",
+            "per_mille": 100
+          }
+        ]
+      },
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 100
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
+    },
+    {
+      "id": "pb:bbb_01",
+      "authored_id": "BBB-01",
+      "kind": "technology",
+      "name": "First beta",
+      "category": "pb:bbb",
+      "year": 1932,
+      "year_declared": null,
+      "prerequisites": [
+        [
+          {
+            "kind": "technology",
+            "value": "pb:aaa_01"
+          }
+        ]
+      ],
+      "prerequisites_source": "AAA-01",
+      "cost_reducers": [
+        [
+          {
+            "kind": "flag",
+            "value": "pb:test_shortage"
+          }
+        ]
+      ],
+      "cost_reducers_source": "flag:test_shortage",
+      "effect": {
+        "no_target": {
+          "needs": "test_writer",
+          "reason": "synthetic: no writer target exists for this yet"
+        }
+      },
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 150
+        }
+      ],
+      "cost_source": "override",
+      "cost_reason": "synthetic: a deliberately dearer row"
+    },
+    {
+      "id": "pb:sss_01",
+      "authored_id": "SSS-01",
+      "kind": "technology",
+      "name": "First sigma",
+      "category": "pb:bbb",
+      "year": 1933,
+      "year_declared": null,
+      "prerequisites": [
+        [
+          {
+            "kind": "technology",
+            "value": "pb:aaa_02"
+          },
+          {
+            "kind": "technology",
+            "value": "pb:bbb_01"
+          }
+        ],
+        [
+          {
+            "kind": "xp",
+            "value": {
+              "branch": "land",
+              "tier": 2
+            }
+          }
+        ]
+      ],
+      "prerequisites_source": "AAA-02 | BBB-01, xp:land:2",
+      "cost_reducers": [],
+      "cost_reducers_source": null,
+      "effect": null,
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 100
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
+    },
+    {
+      "id": "pb:ql_01",
+      "authored_id": "QL-01",
+      "kind": "doctrine",
+      "name": "First drill",
+      "domain": "Land",
+      "branch": "Drill",
+      "year": null,
+      "year_declared": "base",
+      "base_holders": [
+        "NTH",
+        "STH"
+      ],
+      "prerequisites": [],
+      "prerequisites_source": null,
+      "exclusive_with": [
+        "pb:ql_02"
+      ],
+      "effect": {
+        "gate_only": true,
+        "modifiers": []
+      },
+      "cost": [
+        {
+          "currency": "doctrine",
+          "amount": 80
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
+    },
+    {
+      "id": "pb:ql_02",
+      "authored_id": "QL-02",
+      "kind": "doctrine",
+      "name": "Other drill",
+      "domain": "Land",
+      "branch": "Drill",
+      "year": null,
+      "year_declared": "base",
+      "base_holders": [
+        "WST",
+        "EST",
+        "UPL",
+        "LOW",
+        "MID"
+      ],
+      "prerequisites": [],
+      "prerequisites_source": null,
+      "exclusive_with": [],
+      "effect": {
+        "gate_only": true,
+        "modifiers": []
+      },
+      "cost": [
+        {
+          "currency": "doctrine",
+          "amount": 80
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
+    },
+    {
+      "id": "pb:bbb_90",
+      "authored_id": "BBB-90",
+      "kind": "doctrine",
+      "name": "Doctrine with a technology-shaped id",
+      "domain": "Land",
+      "branch": "Drill",
+      "year": null,
+      "year_declared": "base",
+      "base_holders": [
+        "NTH",
+        "STH",
+        "WST",
+        "EST",
+        "UPL",
+        "LOW",
+        "MID"
+      ],
+      "prerequisites": [],
+      "prerequisites_source": null,
+      "exclusive_with": [],
+      "effect": {
+        "gate_only": true,
+        "modifiers": []
+      },
+      "cost": [
+        {
+          "currency": "doctrine",
+          "amount": 80
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
+    },
+    {
+      "id": "pb:ql_03",
+      "authored_id": "QL-03",
+      "kind": "doctrine",
+      "name": "Later drill",
+      "domain": "Land",
+      "branch": "Drill",
+      "year": 1934,
+      "year_declared": null,
+      "base_holders": [],
+      "prerequisites": [
+        [
+          {
+            "kind": "doctrine",
+            "value": "pb:ql_01"
+          }
+        ],
+        [
+          {
+            "kind": "focus",
+            "value": "pb:test_plan"
+          }
+        ]
+      ],
+      "prerequisites_source": "QL-01, focus:test_plan",
+      "exclusive_with": [],
+      "effect": {
+        "gate_only": false,
+        "modifiers": [
+          {
+            "target": "facility_output",
+            "scope": "SteelMill",
+            "pool": "steel",
+            "per_mille": 50
+          }
+        ]
+      },
+      "cost": [
+        {
+          "currency": "doctrine",
+          "amount": 80
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
+    },
+    {
+      "id": "pb:design_0001",
+      "kind": "design",
+      "name": "Lancer Mk I (prototype B)",
+      "nation": "NTH",
+      "domain": "Armour",
+      "role": "Light tank",
+      "variant_of": null,
+      "year": 1931,
+      "year_declared": null,
+      "acquisition": [
+        [
+          {
+            "kind": "bureau",
+            "value": "pb:de_ostwerk"
+          },
+          {
+            "kind": "bureau",
+            "value": "pb:de_kessel"
+          }
+        ]
+      ],
+      "acquisition_source": "Ostwerk | Kessel",
+      "lead": "pb:de_ostwerk",
+      "producers": [
+        "pb:de_ostwerk_plant"
+      ],
+      "prerequisites": [
+        [
+          {
+            "kind": "technology",
+            "value": "pb:aaa_02"
+          }
+        ]
+      ],
+      "prerequisites_source": "AAA-02",
+      "doctrine_role": [
+        [
+          {
+            "kind": "doctrine",
+            "value": "pb:ql_01"
+          },
+          {
+            "kind": "doctrine",
+            "value": "pb:ql_02"
+          }
+        ]
+      ],
+      "doctrine_role_source": "QL-01 | QL-02",
+      "cost_reducers": [],
+      "cost_reducers_source": null,
+      "tags": [
+        "DEMO"
+      ],
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 60
+        },
+        {
+          "currency": "money",
+          "amount": 40
+        },
+        {
+          "currency": "steel",
+          "amount": 20
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
+    },
+    {
+      "id": "pb:design_0002",
+      "kind": "design",
+      "name": "Lancer Mk II",
+      "nation": "NTH",
+      "domain": "Armour",
+      "role": "Light tank",
+      "variant_of": "pb:design_0001",
+      "year": 1933,
+      "year_declared": null,
+      "acquisition": [
+        [
+          {
+            "kind": "bureau",
+            "value": "pb:de_ostwerk"
+          }
+        ],
+        [
+          {
+            "kind": "bureau",
+            "value": "pb:de_kessel"
+          }
+        ]
+      ],
+      "acquisition_source": "Ostwerk, Kessel",
+      "lead": "pb:de_ostwerk",
+      "producers": [],
+      "prerequisites": [
+        [
+          {
+            "kind": "design",
+            "value": "pb:design_0001"
+          }
+        ]
+      ],
+      "prerequisites_source": "design:Lancer Mk I (prototype B)",
+      "doctrine_role": [],
+      "doctrine_role_source": null,
+      "cost_reducers": [
+        [
+          {
+            "kind": "fielded",
+            "value": "pb:test_heavy"
+          }
+        ]
+      ],
+      "cost_reducers_source": "fielded:test_heavy",
+      "tags": [],
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 30
+        },
+        {
+          "currency": "money",
+          "amount": 20
+        },
+        {
+          "currency": "steel",
+          "amount": 10
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
+    },
+    {
+      "id": "pb:design_0003",
+      "kind": "design",
+      "name": "Kestrel 12(t)",
+      "nation": "STH",
+      "domain": "Aircraft",
+      "role": "Fighter",
+      "variant_of": null,
+      "year": null,
+      "year_declared": "base",
+      "acquisition": [
+        [
+          {
+            "kind": "import",
+            "value": "pb:vendor_0001"
+          }
+        ]
+      ],
+      "acquisition_source": "import:Testvendor AB",
+      "lead": null,
+      "producers": [],
+      "prerequisites": [],
+      "prerequisites_source": null,
+      "doctrine_role": [],
+      "doctrine_role_source": null,
+      "cost_reducers": [],
+      "cost_reducers_source": null,
+      "tags": [
+        "COND"
+      ],
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 60
+        },
+        {
+          "currency": "money",
+          "amount": 40
+        },
+        {
+          "currency": "steel",
+          "amount": 20
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
+    },
+    {
+      "id": "pb:design_0004",
+      "kind": "design",
+      "name": "Varenne Q-5",
+      "nation": "STH",
+      "domain": "Naval",
+      "role": "Submarine",
+      "variant_of": null,
+      "year": 1934,
+      "year_declared": null,
+      "acquisition": [
+        [
+          {
+            "kind": "bureau",
+            "value": "pb:fr_varenne"
+          }
+        ]
+      ],
+      "acquisition_source": "Varenne",
+      "lead": "pb:fr_varenne",
+      "producers": [],
+      "prerequisites": [
+        [
+          {
+            "kind": "technology",
+            "value": "pb:sss_01"
+          }
+        ]
+      ],
+      "prerequisites_source": "SSS-01",
+      "doctrine_role": [],
+      "doctrine_role_source": null,
+      "cost_reducers": [],
+      "cost_reducers_source": null,
+      "tags": [
+        "PAPER"
+      ],
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 60
+        },
+        {
+          "currency": "money",
+          "amount": 40
+        },
+        {
+          "currency": "steel",
+          "amount": 20
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
+    },
+    {
+      "id": "pb:design_0005",
+      "kind": "design",
+      "name": "ZX-3",
+      "nation": "UPL",
+      "domain": "Armour",
+      "role": "Captured",
+      "variant_of": null,
+      "year": 1940,
+      "year_declared": null,
+      "acquisition": [
+        [
+          {
+            "kind": "captured",
+            "value": "NTH"
+          }
+        ]
+      ],
+      "acquisition_source": "captured:Northland",
+      "lead": null,
+      "producers": [],
+      "prerequisites": [],
+      "prerequisites_source": null,
+      "doctrine_role": [],
+      "doctrine_role_source": null,
+      "cost_reducers": [],
+      "cost_reducers_source": null,
+      "tags": [],
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 60
+        },
+        {
+          "currency": "money",
+          "amount": 40
+        },
+        {
+          "currency": "steel",
+          "amount": 20
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
+    },
+    {
+      "id": "pb:design_0006",
+      "kind": "design",
+      "name": "Heron 1927",
+      "nation": "WST",
+      "domain": "Aircraft",
+      "role": "Fighter",
+      "variant_of": null,
+      "year": 1927,
+      "year_declared": null,
+      "acquisition": [
+        [
+          {
+            "kind": "import",
+            "value": "pb:vendor_0002"
+          }
+        ]
+      ],
+      "acquisition_source": "import:Oakfield-Marsh",
+      "lead": null,
+      "producers": [],
+      "prerequisites": [],
+      "prerequisites_source": null,
+      "doctrine_role": [],
+      "doctrine_role_source": null,
+      "cost_reducers": [],
+      "cost_reducers_source": null,
+      "tags": [
+        "COND"
+      ],
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 60
+        },
+        {
+          "currency": "money",
+          "amount": 40
+        },
+        {
+          "currency": "steel",
+          "amount": 20
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
+    },
+    {
+      "id": "pb:design_0007",
+      "kind": "design",
+      "name": "Heron 1928 prototype",
+      "nation": "WST",
+      "domain": "Aircraft",
+      "role": "Fighter",
+      "variant_of": null,
+      "year": 1928,
+      "year_declared": null,
+      "acquisition": [
+        [
+          {
+            "kind": "import",
+            "value": "pb:vendor_0002"
+          }
+        ]
+      ],
+      "acquisition_source": "import:Oakfield-Marsh",
+      "lead": null,
+      "producers": [],
+      "prerequisites": [],
+      "prerequisites_source": null,
+      "doctrine_role": [],
+      "doctrine_role_source": null,
+      "cost_reducers": [],
+      "cost_reducers_source": null,
+      "tags": [
+        "PAPER",
+        "COND"
+      ],
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 60
+        },
+        {
+          "currency": "money",
+          "amount": 40
+        },
+        {
+          "currency": "steel",
+          "amount": 20
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
+    }
+  ],
+  "registries": {
+    "flags": [
+      {
+        "id": "pb:test_shortage",
+        "authored_id": "test_shortage",
+        "name": "Test shortage",
+        "type": "Economy",
+        "inert_reason": null
+      },
+      {
+        "id": "pb:test_covert",
+        "authored_id": "test_covert",
+        "name": "Test covert school",
+        "type": "Covert channel",
+        "inert_reason": null
+      },
+      {
+        "id": "pb:test_covert_two",
+        "authored_id": "test_covert_two",
+        "name": "Second test channel",
+        "type": "Covert channel",
+        "inert_reason": null
+      },
+      {
+        "id": "pb:test_dormant",
+        "authored_id": "test_dormant",
+        "name": "Dormant test channel",
+        "type": "Covert channel",
+        "inert_reason": "synthetic: the sheet does not say which ban it circumvents"
+      }
+    ],
+    "treaties": [
+      {
+        "id": "pb:pact_of_testing",
+        "authored_id": "pact_of_testing",
+        "name": "Pact of Testing"
+      },
+      {
+        "id": "pb:accord_of_trials",
+        "authored_id": "accord_of_trials",
+        "name": "Accord of Trials"
+      }
+    ],
+    "fielded": [
+      "pb:test_heavy"
+    ],
+    "focus": [
+      "pb:test_plan"
+    ],
+    "xp": [
+      {
+        "branch": "land",
+        "tier": 1
+      },
+      {
+        "branch": "land",
+        "tier": 2
+      },
+      {
+        "branch": "land",
+        "tier": 3
+      }
+    ]
+  },
+  "start": [
+    {
+      "nation": "NTH",
+      "technologies": [
+        "pb:aaa_01",
+        "pb:aaa_02"
+      ],
+      "doctrines": [
+        "pb:bbb_90",
+        "pb:ql_01"
+      ],
+      "designs": [],
+      "flags": [
+        "pb:test_covert"
+      ]
+    },
+    {
+      "nation": "STH",
+      "technologies": [
+        "pb:aaa_01"
+      ],
+      "doctrines": [
+        "pb:bbb_90",
+        "pb:ql_01",
+        "pb:ql_03"
+      ],
+      "designs": [
+        "pb:design_0003"
+      ],
+      "flags": []
+    },
+    {
+      "nation": "WST",
+      "technologies": [
+        "pb:aaa_01"
+      ],
+      "doctrines": [
+        "pb:bbb_90",
+        "pb:ql_02"
+      ],
+      "designs": [
+        "pb:design_0006"
+      ],
+      "flags": []
+    },
+    {
+      "nation": "EST",
+      "technologies": [
+        "pb:aaa_01"
+      ],
+      "doctrines": [
+        "pb:bbb_90",
+        "pb:ql_02"
+      ],
+      "designs": [],
+      "flags": []
+    },
+    {
+      "nation": "UPL",
+      "technologies": [
+        "pb:aaa_01",
+        "pb:bbb_01"
+      ],
+      "doctrines": [
+        "pb:bbb_90",
+        "pb:ql_02"
+      ],
+      "designs": [],
+      "flags": []
+    },
+    {
+      "nation": "LOW",
+      "technologies": [
+        "pb:aaa_01"
+      ],
+      "doctrines": [
+        "pb:bbb_90",
+        "pb:ql_02"
+      ],
+      "designs": [],
+      "flags": []
+    },
+    {
+      "nation": "MID",
+      "technologies": [
+        "pb:aaa_01"
+      ],
+      "doctrines": [
+        "pb:bbb_90",
+        "pb:ql_02"
+      ],
+      "designs": [],
+      "flags": []
+    }
+  ],
+  "restrictions": [
+    {
+      "nation": "NTH",
+      "treaty": "pb:pact_of_testing",
+      "scope": {
+        "category": "pb:bbb"
+      },
+      "lifted_by": "pb:test_covert"
+    },
+    {
+      "nation": "NTH",
+      "treaty": "pb:pact_of_testing",
+      "scope": {
+        "design_types": [
+          "Submarine",
+          "Light tank"
+        ]
+      },
+      "lifted_by": "pb:test_covert_two"
+    },
+    {
+      "nation": "MID",
+      "treaty": "pb:accord_of_trials",
+      "scope": {
+        "category": "pb:aaa"
+      },
+      "lifted_by": null
+    }
+  ],
+  "era_multiplier": {
+    "growth_per_year_per_mille": 1100,
+    "cap_per_mille": 2000
+  }
+}

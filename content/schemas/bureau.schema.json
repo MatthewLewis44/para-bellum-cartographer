@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:bureau:1",
+  "title": "Para Bellum content: research bureaus",
+  "description": "File: Content/<namespace>/bureau.json. The design bureaus, suppliers and producers that lead and build research projects. Every authored bureau ships; the roster cut is the active flag, never a deletion. An ACTIVE bureau carries a positive capacity: the most labs it may lead on one project (D3). An active bureau with a null capacity is a missing required value, C101, checked beside the schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "bureaus"],
+  "properties": {
+    "format": { "const": "pb-content/bureau/1" },
+    "bureaus": { "type": "array", "items": { "$ref": "#/$defs/bureau" } }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9_]+:[a-z0-9_]+$" },
+    "bureau": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "authored_id", "nation", "name", "role", "primary", "secondary", "active_from", "active", "capacity"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "authored_id": { "type": "string" },
+        "nation": { "description": "A map owner tag.", "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "primary": { "description": "A category id.", "$ref": "#/$defs/id" },
+        "secondary": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+        "active_from": { "type": "integer", "minimum": 0 },
+        "active": { "type": "boolean" },
+        "capacity": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] }
+      }
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "format": "pb-content/bureau/1",
+  "bureaus": [
+    {
+      "id": "pb:de_ostwerk",
+      "authored_id": "DE_OSTWERK",
+      "nation": "NTH",
+      "name": "Ostwerk",
+      "role": "Lead",
+      "primary": "pb:aaa",
+      "secondary": [
+        "pb:bbb",
+        "pb:ccc"
+      ],
+      "active_from": 1930,
+      "active": true,
+      "capacity": 2
+    },
+    {
+      "id": "pb:de_kessel",
+      "authored_id": "DE_KESSEL",
+      "nation": "NTH",
+      "name": "Kessel",
+      "role": "Lead",
+      "primary": "pb:bbb",
+      "secondary": [],
+      "active_from": 1932,
+      "active": false,
+      "capacity": null
+    },
+    {
+      "id": "pb:de_ostwerk_plant",
+      "authored_id": "DE_OSTWERK_PLANT",
+      "nation": "NTH",
+      "name": "Ostwerk Plant",
+      "role": "Producer",
+      "primary": "pb:aaa",
+      "secondary": [],
+      "active_from": 1930,
+      "active": false,
+      "capacity": null
+    },
+    {
+      "id": "pb:fr_varenne",
+      "authored_id": "FR_VARENNE",
+      "nation": "STH",
+      "name": "Varenne",
+      "role": "Lead",
+      "primary": "pb:ccc",
+      "secondary": [],
+      "active_from": 1930,
+      "active": false,
+      "capacity": null
+    }
+  ]
+}

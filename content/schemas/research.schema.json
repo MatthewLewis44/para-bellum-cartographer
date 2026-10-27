@@ -1,0 +1,255 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:research:1",
+  "title": "Para Bellum content: the research database",
+  "description": "File: Content/<namespace>/research.json, ONE per content set (C907). Categories, every research project in one id space (technology, doctrine, design study), the gate registries, the 1930 start state, the treaty restrictions and the era multiplier's constants. Written by the pipeline's converter (tools/research_convert.py) from the research workbook; prerequisites ship PRE-PARSED as CNF atoms, and the game contains no string parser (AD-M37 section 5). Atom values are matched exactly: never trimmed, normalised or case-folded. Cost amounts are in lab-days (research) and nation-days (doctrine), D37. Rules a schema cannot express (a cost reason that matches its source, gate_only agreeing with its modifiers, the era multiplier's floor and ordering, references) are checked by both readers beside it, under the same codes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "categories", "projects", "registries", "start", "restrictions", "era_multiplier"],
+  "properties": {
+    "format": { "const": "pb-content/research/1" },
+    "categories": { "type": "array", "items": { "$ref": "#/$defs/category" } },
+    "projects": { "type": "array", "items": { "$ref": "#/$defs/project" } },
+    "registries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["flags", "treaties", "fielded", "focus", "xp"],
+      "properties": {
+        "flags": { "type": "array", "items": { "$ref": "#/$defs/flag" } },
+        "treaties": { "type": "array", "items": { "$ref": "#/$defs/treaty" } },
+        "fielded": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+        "focus": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+        "xp": { "type": "array", "items": { "$ref": "#/$defs/xp" } }
+      }
+    },
+    "start": { "type": "array", "items": { "$ref": "#/$defs/start" } },
+    "restrictions": { "type": "array", "items": { "$ref": "#/$defs/restriction" } },
+    "era_multiplier": {
+      "description": "The constants of M(start date), the one function the engine evaluates at runtime (D24): growth per whole year a project starts ahead of its historical year, capped. Both at least 1000 (M never discounts) and growth no more than the cap, checked beside the schema (C102).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["growth_per_year_per_mille", "cap_per_mille"],
+      "properties": {
+        "growth_per_year_per_mille": { "type": "integer", "minimum": 0 },
+        "cap_per_mille": { "type": "integer", "minimum": 0 }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "A namespaced id, <namespace>:<name>, lower case. Opaque: nothing reads its prefix (AD-M37 section 4).",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+:[a-z0-9_]+$"
+    },
+    "nullableId": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+    "source": {
+      "description": "The authored string beside an atom list: provenance only, never read for meaning.",
+      "type": ["string", "null"]
+    },
+    "category": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "authored_id", "name", "folded_into", "fallback_into"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "authored_id": { "type": "string" },
+        "name": { "type": "string" },
+        "folded_into": { "$ref": "#/$defs/nullableId" },
+        "fallback_into": { "$ref": "#/$defs/nullableId" }
+      }
+    },
+    "xp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branch", "tier"],
+      "properties": { "branch": { "type": "string" }, "tier": { "type": "integer", "minimum": 0 } }
+    },
+    "atom": {
+      "description": "One alternative of a clause. captured names a NATION (an owner tag); xp names a branch and tier; every other kind names an id.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": { "enum": ["technology", "doctrine", "design", "flag", "fielded", "focus", "xp", "licence", "bureau",
+                           "import", "seized", "captured"] },
+        "value": { "description": "Its shape depends on the kind: see allOf." }
+      },
+      "allOf": [
+        { "if": { "properties": { "kind": { "const": "xp" } } },
+          "then": { "properties": { "value": { "$ref": "#/$defs/xp" } } },
+          "else": { "if": { "properties": { "kind": { "const": "captured" } } },
+                    "then": { "properties": { "value": { "type": "string" } } },
+                    "else": { "properties": { "value": { "$ref": "#/$defs/id" } } } } }
+      ]
+    },
+    "cnf": {
+      "description": "A condition in conjunctive normal form: a list of clauses (ALL must hold), each a non-empty list of atoms (ANY holds). An empty list is no condition.",
+      "type": "array",
+      "items": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/atom" } }
+    },
+    "cost": {
+      "description": "What a study costs, BEFORE the era multiplier. currency is research (lab-days), doctrine (nation-days) or an engine pool (C403 otherwise), each listed once (C203).",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["currency", "amount"],
+        "properties": { "currency": { "type": "string" }, "amount": { "type": "integer", "minimum": 0 } }
+      }
+    },
+    "yearShape": {
+      "description": "An integer historical year, or null with year_declared \"base\": exactly one of the two (D19, D30).",
+      "oneOf": [
+        { "properties": { "year": { "type": "integer", "minimum": 0 }, "year_declared": { "type": "null" } } },
+        { "properties": { "year": { "type": "null" }, "year_declared": { "const": "base" } } }
+      ]
+    },
+    "effect": {
+      "description": "The ENCODED effect, or null when the row is not in the slice. Exactly one of three forms: gate_only true with no modifiers (E5); gate_only false with at least one modifier; or no_target, declaring the writer target the row would need and why it is not encoded yet (a one-line reason). Prose is never shipped (D3 S-2).",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["no_target"],
+          "properties": {
+            "no_target": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["needs", "reason"],
+              "properties": { "needs": { "type": "string" }, "reason": { "type": "string" } }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["gate_only", "modifiers"],
+          "properties": {
+            "gate_only": { "type": "boolean" },
+            "modifiers": { "type": "array", "items": { "$ref": "#/$defs/modifier" } }
+          }
+        }
+      ]
+    },
+    "modifier": {
+      "type": "object",
+      "required": ["target", "scope", "per_mille"],
+      "properties": { "target": { "enum": ["design_stat", "facility_output", "power_supply"] } },
+      "allOf": [
+        { "if": { "properties": { "target": { "const": "design_stat" } } },
+          "then": { "additionalProperties": false, "required": ["stat"],
+                    "properties": { "target": {}, "scope": { "type": "string" }, "stat": { "type": "string" },
+                                    "per_mille": { "type": "integer" } } } },
+        { "if": { "properties": { "target": { "const": "facility_output" } } },
+          "then": { "additionalProperties": false, "required": ["pool"],
+                    "properties": { "target": {}, "scope": { "type": "string" }, "pool": { "type": "string" },
+                                    "per_mille": { "type": "integer" } } } },
+        { "if": { "properties": { "target": { "const": "power_supply" } } },
+          "then": { "additionalProperties": false,
+                    "properties": { "target": {}, "scope": { "type": "string" }, "per_mille": { "type": "integer" } } } }
+      ]
+    },
+    "project": {
+      "type": "object",
+      "required": ["id", "kind", "name", "year", "year_declared", "prerequisites", "prerequisites_source", "cost",
+                   "cost_source", "cost_reason"],
+      "properties": { "kind": { "enum": ["technology", "doctrine", "design"] } },
+      "allOf": [
+        { "$ref": "#/$defs/yearShape" },
+        { "if": { "properties": { "kind": { "const": "technology" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["authored_id", "category", "cost_reducers", "cost_reducers_source", "effect"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" }, "authored_id": { "type": "string" }, "kind": {}, "name": { "type": "string" },
+              "category": { "$ref": "#/$defs/id" }, "year": {}, "year_declared": {},
+              "prerequisites": { "$ref": "#/$defs/cnf" }, "prerequisites_source": { "$ref": "#/$defs/source" },
+              "cost_reducers": { "$ref": "#/$defs/cnf" }, "cost_reducers_source": { "$ref": "#/$defs/source" },
+              "effect": { "$ref": "#/$defs/effect" }, "cost": { "$ref": "#/$defs/cost" },
+              "cost_source": { "enum": ["rule", "override"] }, "cost_reason": { "type": ["string", "null"] }
+            } } },
+        { "if": { "properties": { "kind": { "const": "doctrine" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["authored_id", "domain", "branch", "base_holders", "exclusive_with", "effect"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" }, "authored_id": { "type": "string" }, "kind": {}, "name": { "type": "string" },
+              "domain": { "type": "string" }, "branch": { "type": "string" }, "year": {}, "year_declared": {},
+              "base_holders": { "type": "array", "items": { "type": "string" } },
+              "prerequisites": { "$ref": "#/$defs/cnf" }, "prerequisites_source": { "$ref": "#/$defs/source" },
+              "exclusive_with": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+              "effect": { "$ref": "#/$defs/effect" }, "cost": { "$ref": "#/$defs/cost" },
+              "cost_source": { "enum": ["rule", "override"] }, "cost_reason": { "type": ["string", "null"] }
+            } } },
+        { "if": { "properties": { "kind": { "const": "design" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["nation", "domain", "role", "variant_of", "acquisition", "acquisition_source", "lead", "producers",
+                         "doctrine_role", "doctrine_role_source", "cost_reducers", "cost_reducers_source", "tags"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" }, "kind": {}, "name": { "type": "string" }, "nation": { "type": "string" },
+              "domain": { "type": "string" }, "role": { "type": "string" }, "variant_of": { "$ref": "#/$defs/nullableId" },
+              "year": {}, "year_declared": {},
+              "acquisition": { "$ref": "#/$defs/cnf" }, "acquisition_source": { "$ref": "#/$defs/source" },
+              "lead": { "$ref": "#/$defs/nullableId" },
+              "producers": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+              "prerequisites": { "$ref": "#/$defs/cnf" }, "prerequisites_source": { "$ref": "#/$defs/source" },
+              "doctrine_role": { "$ref": "#/$defs/cnf" }, "doctrine_role_source": { "$ref": "#/$defs/source" },
+              "cost_reducers": { "$ref": "#/$defs/cnf" }, "cost_reducers_source": { "$ref": "#/$defs/source" },
+              "tags": { "type": "array", "items": { "type": "string" } },
+              "cost": { "$ref": "#/$defs/cost" },
+              "cost_source": { "enum": ["rule", "override"] }, "cost_reason": { "type": ["string", "null"] }
+            } } }
+      ]
+    },
+    "flag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "authored_id", "name", "type", "inert_reason"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "authored_id": { "type": "string" }, "name": { "type": "string" },
+        "type": { "type": "string" }, "inert_reason": { "type": ["string", "null"] }
+      }
+    },
+    "treaty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "authored_id", "name"],
+      "properties": { "id": { "$ref": "#/$defs/id" }, "authored_id": { "type": "string" }, "name": { "type": "string" } }
+    },
+    "start": {
+      "description": "A nation's COMPLETE 1930 holding, resolved at conversion so the engine derives nothing. nation is a map owner tag. designs are the design studies the nation holds at the start: its own designs dated base or before 1930, in service before the start (D30's fact, second use).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nation", "technologies", "doctrines", "designs", "flags"],
+      "properties": {
+        "nation": { "type": "string" },
+        "designs": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+        "technologies": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+        "doctrines": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+        "flags": { "type": "array", "items": { "$ref": "#/$defs/id" } }
+      }
+    },
+    "restriction": {
+      "description": "A treaty ban (D4, D26): a nation may not research the scope until it holds lifted_by. lifted_by null means no covert channel exists. A scope is a category OR a non-empty list of exact design roles, never both.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nation", "treaty", "scope", "lifted_by"],
+      "properties": {
+        "nation": { "type": "string" },
+        "treaty": { "$ref": "#/$defs/id" },
+        "scope": {
+          "oneOf": [
+            { "type": "object", "additionalProperties": false, "required": ["category"],
+              "properties": { "category": { "$ref": "#/$defs/id" } } },
+            { "type": "object", "additionalProperties": false, "required": ["design_types"],
+              "properties": { "design_types": { "type": "array", "minItems": 1, "items": { "type": "string" } } } }
+          ]
+        },
+        "lifted_by": { "$ref": "#/$defs/nullableId" }
+      }
+    }
+  }
+}

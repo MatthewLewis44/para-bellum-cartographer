@@ -43,7 +43,10 @@ SIDES = {c["code"]: {"python": c["python"], "csharp": c["csharp"]} for c in REGI
 
 FILES = ("vocabulary.json", "pb/class.json", "pb/model.json", "pb/variant.json",
          "pb/trait.json", "pb/template.json", "pb/facility.json", "pb/settlement.json",
-         "pb/rates.json", "pb/combat.json", "pb/economy.json")
+         "pb/rates.json", "pb/combat.json", "pb/economy.json",
+         # Sprint 13: the research database and its generated models, written by the pipeline's converter
+         # (tools/research_convert.py) from its SYNTHETIC case set, then hand-kept here as part of the control set.
+         "pb/research.json", "pb/bureau.json", "pb/vendor.json", "pb/design_model.json")
 
 
 def dump(doc) -> str:
@@ -100,6 +103,7 @@ ST = "pb/settlement.json"
 V = "pb/variant.json"
 C = "pb/class.json"
 T = "pb/template.json"
+R = "pb/research.json"
 
 MUTATIONS = [
     ("h108_invalid_json", "C108", M, "model.json is not JSON (truncated)", "RAW"),
@@ -131,6 +135,16 @@ MUTATIONS = [
      _set([M, "models", 0, "id"], "player:infantry_kit")),
     ("h205_design_id_collision", "C205", V, 'variants[0].id is "pb:light_tank", which is also a model',
      _set([V, "variants", 0, "id"], "pb:light_tank")),
+    ("h111_atom_value_whitespace", "C111", R,
+     'projects[1] (pb:aaa_02) requires "pb:aaa_01" followed by U+00A0: a padded atom value, refused by its own '
+     "code ahead of C106, and never trimmed into a match",
+     _set([R, "projects", 1, "prerequisites", 0, 0, "value"], "pb:aaa_01" + chr(0xA0))),
+    ("h304_exclusive_pair_asymmetric", "C304", R,
+     "pb:ql_02 no longer names pb:ql_01 in exclusive_with, so pb:ql_01's pair is one-sided",
+     _set([R, "projects", 5, "exclusive_with"], [])),
+    ("h909_slice_row_unencoded", "C909", R,
+     "pb:aaa_01, a prerequisite of a slice design and a start holding, has a null effect",
+     _set([R, "projects", 0, "effect"], None)),
     ("h301_dangling_reference", "C301", V, 'variants[1].model is "pb:light_tnak"',
      _set([V, "variants", 1, "model"], "pb:light_tnak")),
     ("h301b_extends_dangling", "C301", "mymod/class.json", 'a class extension of "pb:tnak", which is not a class',

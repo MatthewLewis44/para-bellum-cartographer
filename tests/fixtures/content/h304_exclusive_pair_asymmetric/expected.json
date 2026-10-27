@@ -1,0 +1,8 @@
+{
+  "code": "C304",
+  "rule": "exclusive-pair-asymmetric",
+  "file": "pb/research.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "pb:ql_02 no longer names pb:ql_01 in exclusive_with, so pb:ql_01's pair is one-sided"
+}

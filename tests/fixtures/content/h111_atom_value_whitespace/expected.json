@@ -1,0 +1,8 @@
+{
+  "code": "C111",
+  "rule": "atom-value-whitespace",
+  "file": "pb/research.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "projects[1] (pb:aaa_02) requires \"pb:aaa_01\" followed by U+00A0: a padded atom value, refused by its own code ahead of C106, and never trimmed into a match"
+}
