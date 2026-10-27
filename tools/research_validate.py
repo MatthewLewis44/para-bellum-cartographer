@@ -309,7 +309,9 @@ class Validator:
                    "doctrine_role", "doctrine_role_source", "cost_reducers", "cost_reducers_source", "tags", "cost",
                    "cost_source", "cost_reason"},
     }
-    TARGET_FIELD = {"design_stat": "stat", "facility_output": "pool", "power_supply": "pool"}
+    # The extra key each writer target carries, as the game's reader takes it (ContentReader.Research.cs, b7dcd60):
+    # power_supply carries neither a stat nor a pool.
+    TARGET_FIELD = {"design_stat": "stat", "facility_output": "pool", "power_supply": None}
 
     def r11(self) -> None:
         for p in self.r["projects"]:
@@ -329,11 +331,13 @@ class Validator:
             if e["gate_only"] == bool(e["modifiers"]):
                 self.fail("V111", self.label(p), e, "gate_only true needs no modifiers; false needs at least one")
             for m in e["modifiers"]:
-                want = self.TARGET_FIELD.get(m.get("target")) if isinstance(m, dict) else None
-                if not (want and set(m) == {"target", "scope", want, "per_mille"} and isinstance(m["scope"], str)
-                        and isinstance(m[want], str) and isinstance(m["per_mille"], int)
+                known = isinstance(m, dict) and m.get("target") in self.TARGET_FIELD
+                want = self.TARGET_FIELD[m["target"]] if known else None
+                keys = {"target", "scope", "per_mille"} | ({want} if want else set())
+                if not (known and set(m) == keys and isinstance(m["scope"], str)
+                        and (want is None or isinstance(m[want], str)) and isinstance(m["per_mille"], int)
                         and not isinstance(m["per_mille"], bool) and m["per_mille"] != 0):
-                    self.fail("V111", self.label(p), m, "a modifier is {target, scope, stat|pool, per_mille != 0}")
+                    self.fail("V111", self.label(p), m, "a modifier is {target, scope, [stat|pool], per_mille != 0}")
         per_design = collections.Counter(m["id"] for m in self.models)
         for mid, c in per_design.items():
             if c != 1:
