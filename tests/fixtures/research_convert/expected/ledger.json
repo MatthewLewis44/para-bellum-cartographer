@@ -1,0 +1,36 @@
+{
+  "format": "pb-research-ledger/1",
+  "_comment": "APPEND-ONLY name -> id ledger (D4). Never edit or remove an entry. To keep an id across a rename, append {id: <existing id>, name: <new name>}.",
+  "designs": [
+    {
+      "id": "pb:design_0001",
+      "name": "Lancer Mk I (prototype B)"
+    },
+    {
+      "id": "pb:design_0002",
+      "name": "Lancer Mk II"
+    },
+    {
+      "id": "pb:design_0003",
+      "name": "Kestrel 12(t)"
+    },
+    {
+      "id": "pb:design_0004",
+      "name": "Varenne Q-5"
+    },
+    {
+      "id": "pb:design_0005",
+      "name": "ZX-3"
+    }
+  ],
+  "vendors": [
+    {
+      "id": "pb:vendor_0001",
+      "name": "Testvendor AB"
+    },
+    {
+      "id": "pb:vendor_0002",
+      "name": "Oakfield-Marsh"
+    }
+  ]
+}

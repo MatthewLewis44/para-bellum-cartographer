@@ -1,0 +1,141 @@
+{
+  "format": "pb-test/research-convert-cases/1",
+  "_comment": "Cases for tools/research_convert.py. Every name, id, category and flag here is SYNTHETIC; the nations are synthetic too: the nation table is overlay data. 'base' is a small workbook (built in memory by the test, rows 1-3 a title, a note and a blank, the header on row 4, as the real workbook lays them out), an overlay and an empty ledger. Its conversion is compared byte for byte with expected/. Each refuse case applies 'patch' to a copy of base and must be refused with EXACTLY its one code, and nothing written.",
+  "base": {
+    "sheets": {
+      "Categories": [
+        ["Code", "Category"],
+        ["AAA", "Alpha works"],
+        ["BBB", "Beta works"],
+        ["CCC", "Gamma works"],
+        ["SSS", "Sigma works"],
+        ["Total", null]
+      ],
+      "Technologies": [
+        ["ID", "Cat.", "Category", "Technology", "Year", "Prerequisites", "Cost reducers", "Effect / unlocks"],
+        ["AAA-01", "AAA", "Alpha works", "First alpha", "base", null, null, "prose that must not ship"],
+        ["AAA-02", "AAA", "Alpha works", "Second alpha", 1931, "AAA-01, BBB-90", null, "prose that must not ship"],
+        ["BBB-01", "BBB", "Beta works", "First beta", 1932, "AAA-01", "flag:test_shortage", "prose"],
+        ["SSS-01", "SSS", "Sigma works", "First sigma", 1935, "AAA-02 | BBB-01, xp:land:2", null, "prose"]
+      ],
+      "Doctrines": [
+        ["ID", "Domain", "Branch", "Doctrine", "Year", "Base holders", "Prerequisites", "Unlocks", "Exclusive with"],
+        ["QL-01", "Land", "Drill", "First drill", "base", "NO, SO", null, "prose", "QL-02"],
+        ["QL-02", "Land", "Drill", "Other drill", "base", "WE, EA, UP, LO, MI", null, "prose", "QL-01"],
+        ["BBB-90", "Land", "Drill", "Doctrine with a technology-shaped id", "base", null, null, "prose", null],
+        ["QL-03", "Land", "Drill", "Later drill", 1934, null, "QL-01, focus:test_plan", "prose", null]
+      ],
+      "Designs": [
+        ["Nation", "Domain", "Type / role", "Design", "Variant of", "Year", "Design bureau", "Producers", "Prerequisites", "Doctrine role", "Cost reducers", "Tags", "Notes"],
+        ["Northland", "Armour", "Light tank", "Lancer Mk I (prototype B)", null, 1931, "Ostwerk | Kessel", "Ostwerk Plant", "AAA-02", "QL-01 | QL-02", null, "DEMO", "prose"],
+        ["Northland", "Armour", "Light tank", "Lancer Mk II", "Lancer Mk I (prototype B)", 1933, "Ostwerk, Kessel", null, "design:Lancer Mk I (prototype B)", null, "fielded:test_heavy", null, "prose"],
+        ["Southland", "Aircraft", "Fighter", "Kestrel 12(t)", null, "base", "import:Testvendor AB", null, null, null, null, "COND", "prose"],
+        ["Southland", "Naval", "Submarine", "Varenne Q-5", null, 1934, "Varenne", null, "SSS-01", null, null, "PAPER", "prose"],
+        ["Upland", "Armour", "Captured", "ZX-3", null, 1940, "captured:Northland", null, null, null, null, null, "prose"]
+      ],
+      "Bureaus": [
+        ["ID", "Nation", "Bureau", "Role", "Primary", "Primary category", "Secondary", "Traits", "Active from", "Notes"],
+        ["DE_OSTWERK", "Northland", "Ostwerk", "Lead", "AAA", "Alpha works", "BBB, CCC", "prose", "1930 (as Ostwerk-Hall)", "prose"],
+        ["DE_KESSEL", "Northland", "Kessel", "Lead", "SSS", "Sigma works", null, "prose", "1932", "prose"],
+        ["DE_OSTWERK_PLANT", "Northland", "Ostwerk Plant", "Producer", "AAA", "Alpha works", null, null, "1930", null],
+        ["FR_VARENNE", "Southland", "Varenne", "Supplier", "CCC", "Gamma works", null, null, "1930", null]
+      ],
+      "Vendors": [
+        ["Country", "Vendor", "Fields", "Sells"],
+        ["Nowhere", "Testvendor AB", "AAA, SSS", "prose"],
+        ["Elsewhere", "Oakfield-Marsh", "BBB", "prose"]
+      ],
+      "Start 1930": [
+        ["Nation", "Technologies held beyond base", "Doctrines held", "In service", "Gaps the player inherits"],
+        ["Northland", "AAA-02", "QL-01", "prose", "prose"],
+        ["Southland", null, "QL-03", "prose", "prose"],
+        ["Westland", null, null, null, null],
+        ["Eastland", null, null, null, null],
+        ["Upland", "BBB-01", null, null, null],
+        ["Lowland", null, null, null, null],
+        ["Midland", null, null, null, null]
+      ],
+      "Treaties 1930": [
+        ["Nation", "Treaty / alignment", "Restrictions", "Covert or legal workarounds", "How it ends"],
+        ["Northland", "prose", "prose", "prose", "prose"]
+      ]
+    },
+    "registries": [
+      ["Gate registries"],
+      ["Every token used in a prerequisite must be declared here."],
+      [],
+      ["Flags (flag:<id>)"],
+      ["id", "type", "trigger", "historical example"],
+      ["test_shortage", "Economy", "prose", "prose"],
+      ["test_covert", "Covert channel", "prose", "prose"],
+      [],
+      ["Fielded (fielded:<id>)"],
+      ["id", "meaning"],
+      ["test_heavy", "prose"],
+      [],
+      ["Focus (focus:<id>)"],
+      ["id", "meaning"],
+      ["test_plan", "prose"],
+      [],
+      ["Experience (xp:<branch>:<tier>)"],
+      ["token", "meaning"],
+      ["xp:land:1 … xp:land:3", "prose"]
+    ],
+    "overlay": {
+      "format": "pb-research-overlay/1",
+      "nations": {"Northland": {"tag": "NTH", "code": "NO"}, "Southland": {"tag": "STH", "code": "SO"}, "Westland": {"tag": "WST", "code": "WE"}, "Eastland": {"tag": "EST", "code": "EA"}, "Upland": {"tag": "UPL", "code": "UP"}, "Lowland": {"tag": "LOW", "code": "LO"}, "Midland": {"tag": "MID", "code": "MI"}},
+      "category_fold": {"SSS": "BBB"},
+      "category_fallback": {"CCC": "AAA"},
+      "flags": [{"id": "test_covert_two", "type": "Covert channel"}],
+      "flags_held": {"Northland": ["test_covert"]},
+      "restrictions": [
+        {"nation": "Northland", "scope": {"category": "SSS"}, "lifted_by": "test_covert"},
+        {"nation": "Northland", "scope": {"design_types": ["Submarine", "Light tank"]}, "lifted_by": "test_covert_two"}
+      ],
+      "bureaus": {"DE_OSTWERK": {"active": true, "capacity": 2}, "DE_KESSEL": {"active": false}},
+      "effects": {"AAA-02": {"gate_only": false, "modifiers": [{"target": "design_stat", "scope": "pb:tank", "stat": "armour_front_mm", "per_mille": 100}]},
+                  "QL-01": {"gate_only": true, "modifiers": []}},
+      "readings": {"base_holders": {}}
+    }
+  },
+  "refuse": [
+    {"id": "x101_missing_sheet", "code": "X101", "patch": [{"drop_sheet": "Vendors"}]},
+    {"id": "x102_missing_column", "code": "X102", "patch": [{"rename_column": ["Designs", "Producers", "Producer"]}]},
+    {"id": "x103_year_string", "code": "X103", "patch": [{"set": ["Technologies", "AAA-02", "Year", "c. 1931"]}]},
+    {"id": "x103_year_float", "code": "X103", "patch": [{"set": ["Doctrines", "QL-03", "Year", 1934.5]}]},
+    {"id": "x103_year_bool", "code": "X103", "patch": [{"set": ["Technologies", "AAA-02", "Year", true]}]},
+    {"id": "x104_unknown_nation", "code": "X104", "patch": [{"set": ["Designs", "ZX-3", "Nation", "Ruritania"]}]},
+    {"id": "x104_start_row_missing", "code": "X104", "patch": [{"drop_row": ["Start 1930", "Midland"]}]},
+    {"id": "x105_unknown_category", "code": "X105", "patch": [{"set": ["Technologies", "BBB-01", "Cat.", "ZZZ"]}]},
+    {"id": "x105_fold_unknown", "code": "X105", "patch": [{"overlay": {"category_fold": {"SSS": "ZZZ"}}}]},
+    {"id": "x106_duplicate_tech_id", "code": "X106", "patch": [{"add_row": ["Technologies", ["AAA-01", "AAA", "Alpha works", "Repeated alpha", 1936, null, null, "prose"]]}]},
+    {"id": "x106_duplicate_design_name", "code": "X106", "patch": [{"set": ["Designs", "ZX-3", "Design", "Kestrel 12(t)"]}]},
+    {"id": "x106_duplicate_overlay_flag", "code": "X106", "patch": [{"overlay": {"flags": [{"id": "test_covert", "type": "Covert channel"}]}}]},
+    {"id": "x107_qualification_collision", "code": "X107", "patch": [{"add_row": ["Technologies", ["AAA_01", "AAA", "Alpha works", "Underscored alpha", 1936, null, null, "prose"]]}]},
+    {"id": "x108_tech_and_doctrine", "code": "X108", "patch": [{"add_row": ["Doctrines", ["BBB-01", "Land", "Drill", "Doctrine sharing an id", 1936, null, null, "prose", null]]}]},
+    {"id": "x109_unminted_name", "code": "X109", "no_mint": true, "patch": []},
+    {"id": "x110_ledger_two_ids", "code": "X110", "patch": [{"ledger": {"designs": [{"id": "pb:design_0001", "name": "ZX-3"}, {"id": "pb:design_0002", "name": "ZX-3"}]}}]},
+    {"id": "x110_ledger_bad_id", "code": "X110", "patch": [{"ledger": {"designs": [{"id": "pb:zx_3", "name": "ZX-3"}]}}]},
+    {"id": "x111_active_without_capacity", "code": "X111", "patch": [{"overlay": {"bureaus": {"DE_OSTWERK": {"active": true}}}}]},
+    {"id": "x111_capacity_zero", "code": "X111", "patch": [{"overlay": {"bureaus": {"DE_OSTWERK": {"active": true, "capacity": 0}}}}]},
+    {"id": "x112_overlay_unknown_bureau", "code": "X112", "patch": [{"overlay": {"bureaus": {"DE_NOBODY": {"active": false}}}}]},
+    {"id": "x112_restriction_unknown_type", "code": "X112", "patch": [{"overlay": {"restrictions": [{"nation": "Northland", "scope": {"design_types": ["Airship"]}, "lifted_by": "test_covert"}]}}]},
+    {"id": "x112_flags_held_unknown_flag", "code": "X112", "patch": [{"overlay": {"flags_held": {"Northland": ["test_nothing"]}}}]},
+    {"id": "x112_effect_unknown_id", "code": "X112", "patch": [{"overlay": {"effects": {"ZZ-99": {"gate_only": true, "modifiers": []}}}}]},
+    {"id": "x113_nations_missing", "code": "X113", "patch": [{"overlay": {"nations": {}}}]},
+    {"id": "x113_nation_tag_malformed", "code": "X113", "patch": [{"overlay": {"nations": {"Northland": {"tag": "nth", "code": "NO"}}}}]},
+    {"id": "x106_nation_tag_shared", "code": "X106", "patch": [{"overlay": {"nations": {"Northland": {"tag": "NTH", "code": "NO"}, "Southland": {"tag": "NTH", "code": "SO"}, "Westland": {"tag": "WST", "code": "WE"}, "Eastland": {"tag": "EST", "code": "EA"}, "Upland": {"tag": "UPL", "code": "UP"}, "Lowland": {"tag": "LOW", "code": "LO"}, "Midland": {"tag": "MID", "code": "MI"}}}}]},
+    {"id": "x113_overlay_unknown_key", "code": "X113", "patch": [{"overlay": {"bogus_key": {}}}]},
+    {"id": "x113_overlay_format", "code": "X113", "patch": [{"overlay": {"format": "pb-research-overlay/2"}}]},
+    {"id": "x113_effect_shape", "code": "X113", "patch": [{"overlay": {"effects": {"AAA-02": {"modifiers": []}}}}]},
+    {"id": "x114_base_holders_prose", "code": "X114", "patch": [{"set": ["Doctrines", "QL-01", "Base holders", "NO; SO via a mission"]}]},
+    {"id": "x114_base_holders_on_dated", "code": "X114", "patch": [{"set": ["Doctrines", "QL-03", "Base holders", "NO"]}]},
+    {"id": "x114_active_from_prose", "code": "X114", "patch": [{"set": ["Bureaus", "DE_KESSEL", "Active from", "early 1930s"]}]},
+    {"id": "x114_unknown_tag", "code": "X114", "patch": [{"set": ["Designs", "ZX-3", "Tags", "DEMO, LATER"]}]},
+    {"id": "x114_exclusive_with_tech", "code": "X114", "patch": [{"set": ["Doctrines", "QL-02", "Exclusive with", "AAA-01"]}]},
+    {"id": "g101_blank_prerequisite", "code": "G101", "patch": [{"set": ["Technologies", "AAA-02", "Prerequisites", "  "]}]},
+    {"id": "g201_unknown_id", "code": "G201", "patch": [{"set": ["Technologies", "AAA-02", "Prerequisites", "AAA-09"]}]},
+    {"id": "g202_unknown_variant_parent", "code": "G202", "patch": [{"set": ["Designs", "Lancer Mk II", "Variant of", "Lancer Mk 0"]}]},
+    {"id": "g207_bureau_of_other_nation", "code": "G207", "patch": [{"set": ["Designs", "ZX-3", "Design bureau", "Ostwerk"]}]}
+  ]
+}
