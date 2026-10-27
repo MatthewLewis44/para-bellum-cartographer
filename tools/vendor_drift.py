@@ -9,6 +9,12 @@ bytes are not what the repositories hold. Compares, with no normalisation:
   pipeline content/schemas/            <->  game Assets/StreamingAssets/Content/schemas/
   pipeline tests/fixtures/content/     <->  game Assets/Tests/EditMode/Fixtures/content/
 
+NOT compared, by design: the game's ContentSource/ (the research workbook, its
+overlay and the design-id ledger). That folder is private SOURCE that the
+converter reads, not content vendored from here, and no pipeline file mirrors it
+(Sprint 13, D19). Comparing it would fail forever; leaking it would publish the
+catalogue.
+
 Unity's .meta sidecars are ignored. Prints both revisions it measured (D24), the file
 counts on each side (so a comparison of nothing cannot pass, D41), and every
 differing path. Exit code 0 if identical, 1 if not, 2 on a usage or git error.
@@ -27,6 +33,7 @@ DEFAULT_GAME = os.environ.get("PB_UNITY_REPO", "C:/UnityProjects/ParaBellum")
 PIPE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAIRS = (("content/schemas", "Assets/StreamingAssets/Content/schemas"),
          ("tests/fixtures/content", "Assets/Tests/EditMode/Fixtures/content"))
+assert not any(game.startswith("ContentSource") for _, game in PAIRS), "ContentSource is private source, never a pair"
 
 
 def _git(repo: str, *args: str) -> bytes:
