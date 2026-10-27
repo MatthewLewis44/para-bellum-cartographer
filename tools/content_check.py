@@ -84,8 +84,8 @@ class Problem:
 
 # --- The modifier arithmetic (CONTENT_MODEL section 3, "The arithmetic, exactly") -------
 # The signed layer order. A design's stat goes through every layer; only Base has
-# writers in content (traits). The other four are present and neutral at 1000.
-LAYERS = ("Base", "Facility", "Research", "Policy", "CaptureState")
+# writers in content (traits). The other five are present and neutral at 1000.
+LAYERS = ("Base", "Facility", "Research", "Doctrine", "Policy", "CaptureState")   # Doctrine: its own layer (D20)
 CLAMP_SOURCE = "clamp:non_negative"
 
 

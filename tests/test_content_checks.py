@@ -261,7 +261,7 @@ def main() -> int:
     every = [L for d in a001.values() for L in d["layers"]]
     check("every layer equals 1000 + the sum of its sources, clamp included",
           all(L["per_mille"] == 1000 + sum(v for _, v in L["sources"]) for L in every))
-    check("all five layers are present on every stat, in the signed order",
+    check("all six layers are present on every stat, in the signed order",
           all([L["layer"] for L in d["layers"]] == list(cc.LAYERS) for d in a001.values()))
     try:
         cc.mul_div_nonneg(-7, 500)
