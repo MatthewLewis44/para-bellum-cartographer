@@ -76,10 +76,10 @@ COLUMNS = {
     "Bureaus": ("ID", "Nation", "Bureau", "Role", "Primary", "Secondary", "Active from"),
     "Vendors": ("Country", "Vendor", "Fields"),
     "Start 1930": ("Nation", "Technologies held beyond base", "Doctrines held"),
-    "Treaties 1930": ("Nation",),
+    "Treaties 1930": ("Nation", "Treaty / alignment"),
 }
 OVERLAY_FORMAT = "pb-research-overlay/1"
-OVERLAY_KEYS = {"format", "_comment", "nations", "design_roles", "costs", "category_fold", "category_fallback", "flags", "flags_held",
+OVERLAY_KEYS = {"format", "_comment", "nations", "design_roles", "costs", "treaties", "flag_names", "inert_flags", "category_fold", "category_fallback", "flags", "flags_held",
                 "restrictions", "bureaus", "effects", "readings"}
 LEDGER_FORMAT = "pb-research-ledger/1"
 LEDGER_KINDS = {"designs": "design", "vendors": "vendor"}   # section -> id stem
@@ -587,13 +587,16 @@ class Convert:
                    for where, r in sheets["Vendors"]]
 
         start = self.start_state(sheets["Start 1930"], projects, ov.get("flags_held", {}), known_flags, nation)
-        restrictions = self.restrictions(ov.get("restrictions", []), cats, known_flags, sheets["Designs"])
+        treaties = self.treaties(ov.get("treaties", []), sheets["Treaties 1930"])
+        restrictions = self.restrictions(ov.get("restrictions", []), cats, known_flags, sheets["Designs"], treaties)
+        flag_rows = self.flag_registry(flags, projects, restrictions)
 
         categories = [{"id": qualify(c), "authored_id": c, "name": name,
                        "folded_into": qualify(fold[c]) if c in fold else None,
                        "fallback_into": qualify(fallback[c]) if c in fallback else None}
                       for c, name in cats.items()]
-        registries = {"flags": [{"id": qualify(f["id"]), "authored_id": f["id"], "type": f["type"]} for f in flags],
+        registries = {"flags": flag_rows,
+                      "treaties": list(treaties.values()),
                       "fielded": [qualify(f) for f in regs["fielded"]],
                       "focus": [qualify(f) for f in regs["focus"]],
                       "xp": [{"branch": b, "tier": t} for b, t in regs["xp"]]}
@@ -742,18 +745,81 @@ class Convert:
             bad.add("X104", "Start 1930", n, "nation has no start-state row")
         return out
 
-    def restrictions(self, rows, cats, known_flags, designs) -> list[dict]:
-        """(nation, scope, lifted_by) rows (D4). Scope is a category code, or design types:
-        exact 'Type / role' strings, because a submarine is a slice of NAV, not a category
-        (D3), and the workbook spells it two ways."""
+    def treaties(self, rows, sheet) -> dict[str, dict]:
+        """The closed treaty registry (D26, PB-SIM13): {id, name}, where the name is an exact
+        'Treaty / alignment' cell of the Treaties sheet, so a restriction can say WHICH treaty
+        it enforces without the interface hard-coding one. authored id -> shipped entry."""
+        bad, out = self.bad, {}
+        names = {r["Treaty / alignment"] for _, r in sheet}
+        if not isinstance(rows, list):
+            bad.add("X113", "overlay.treaties", rows, "a list of {id, name}")
+            return out
+        for n, t in enumerate(rows):
+            where = f"overlay.treaties[{n}]"
+            if not (isinstance(t, dict) and set(t) == {"id", "name"} and isinstance(t["id"], str)
+                    and re.fullmatch(r"[a-z0-9_]+", t["id"])):
+                bad.add("X113", where, t, "a treaty is {id: [a-z0-9_]+, name}")
+            elif t["name"] not in names:
+                bad.add("X112", where, t["name"], "not a Treaty / alignment cell of the Treaties sheet")
+            elif t["id"] in out:
+                bad.add("X106", where, t["id"], "treaty declared twice")
+            else:
+                out[t["id"]] = {"id": qualify(t["id"]), "authored_id": t["id"], "name": t["name"]}
+        return out
+
+    def flag_registry(self, flags, projects, restrictions) -> list[dict]:
+        """Every flag ships with a display name, and a flag that NOTHING references (no atom,
+        no restriction lifts by it) must say so: declared-unused is fine, silently-unused is
+        not (D26). Both directions refuse: an unreferenced flag with no inert reason, and an
+        inert reason on a flag something references."""
+        bad, ov = self.bad, self.overlay
+        names, inert = ov.get("flag_names", {}), ov.get("inert_flags", {})
+        known = {f["id"] for f in flags}
+        for key, table in (("flag_names", names), ("inert_flags", inert)):
+            if not isinstance(table, dict):
+                bad.add("X113", f"overlay.{key}", table, "an object keyed by flag id")
+                return []
+            for k, v in table.items():
+                if k not in known:
+                    bad.add("X112", f"overlay.{key}", k, "not a declared flag")
+                elif not (isinstance(v, str) and v.strip()):
+                    bad.add("X113", f"overlay.{key}.{k}", v, "a non-empty string")
+        used = {a["value"] for p in projects
+                for f in ("prerequisites", "cost_reducers", "acquisition", "doctrine_role")
+                for c in p.get(f, []) for a in c if a["kind"] == "flag"}
+        used |= {x["lifted_by"] for x in restrictions if x["lifted_by"]}
+        out = []
+        for f in flags:
+            fid = qualify(f["id"])
+            if f["id"] not in names:
+                bad.add("X113", "overlay.flag_names", f["id"], "every flag needs a display name")
+            if fid not in used and f["id"] not in inert:
+                bad.add("X112", "overlay.inert_flags", f["id"], "nothing references this flag: declare it inert, with a reason")
+            if fid in used and f["id"] in inert:
+                bad.add("X112", f"overlay.inert_flags.{f['id']}", f["id"], "declared inert, but something references it")
+            out.append({"id": fid, "authored_id": f["id"], "name": names.get(f["id"]), "type": f["type"],
+                        "inert_reason": inert.get(f["id"])})
+        return out
+
+    def restrictions(self, rows, cats, known_flags, designs, treaties) -> list[dict]:
+        """(nation, treaty, scope, lifted_by) rows (D4, D26). Scope is a category code, or design
+        types: exact 'Type / role' strings, because a submarine is a slice of NAV, not a
+        category (D3), and the workbook spells it two ways. Every declared treaty must be
+        enforced by some row, and every row must name a declared treaty."""
         bad, out = self.bad, []
         types = {r["Type / role"] for _, r in designs}
+        used = set()
         for n, x in enumerate(rows):
             where = f"overlay.restrictions[{n}]"
-            if not isinstance(x, dict) or set(x) != {"nation", "scope", "lifted_by"} \
+            if not isinstance(x, dict) or set(x) != {"nation", "treaty", "scope", "lifted_by"} \
                     or not isinstance(x["scope"], dict) or len(x["scope"]) != 1:
-                bad.add("X113", where, x, "a restriction is {nation, scope: {category | design_types}, lifted_by}")
+                bad.add("X113", where, x,
+                        "a restriction is {nation, treaty, scope: {category | design_types}, lifted_by}")
                 continue
+            if x["treaty"] not in treaties:
+                bad.add("X112", where, x["treaty"], "not a declared treaty")
+                continue
+            used.add(x["treaty"])
             if x["nation"] not in self.nations:
                 bad.add("X112", where, x["nation"], "not a nation")
                 continue
@@ -778,8 +844,10 @@ class Convert:
             if lifted is not None and lifted not in known_flags:
                 bad.add("X112", where, lifted, "not a declared flag (null if no covert channel exists)")
                 continue
-            out.append({"nation": self.nations[x["nation"]][0], "scope": scope,
-                        "lifted_by": qualify(lifted) if lifted is not None else None})
+            out.append({"nation": self.nations[x["nation"]][0], "treaty": treaties[x["treaty"]]["id"],
+                        "scope": scope, "lifted_by": qualify(lifted) if lifted is not None else None})
+        for t in sorted(set(treaties) - used):
+            bad.add("X112", "overlay.treaties", t, "declared, but no restriction enforces it")
         return out
 
 

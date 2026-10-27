@@ -57,7 +57,9 @@
       ],
       "Treaties 1930": [
         ["Nation", "Treaty / alignment", "Restrictions", "Covert or legal workarounds", "How it ends"],
-        ["Northland", "prose", "prose", "prose", "prose"]
+        ["Northland", "Pact of Testing", "prose", "prose", "prose"],
+        ["Midland", "Accord of Trials", "prose", "prose", "prose"],
+        ["Lowland", "Lowland convention", "prose", "prose", "prose"]
       ]
     },
     "registries": [
@@ -96,12 +98,15 @@
       },
       "category_fold": {"SSS": "BBB"},
       "category_fallback": {"CCC": "AAA"},
-      "flags": [{"id": "test_covert_two", "type": "Covert channel"}],
+      "flags": [{"id": "test_covert_two", "type": "Covert channel"}, {"id": "test_dormant", "type": "Covert channel"}],
+      "flag_names": {"test_shortage": "Test shortage", "test_covert": "Test covert school", "test_covert_two": "Second test channel", "test_dormant": "Dormant test channel"},
+      "inert_flags": {"test_dormant": "synthetic: the sheet does not say which ban it circumvents"},
+      "treaties": [{"id": "pact_of_testing", "name": "Pact of Testing"}, {"id": "accord_of_trials", "name": "Accord of Trials"}],
       "flags_held": {"Northland": ["test_covert"]},
       "restrictions": [
-        {"nation": "Northland", "scope": {"category": "SSS"}, "lifted_by": "test_covert"},
-        {"nation": "Northland", "scope": {"design_types": ["Submarine", "Light tank"]}, "lifted_by": "test_covert_two"},
-        {"nation": "Midland", "scope": {"category": "AAA"}, "lifted_by": null}
+        {"nation": "Northland", "treaty": "pact_of_testing", "scope": {"category": "SSS"}, "lifted_by": "test_covert"},
+        {"nation": "Northland", "treaty": "pact_of_testing", "scope": {"design_types": ["Submarine", "Light tank"]}, "lifted_by": "test_covert_two"},
+        {"nation": "Midland", "treaty": "accord_of_trials", "scope": {"category": "AAA"}, "lifted_by": null}
       ],
       "bureaus": {"DE_OSTWERK": {"active": true, "capacity": 2}, "DE_KESSEL": {"active": false}},
       "effects": {"AAA-02": {"gate_only": false, "modifiers": [{"target": "design_stat", "scope": "pb:tank", "stat": "armour_front_mm", "per_mille": 100}]},
@@ -130,8 +135,8 @@
     {"id": "x111_active_without_capacity", "code": "X111", "patch": [{"overlay": {"bureaus": {"DE_OSTWERK": {"active": true}}}}]},
     {"id": "x111_capacity_zero", "code": "X111", "patch": [{"overlay": {"bureaus": {"DE_OSTWERK": {"active": true, "capacity": 0}}}}]},
     {"id": "x112_overlay_unknown_bureau", "code": "X112", "patch": [{"overlay": {"bureaus": {"DE_NOBODY": {"active": false}}}}]},
-    {"id": "x112_restriction_unknown_type", "code": "X112", "patch": [{"overlay": {"restrictions": [{"nation": "Northland", "scope": {"design_types": ["Airship"]}, "lifted_by": "test_covert"}]}}]},
-    {"id": "x112_restriction_unknown_flag", "code": "X112", "patch": [{"overlay": {"restrictions": [{"nation": "Northland", "scope": {"category": "AAA"}, "lifted_by": "test_nothing"}]}}]},
+    {"id": "x112_restriction_unknown_type", "code": "X112", "patch": [{"overlay": {"restrictions": [{"nation": "Northland", "treaty": "pact_of_testing", "scope": {"category": "SSS"}, "lifted_by": "test_covert"}, {"nation": "Northland", "treaty": "pact_of_testing", "scope": {"design_types": ["Submarine", "Light tank"]}, "lifted_by": "test_covert_two"}, {"nation": "Midland", "treaty": "accord_of_trials", "scope": {"category": "AAA"}, "lifted_by": null}, {"nation": "Northland", "treaty": "pact_of_testing", "scope": {"design_types": ["Airship"]}, "lifted_by": "test_covert"}]}}]},
+    {"id": "x112_restriction_unknown_flag", "code": "X112", "patch": [{"overlay": {"restrictions": [{"nation": "Northland", "treaty": "pact_of_testing", "scope": {"category": "SSS"}, "lifted_by": "test_covert"}, {"nation": "Northland", "treaty": "pact_of_testing", "scope": {"design_types": ["Submarine", "Light tank"]}, "lifted_by": "test_covert_two"}, {"nation": "Midland", "treaty": "accord_of_trials", "scope": {"category": "AAA"}, "lifted_by": null}, {"nation": "Northland", "treaty": "pact_of_testing", "scope": {"category": "AAA"}, "lifted_by": "test_nothing"}]}}]},
     {"id": "x112_flags_held_unknown_flag", "code": "X112", "patch": [{"overlay": {"flags_held": {"Northland": ["test_nothing"]}}}]},
     {"id": "x112_effect_unknown_id", "code": "X112", "patch": [{"overlay": {"effects": {"ZZ-99": {"gate_only": true, "modifiers": []}}}}]},
     {"id": "x113_nations_missing", "code": "X113", "patch": [{"overlay": {"nations": {}}}]},
@@ -153,6 +158,13 @@
     {"id": "x112_override_unknown_project", "code": "X112", "patch": [{"overlay": {"costs": {"technology": [{"currency": "research", "amount": 100}], "doctrine": [{"currency": "doctrine", "amount": 80}], "design": [{"currency": "research", "amount": 60}, {"currency": "money", "amount": 40}, {"currency": "steel", "amount": 20}], "variant_fraction_per_mille": 500, "era_multiplier": {"growth_per_year_per_mille": 1100, "cap_per_mille": 2000}, "overrides": {"ZZ-99": {"cost": [{"currency": "research", "amount": 150}], "reason": "no such row"}}}}}]},
     {"id": "x108_override_key_names_design_and_tech", "code": "X108", "patch": [{"add_row": ["Designs", ["Southland", "Aircraft", "Fighter", "AAA-02", null, 1936, "Varenne", null, null, null, null, null, "prose"]]}, {"overlay": {"costs": {"technology": [{"currency": "research", "amount": 100}], "doctrine": [{"currency": "doctrine", "amount": 80}], "design": [{"currency": "research", "amount": 60}, {"currency": "money", "amount": 40}, {"currency": "steel", "amount": 20}], "variant_fraction_per_mille": 500, "era_multiplier": {"growth_per_year_per_mille": 1100, "cap_per_mille": 2000}, "overrides": {"AAA-02": {"cost": [{"currency": "research", "amount": 150}], "reason": "which row?"}}}}}]},
     {"id": "x115_vocabulary_missing", "code": "X115", "patch": [{"vocabulary": null}]},
+    {"id": "x112_treaty_unreferenced", "code": "X112", "patch": [{"overlay": {"treaties": [{"id": "pact_of_testing", "name": "Pact of Testing"}, {"id": "accord_of_trials", "name": "Accord of Trials"}, {"id": "lowland_convention", "name": "Lowland convention"}]}}]},
+    {"id": "x112_treaty_name_not_in_sheet", "code": "X112", "patch": [{"overlay": {"treaties": [{"id": "pact_of_testing", "name": "Pact of Testing"}, {"id": "accord_of_trials", "name": "Accord of Nothing"}]}}]},
+    {"id": "x113_flag_unnamed", "code": "X113", "patch": [{"overlay": {"flag_names": {"test_shortage": "Test shortage", "test_covert": "Test covert school", "test_covert_two": "Second test channel"}}}]},
+    {"id": "x112_flag_unreferenced_undeclared", "code": "X112", "patch": [{"overlay": {"inert_flags": {}}}]},
+    {"id": "x112_inert_flag_referenced", "code": "X112", "patch": [{"overlay": {"inert_flags": {"test_dormant": "synthetic", "test_covert": "but a restriction lifts by it"}}}]},
+    {"id": "x112_restriction_unknown_treaty", "code": "X112", "patch": [{"overlay": {"restrictions": [{"nation": "Northland", "treaty": "pact_of_testing", "scope": {"category": "SSS"}, "lifted_by": "test_covert"}, {"nation": "Northland", "treaty": "pact_of_testing", "scope": {"design_types": ["Submarine", "Light tank"]}, "lifted_by": "test_covert_two"}, {"nation": "Midland", "treaty": "accord_of_trials", "scope": {"category": "AAA"}, "lifted_by": null}, {"nation": "Midland", "treaty": "nonesuch", "scope": {"category": "BBB"}, "lifted_by": null}]}}]},
+    {"id": "x113_restriction_without_treaty", "code": "X113", "patch": [{"overlay": {"restrictions": [{"nation": "Northland", "treaty": "pact_of_testing", "scope": {"category": "SSS"}, "lifted_by": "test_covert"}, {"nation": "Northland", "treaty": "pact_of_testing", "scope": {"design_types": ["Submarine", "Light tank"]}, "lifted_by": "test_covert_two"}, {"nation": "Midland", "treaty": "accord_of_trials", "scope": {"category": "AAA"}, "lifted_by": null}, {"nation": "Midland", "scope": {"category": "BBB"}, "lifted_by": null}]}}]},
     {"id": "x113_overlay_unknown_key", "code": "X113", "patch": [{"overlay": {"bogus_key": {}}}]},
     {"id": "x113_overlay_format", "code": "X113", "patch": [{"overlay": {"format": "pb-research-overlay/2"}}]},
     {"id": "x113_effect_shape", "code": "X113", "patch": [{"overlay": {"effects": {"AAA-02": {"modifiers": []}}}}]},

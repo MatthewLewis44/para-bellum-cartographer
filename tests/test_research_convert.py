@@ -236,7 +236,16 @@ def main() -> int:
               {"growth_per_year_per_mille": 1100, "cap_per_mille": 2000})
         no_route = [x for x in research["restrictions"] if x["nation"] == "MID"]
         check("ships/a restriction with no covert route ships lifted_by null", no_route ==
-              [{"nation": "MID", "scope": {"category": "pb:aaa"}, "lifted_by": None}], json.dumps(no_route))
+              [{"nation": "MID", "treaty": "pb:accord_of_trials", "scope": {"category": "pb:aaa"}, "lifted_by": None}],
+              json.dumps(no_route))
+        reg = research["registries"]
+        check("ships/treaty registry, each enforced", [t["id"] for t in reg["treaties"]] ==
+              ["pb:pact_of_testing", "pb:accord_of_trials"]
+              and {x["treaty"] for x in research["restrictions"]} == {"pb:pact_of_testing", "pb:accord_of_trials"})
+        flags = {f["authored_id"]: f for f in reg["flags"]}
+        check("ships/every flag named; only the unreferenced one inert",
+              all(f["name"] for f in flags.values())
+              and [k for k, f in flags.items() if f["inert_reason"]] == ["test_dormant"], json.dumps(flags))
         bureaus = {b["authored_id"]: b for b in json.loads(produced["bureau.json"])["bureaus"]}
         check("ships/roster cut is a flag", len(bureaus) == 4 and bureaus["DE_OSTWERK"]["capacity"] == 2
               and bureaus["DE_KESSEL"]["active"] is False and bureaus["DE_KESSEL"]["capacity"] is None)

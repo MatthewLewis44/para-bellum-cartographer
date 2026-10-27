@@ -593,17 +593,42 @@
       {
         "id": "pb:test_shortage",
         "authored_id": "test_shortage",
-        "type": "Economy"
+        "name": "Test shortage",
+        "type": "Economy",
+        "inert_reason": null
       },
       {
         "id": "pb:test_covert",
         "authored_id": "test_covert",
-        "type": "Covert channel"
+        "name": "Test covert school",
+        "type": "Covert channel",
+        "inert_reason": null
       },
       {
         "id": "pb:test_covert_two",
         "authored_id": "test_covert_two",
-        "type": "Covert channel"
+        "name": "Second test channel",
+        "type": "Covert channel",
+        "inert_reason": null
+      },
+      {
+        "id": "pb:test_dormant",
+        "authored_id": "test_dormant",
+        "name": "Dormant test channel",
+        "type": "Covert channel",
+        "inert_reason": "synthetic: the sheet does not say which ban it circumvents"
+      }
+    ],
+    "treaties": [
+      {
+        "id": "pb:pact_of_testing",
+        "authored_id": "pact_of_testing",
+        "name": "Pact of Testing"
+      },
+      {
+        "id": "pb:accord_of_trials",
+        "authored_id": "accord_of_trials",
+        "name": "Accord of Trials"
       }
     ],
     "fielded": [
@@ -714,6 +739,7 @@
   "restrictions": [
     {
       "nation": "NTH",
+      "treaty": "pb:pact_of_testing",
       "scope": {
         "category": "pb:bbb"
       },
@@ -721,6 +747,7 @@
     },
     {
       "nation": "NTH",
+      "treaty": "pb:pact_of_testing",
       "scope": {
         "design_types": [
           "Submarine",
@@ -731,6 +758,7 @@
     },
     {
       "nation": "MID",
+      "treaty": "pb:accord_of_trials",
       "scope": {
         "category": "pb:aaa"
       },
