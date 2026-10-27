@@ -887,8 +887,8 @@ class Convert:
 
     def restrictions(self, rows, cats, known_flags, designs, treaties) -> list[dict]:
         """(nation, treaty, scope, lifted_by) rows (D4, D26). Scope is a category code, or design
-        types: exact 'Type / role' strings, because a submarine is a slice of NAV, not a
-        category (D3), and the workbook spells it two ways. Every declared treaty must be
+        types: exact 'Type / role' strings, because a banned kind of design can be a slice of a
+        category rather than a whole one (D3), and one kind may be spelled two ways. Every declared treaty must be
         enforced by some row, and every row must name a declared treaty."""
         bad, out = self.bad, []
         types = {r["Type / role"] for _, r in designs}
