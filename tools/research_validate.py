@@ -1,6 +1,6 @@
-"""The research validator, R1-R9, over the SHIPPED content JSON (Sprint 13, AD-M37, D17).
+"""The research validator, R1-R9 and R12, over the SHIPPED content JSON (Sprint 13, AD-M37, D17).
 
-    uv run python tools/research_validate.py <dir holding research.json, bureau.json, vendor.json>
+    uv run python tools/research_validate.py <dir holding research.json, bureau.json, vendor.json, design_model.json>
 
 validate.py does not exist (Matthew, 2026-10-27), so this port is the REFERENCE
 implementation, and the reading recorded beside each rule in
@@ -41,8 +41,8 @@ def atoms(p: dict, fields=ATOM_FIELDS):
 
 
 class Validator:
-    def __init__(self, research: dict, bureaus: list[dict], vendors: list[dict]):
-        self.r, self.bureaus, self.vendors = research, bureaus, vendors
+    def __init__(self, research: dict, bureaus: list[dict], vendors: list[dict], models: list[dict]):
+        self.r, self.bureaus, self.vendors, self.models = research, bureaus, vendors, models
         self.projects = {p["id"]: p for p in research["projects"]}
         self.bureau = {b["id"]: b for b in bureaus}
         self.vendor_ids = {v["id"] for v in vendors}
@@ -267,8 +267,30 @@ class Validator:
                     self.fail("V109", self.label(p), p["variant_of"], f"parent is {parent['nation']}, not {p['nation']}")
         self.measured["V109"] = f"{n} variants"
 
+    # R12 ----------------------------------------------------------------
+    def r12(self) -> None:
+        models = {m["id"]: m for m in self.models}
+        for m in self.models:
+            p = self.projects.get(m["id"])
+            if p is None or p["kind"] != "design":
+                self.fail("V112", f"model {m['id']}", m["id"], "not a design project")
+                continue
+            if m["unlock"] != m["id"]:
+                self.fail("V112", f"model {self.label(p)}", m["unlock"], "unlock does not name its own study")
+            lead = self.bureau.get(p["lead"] or "")
+            if lead is not None:
+                if not (lead["active"] and lead["nation"] == p["nation"] and lead["role"] == "Lead"):
+                    self.fail("V112", f"model {self.label(p)}", p["lead"], "lead is not an ACTIVE Lead of its own nation")
+            elif not p["acquisition"] or any(a["kind"] not in ("seized", "captured") for _, a in atoms(p, ("acquisition",))):
+                self.fail("V112", f"model {self.label(p)}", p["acquisition_source"],
+                          "no lead, and not reachable by seizure or capture alone")
+            sup = m["supersedes"]
+            if sup is not None and (sup not in models or models[sup]["class"] != m["class"]):
+                self.fail("V112", f"model {self.label(p)}", sup, "supersedes no model of the same class in the slice")
+        self.measured["V112"] = f"{len(self.models)} models in the slice"
+
     def run(self) -> list:
-        for rule in (self.r1, self.r2, self.r3, self.r4, self.r5, self.r6, self.r7, self.r8, self.r9):
+        for rule in (self.r1, self.r2, self.r3, self.r4, self.r5, self.r6, self.r7, self.r8, self.r9, self.r12):
             rule()
         return self.failures
 
@@ -276,7 +298,8 @@ class Validator:
 def load(d: Path) -> Validator:
     def read(name):
         return json.loads((d / name).read_text(encoding="utf-8"))
-    return Validator(read("research.json"), read("bureau.json")["bureaus"], read("vendor.json")["vendors"])
+    return Validator(read("research.json"), read("bureau.json")["bureaus"], read("vendor.json")["vendors"],
+                     read("design_model.json")["models"])
 
 
 def main(argv: list[str]) -> int:

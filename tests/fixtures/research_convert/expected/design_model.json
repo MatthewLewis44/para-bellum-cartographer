@@ -1,0 +1,43 @@
+{
+  "format": "pb-content/model/1",
+  "models": [
+    {
+      "id": "pb:design_0001",
+      "class": "pb:tank",
+      "name": "Lancer Mk I (prototype B)",
+      "year": 1931,
+      "year_source": "workbook",
+      "unlock": "pb:design_0001",
+      "supersedes": null,
+      "stats": {},
+      "traits": [],
+      "cost": {
+        "steel": 4,
+        "oil": 1
+      },
+      "production": {
+        "units_per_factory_per_month": 2
+      },
+      "production_template": "pb:test_tank"
+    },
+    {
+      "id": "pb:design_0002",
+      "class": "pb:tank",
+      "name": "Lancer Mk II",
+      "year": 1933,
+      "year_source": "workbook",
+      "unlock": "pb:design_0002",
+      "supersedes": "pb:design_0001",
+      "stats": {},
+      "traits": [],
+      "cost": {
+        "steel": 4,
+        "oil": 1
+      },
+      "production": {
+        "units_per_factory_per_month": 2
+      },
+      "production_template": "pb:test_tank"
+    }
+  ]
+}

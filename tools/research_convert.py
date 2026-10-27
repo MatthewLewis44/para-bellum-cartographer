@@ -79,7 +79,7 @@ COLUMNS = {
     "Treaties 1930": ("Nation", "Treaty / alignment"),
 }
 OVERLAY_FORMAT = "pb-research-overlay/1"
-OVERLAY_KEYS = {"format", "_comment", "nations", "design_roles", "costs", "treaties", "flag_names", "inert_flags", "category_fold", "category_fallback", "flags", "flags_held",
+OVERLAY_KEYS = {"format", "_comment", "nations", "design_roles", "role_classes", "unmodelled_roles", "costs", "treaties", "flag_names", "inert_flags", "category_fold", "category_fallback", "flags", "flags_held",
                 "restrictions", "bureaus", "effects", "readings"}
 LEDGER_FORMAT = "pb-research-ledger/1"
 LEDGER_KINDS = {"designs": "design", "vendors": "vendor"}   # section -> id stem
@@ -205,6 +205,20 @@ def load_pools(path: Path, bad: Refusals) -> frozenset:
         return frozenset()
 
 
+def load_templates(path: Path, bad: Refusals) -> dict[str, dict]:
+    """The game's hand-authored models (Content/pb/model.json). A generated design model copies
+    its production cost and rate from one of these, named per role in the overlay: read here,
+    never copied by hand (D29)."""
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        if doc.get("format") != "pb-content/model/1":
+            raise ValueError("expected format pb-content/model/1")
+        return {m["id"]: m for m in doc["models"]}
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        bad.add("X116", str(path), path.name, f"cannot read the template models: {e}")
+        return {}
+
+
 def load_overlay(path: Path, bad: Refusals) -> dict:
     try:
         ov = json.loads(path.read_text(encoding="utf-8"))
@@ -294,6 +308,8 @@ class Convert:
     mint: bool
     bad: Refusals = field(default_factory=Refusals)
     pools: frozenset = frozenset()   # material currencies, from the game's vocabulary
+    templates: dict = field(default_factory=dict)   # the game's authored models, by id
+    broken_chains: list = field(default_factory=list)   # (design, parent, why), reported by name
 
     def __post_init__(self) -> None:
         """The nation table is DATA (overlay.nations), so a new nation is an overlay row,
@@ -607,7 +623,77 @@ class Convert:
                               "era_multiplier": era},
             "bureau.json": {"format": "pb-content/bureau/1", "bureaus": bureaus},
             "vendor.json": {"format": "pb-content/vendor/1", "vendors": vendors},
+            "design_model.json": {"format": "pb-content/model/1", "models": self.design_models(projects, bureaus)},
         }
+
+    def design_models(self, projects: list[dict], bureaus: list[dict]) -> list[dict]:
+        """One generated model per SLICE design (D28, D29): the model id IS the design id, and its
+        unlock names that design's own study, so a nation may produce it once it holds the study.
+        The slice is the designs whose lead is an ACTIVE bureau of their own nation and whose
+        role has a class. A role with no class is declared unmodelled, with a reason. The
+        workbook's 'Variant of' is LINEAGE and ships as supersedes, never as an AD-M36 variant:
+        a chain whose parent is outside the slice, or of another class, ships supersedes null
+        and is reported by name. Cost and production are the named template's (placeholders)."""
+        bad, ov = self.bad, self.overlay
+        rc, um = ov.get("role_classes"), ov.get("unmodelled_roles")
+        if not isinstance(rc, dict) or not isinstance(um, dict):
+            bad.add("X113", "overlay.role_classes", sorted(k for k in ("role_classes", "unmodelled_roles") if k not in ov),
+                    "role_classes {role: {class, template}} and unmodelled_roles {role: reason} are required")
+            return []
+        roles = set(ov.get("design_roles", []))
+        for r in sorted(set(rc) & set(um)):
+            bad.add("X113", "overlay.role_classes", r, "both mapped to a class and declared unmodelled")
+        for r in sorted((set(rc) | set(um)) - roles):
+            bad.add("X112", "overlay.role_classes", r, "not in design_roles")
+        for r in sorted(roles - set(rc) - set(um)):
+            bad.add("X113", "overlay.role_classes", r, "every design role is mapped to a class or declared unmodelled")
+        for r, why in um.items():
+            if not (isinstance(why, str) and why.strip()):
+                bad.add("X113", f"overlay.unmodelled_roles.{r}", why, "a one-line reason")
+        for r, v in rc.items():
+            where = f"overlay.role_classes.{r}"
+            if not (isinstance(v, dict) and set(v) == {"class", "template"}):
+                bad.add("X113", where, v, "{class, template}")
+            elif v["template"] not in self.templates:
+                bad.add("X112", where, v["template"], "not a model in the template file")
+            elif self.templates[v["template"]]["class"] != v["class"]:
+                bad.add("X113", where, v["template"], f"is class {self.templates[v['template']]['class']}, not {v['class']}")
+        base_year = ov.get("readings", {}).get("base_model_year")
+        if base_year is not None and not (isinstance(base_year, int) and not isinstance(base_year, bool)):
+            bad.add("X113", "overlay.readings.base_model_year", base_year, "an integer year")
+        if bad.items:
+            return []
+        lead_ok = {b["id"]: (b["nation"], b["active"]) for b in bureaus}
+        designs = {p["id"]: p for p in projects if p["kind"] == "design"}
+        in_slice = [p for p in designs.values() if p["lead"] is not None and p["role"] in rc
+                    and lead_ok[p["lead"]] == (p["nation"], True)]
+        ids = {p["id"] for p in in_slice}
+        models = []
+        for p in in_slice:
+            cls, tpl = rc[p["role"]]["class"], rc[p["role"]]["template"]
+            if p["year_declared"] == BASE:
+                if base_year is None:
+                    bad.add("X117", f"design {p['id']}", p["name"], "a base-year design in the slice needs "
+                            "readings.base_model_year (what a model's year means is the engine's, not ours)")
+                    continue
+                year, source = base_year, "reading:base_model_year"
+            else:
+                year, source = p["year"], "workbook"
+            sup = p["variant_of"]
+            if sup is not None:
+                parent = designs[sup]
+                if sup not in ids:
+                    self.broken_chains.append((p["name"], parent["name"], "parent is not in the slice"))
+                    sup = None
+                elif rc[parent["role"]]["class"] != cls:
+                    self.broken_chains.append((p["name"], parent["name"], f"parent is class {rc[parent['role']]['class']}"))
+                    sup = None
+            t = self.templates[tpl]
+            models.append({"id": p["id"], "class": cls, "name": p["name"], "year": year, "year_source": source,
+                           "unlock": p["id"], "supersedes": sup, "stats": {}, "traits": [],
+                           "cost": dict(t["cost"]), "production": dict(t["production"]),
+                           "production_template": tpl})
+        return models
 
     def apply_costs(self, projects: list[dict]) -> dict | None:
         """Bake each project's PRE-ERA cost (D19, D24): the flat base for its kind, times the
@@ -860,6 +946,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--workbook", required=True, type=Path)
     ap.add_argument("--vocabulary", required=True, type=Path,
                     help="the game's Content/vocabulary.json: its pools are the material currencies")
+    ap.add_argument("--models", required=True, type=Path,
+                    help="the game's Content/pb/model.json: the templates generated design models copy from")
     ap.add_argument("--overlay", required=True, type=Path)
     ap.add_argument("--ledger", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
@@ -873,10 +961,14 @@ def main(argv: list[str] | None = None) -> int:
     print(f"overlay  {a.overlay}  sha256 {sha256(a.overlay) if a.overlay.exists() else '(missing)'}")
     print(f"ledger   {a.ledger}  sha256 {sha256(a.ledger) if a.ledger.exists() else '(new)'}")
     print(f"vocabulary {a.vocabulary}  sha256 {sha256(a.vocabulary) if a.vocabulary.exists() else '(missing)'}")
+    print(f"models   {a.models}  sha256 {sha256(a.models) if a.models.exists() else '(missing)'}")
     pools = load_pools(a.vocabulary, bad)
+    templates = load_templates(a.models, bad)
     files = {}
+    conv = None
     if not bad.items:
-        conv = Convert(openpyxl.load_workbook(a.workbook, data_only=True), overlay, ledger, a.mint, bad, pools)
+        conv = Convert(openpyxl.load_workbook(a.workbook, data_only=True), overlay, ledger, a.mint, bad, pools,
+                       templates)
         files = conv.run()
     if bad.items:
         print(f"REFUSED - {len(bad.items)} refusal(s), nothing written. By code: "
@@ -900,6 +992,12 @@ def main(argv: list[str] | None = None) -> int:
           f"vendors {len(files['vendor.json']['vendors'])}, "
           f"effects encoded {sum(p.get('effect') is not None for p in r['projects'])}")
     print(f"  ledger: {ledger.minted} id(s) minted" + (f", written to {a.ledger}" if ledger.minted else ""))
+    dm = files["design_model.json"]["models"]
+    print(f"  design models (the slice): {len(dm)} of {kinds['design']} designs, by class "
+          + ", ".join(f"{c} {n}" for c, n in sorted(collections.Counter(m["class"] for m in dm).items())))
+    print(f"  supersedes chains broken at the slice edge: {len(conv.broken_chains)}")
+    for name, parent, why in conv.broken_chains:
+        print(f"    {name!r} -> {parent!r}: {why}")
     return 0
 
 

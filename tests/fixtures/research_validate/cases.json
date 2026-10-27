@@ -9,6 +9,8 @@
      "patch": [{"start": "NTH", "set": {"technologies": ["pb:aaa_01", "pb:aaa_02", "pb:sss_01"]}}]},
     {"id": "a05_r2_one_bureau_name_in_two_nations",
      "patch": [{"bureau": "pb:fr_varenne", "set": {"name": "Ostwerk"}}]},
+    {"id": "a06_r12_captured_design_is_reachable_without_a_lead",
+     "patch": [{"project": "pb:design_0001", "set": {"lead": null, "acquisition": [[{"kind": "captured", "value": "NTH"}]]}}]},
     {"id": "a04_r8_non_id_alternatives_ignored",
      "patch": [{"start": "STH", "set": {"technologies": ["pb:aaa_01", "pb:aaa_02"], "doctrines": ["pb:bbb_90", "pb:ql_01", "pb:ql_03"]}}]}
   ],
@@ -30,6 +32,10 @@
     {"id": "r7_asymmetric_pair", "code": "V107", "patch": [{"project": "pb:ql_02", "set": {"exclusive_with": []}}]},
     {"id": "r7_exclusive_with_itself", "code": "V107", "patch": [{"project": "pb:ql_02", "set": {"exclusive_with": ["pb:ql_01", "pb:ql_02"]}}]},
     {"id": "r8_held_without_its_prerequisite", "code": "V108", "patch": [{"start": "STH", "set": {"doctrines": ["pb:bbb_90", "pb:ql_03"]}}]},
-    {"id": "r9_variant_of_another_nation", "code": "V109", "patch": [{"project": "pb:design_0004", "set": {"variant_of": "pb:design_0001"}}]}
+    {"id": "r9_variant_of_another_nation", "code": "V109", "patch": [{"project": "pb:design_0004", "set": {"variant_of": "pb:design_0001"}}]},
+    {"id": "r12_lead_inactive", "code": "V112", "patch": [{"bureau": "pb:de_ostwerk", "set": {"active": false, "capacity": null}}]},
+    {"id": "r12_unlock_names_another_study", "code": "V112", "patch": [{"model": "pb:design_0001", "set": {"unlock": "pb:design_0002"}}]},
+    {"id": "r12_supersedes_another_class", "code": "V112", "patch": [{"model": "pb:design_0001", "set": {"class": "pb:artillery"}}]},
+    {"id": "r12_import_only_design_in_the_slice", "code": "V112", "patch": [{"project": "pb:design_0001", "set": {"lead": null, "acquisition": [[{"kind": "import", "value": "pb:vendor_0001"}]], "tags": ["DEMO", "COND"]}}]}
   ]
 }

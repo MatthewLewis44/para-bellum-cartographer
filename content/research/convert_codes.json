@@ -32,6 +32,10 @@
     { "code": "X114", "rule": "undeclared-cell",
       "summary": "A cell outside the grammar (Base holders, Active from, Secondary, Tags, Exclusive with, a Type / role absent from overlay.design_roles) that does not match its declared form. The overlay may declare its reading; the converter never guesses." },
     { "code": "X115", "rule": "bad-vocabulary",
-      "summary": "The game's Content/vocabulary.json (passed as --vocabulary) cannot be read, or has no list of pools. Its pools are the only material currencies a study may cost." }
+      "summary": "The game's Content/vocabulary.json (passed as --vocabulary) cannot be read, or has no list of pools. Its pools are the only material currencies a study may cost." },
+    { "code": "X116", "rule": "bad-model-templates",
+      "summary": "The game's Content/pb/model.json (passed as --models) cannot be read. Its hand-authored models are the templates a generated design model copies its production cost and rate from (D29)." },
+    { "code": "X117", "rule": "base-model-year-undeclared",
+      "summary": "A design in the slice has the year 'base', and the overlay declares no readings.base_model_year. A model needs an integer year, and what that year MEANS is the engine's to say, so the converter never picks one." }
   ]
 }

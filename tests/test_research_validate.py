@@ -29,19 +29,22 @@ BASE = ROOT / "tests" / "fixtures" / "research_convert" / "expected"
 CASES = json.loads((ROOT / "tests" / "fixtures" / "research_validate" / "cases.json").read_text(encoding="utf-8"))
 
 
-def base() -> tuple[dict, list, list]:
+def base() -> tuple[dict, list, list, list]:
     def read(name):
         return json.loads((BASE / name).read_text(encoding="utf-8"))
-    return read("research.json"), read("bureau.json")["bureaus"], read("vendor.json")["vendors"]
+    return (read("research.json"), read("bureau.json")["bureaus"], read("vendor.json")["vendors"],
+            read("design_model.json")["models"])
 
 
 def apply(patch: list) -> rv.Validator:
-    research, bureaus, vendors = copy.deepcopy(base())
+    research, bureaus, vendors, models = copy.deepcopy(base())
     for op in patch:
         if "project" in op:
             rows, key, sel = research["projects"], "id", op["project"]
         elif "bureau" in op:
             rows, key, sel = bureaus, "id", op["bureau"]
+        elif "model" in op:
+            rows, key, sel = models, "id", op["model"]
         elif "start" in op:
             rows, key, sel = research["start"], "nation", op["start"]
         else:
@@ -49,7 +52,7 @@ def apply(patch: list) -> rv.Validator:
         hits = [r for r in rows if r[key] == sel]
         assert len(hits) == 1, f"patch {op}: {len(hits)} rows match"
         hits[0].update(op["set"])
-    return rv.Validator(research, bureaus, vendors)
+    return rv.Validator(research, bureaus, vendors, models)
 
 
 def main() -> int:

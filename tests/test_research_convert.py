@@ -41,7 +41,7 @@ import research_convert as rc  # noqa: E402
 FIX = ROOT / "tests" / "fixtures" / "research_convert"
 EXPECTED = FIX / "expected"
 CASES = json.loads((FIX / "cases.json").read_text(encoding="utf-8"))
-OUT_FILES = ("research.json", "bureau.json", "vendor.json")
+OUT_FILES = ("research.json", "bureau.json", "vendor.json", "design_model.json")
 KEY = {"Categories": "Code", "Technologies": "ID", "Doctrines": "ID", "Bureaus": "ID",
        "Designs": "Design", "Vendors": "Vendor", "Start 1930": "Nation", "Treaties 1930": "Nation"}
 
@@ -73,6 +73,8 @@ def apply(base: dict, patch: list) -> dict:
             case["overlay"].update(arg)
         elif verb == "ledger":
             case["ledger"] = {"format": rc.LEDGER_FORMAT, "designs": [], "vendors": [], **arg}
+        elif verb == "models":   # null: no template model file is written
+            case["models"] = arg
         elif verb == "vocabulary":   # null: no vocabulary file is written
             case["vocabulary"] = arg
         else:
@@ -100,12 +102,15 @@ def build(case: dict, d: Path) -> tuple[Path, Path, Path]:
         paths[2].write_text(json.dumps(case["ledger"], ensure_ascii=False), encoding="utf-8")
     if case.get("vocabulary") is not None:
         (d / "vocabulary.json").write_text(json.dumps(case["vocabulary"]), encoding="utf-8")
+    if case.get("models") is not None:
+        (d / "model.json").write_text(json.dumps(case["models"]), encoding="utf-8")
     return paths
 
 
 def run(wb: Path, ov: Path, led: Path, out: Path, mint: bool = True) -> tuple[int, str]:
-    """The vocabulary is read from beside the workbook, where build() writes it."""
-    argv = ["--workbook", str(wb), "--vocabulary", str(wb.parent / "vocabulary.json"), "--overlay", str(ov),
+    """The vocabulary and template models are read from beside the workbook, where build() writes them."""
+    argv = ["--workbook", str(wb), "--vocabulary", str(wb.parent / "vocabulary.json"),
+            "--models", str(wb.parent / "model.json"), "--overlay", str(ov),
             "--ledger", str(led), "--out", str(out)]
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
@@ -197,6 +202,37 @@ def main() -> int:
                 encoding="utf-8"))["projects"] if p["kind"] == "design"}
             check("ledger/rename keeps the id", after.get("ZX-3 Ausf. A") == ids_before["ZX-3"])
 
+        # 4b. a base-year design in the slice, through the declared reading only (D29)
+        based = apply(CASES["base"], [{"set": ["Designs", "Lancer Mk I (prototype B)", "Year", "base"]},
+                                      {"overlay": {"readings": {"base_holders": {}, "base_model_year": 1930}}}])
+        d5 = d / "based"
+        d5.mkdir()
+        wb5, ov5, led5 = build(based, d5)
+        led5.write_bytes(ledger_before)
+        code, text = run(wb5, ov5, led5, d5 / "out", mint=False)
+        check("models/a base design is modelled only through the reading", code == 0, text)
+        if code == 0:
+            m = {x["name"]: x for x in json.loads((d5 / "out" / "design_model.json").read_text(
+                encoding="utf-8"))["models"]}["Lancer Mk I (prototype B)"]
+            check("models/the reading is recorded as the year's source",
+                  (m["year"], m["year_source"]) == (1930, "reading:base_model_year"), json.dumps(m))
+
+        # 4c. lineage broken at the slice edge: shipped as null and reported BY NAME (D29)
+        edge = apply(CASES["base"], [{"set": ["Designs", "Lancer Mk I (prototype B)", "Design bureau", "Kessel"]}])
+        d6 = d / "edge"
+        d6.mkdir()
+        wb6, ov6, led6 = build(edge, d6)
+        led6.write_bytes(ledger_before)
+        code, text = run(wb6, ov6, led6, d6 / "out", mint=False)
+        check("models/a broken chain converts", code == 0, text)
+        if code == 0:
+            ms = {x["name"]: x for x in json.loads((d6 / "out" / "design_model.json").read_text(
+                encoding="utf-8"))["models"]}
+            check("models/a parent outside the slice ships supersedes null",
+                  sorted(ms) == ["Lancer Mk II"] and ms["Lancer Mk II"]["supersedes"] is None, json.dumps(ms))
+            check("models/the broken chain is reported by name",
+                  "'Lancer Mk II' -> 'Lancer Mk I (prototype B)': parent is not in the slice" in text, text)
+
         # 5. properties of the shipped files
         shipped = b"".join(produced[n] for n in OUT_FILES).decode("utf-8")
         check("ships/no prose", "prose" not in shipped, "a prose cell reached the shipped JSON")
@@ -234,6 +270,16 @@ def main() -> int:
               ([{"currency": "research", "amount": 150}], "override", "synthetic: a deliberately dearer row"))
         check("ships/era multiplier constants, as data", research["era_multiplier"] ==
               {"growth_per_year_per_mille": 1100, "cap_per_mille": 2000})
+        models = {m["name"]: m for m in json.loads(produced["design_model.json"])["models"]}
+        mk1, mk2 = models.get("Lancer Mk I (prototype B)"), models.get("Lancer Mk II")
+        check("models/the slice: active own-nation lead and a classed role", sorted(models) ==
+              ["Lancer Mk I (prototype B)", "Lancer Mk II"], json.dumps(sorted(models)))
+        check("models/model id is the design id, and unlock names its own study", mk1 is not None
+              and mk1["id"] == mk1["unlock"] == projects["Lancer Mk I (prototype B)"]["id"])
+        check("models/lineage ships as supersedes", mk2 is not None and mk2["supersedes"] == mk1["id"])
+        check("models/template cost and production, with provenance", mk1 is not None
+              and (mk1["cost"], mk1["production"], mk1["production_template"], mk1["year_source"]) ==
+              ({"steel": 4, "oil": 1}, {"units_per_factory_per_month": 2}, "pb:test_tank", "workbook"))
         no_route = [x for x in research["restrictions"] if x["nation"] == "MID"]
         check("ships/a restriction with no covert route ships lifted_by null", no_route ==
               [{"nation": "MID", "treaty": "pb:accord_of_trials", "scope": {"category": "pb:aaa"}, "lifted_by": None}],
