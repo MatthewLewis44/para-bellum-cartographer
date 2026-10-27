@@ -124,7 +124,12 @@
         ]
       ],
       "cost_reducers_source": "flag:test_shortage",
-      "effect": null,
+      "effect": {
+        "no_target": {
+          "needs": "test_writer",
+          "reason": "synthetic: no writer target exists for this yet"
+        }
+      },
       "cost": [
         {
           "currency": "research",
@@ -586,6 +591,53 @@
       ],
       "cost_source": "rule",
       "cost_reason": null
+    },
+    {
+      "id": "pb:design_0006",
+      "kind": "design",
+      "name": "Heron 1927",
+      "nation": "WST",
+      "domain": "Aircraft",
+      "role": "Fighter",
+      "variant_of": null,
+      "year": 1927,
+      "year_declared": null,
+      "acquisition": [
+        [
+          {
+            "kind": "import",
+            "value": "pb:vendor_0002"
+          }
+        ]
+      ],
+      "acquisition_source": "import:Oakfield-Marsh",
+      "lead": null,
+      "producers": [],
+      "prerequisites": [],
+      "prerequisites_source": null,
+      "doctrine_role": [],
+      "doctrine_role_source": null,
+      "cost_reducers": [],
+      "cost_reducers_source": null,
+      "tags": [
+        "COND"
+      ],
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 60
+        },
+        {
+          "currency": "money",
+          "amount": 40
+        },
+        {
+          "currency": "steel",
+          "amount": 20
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
     }
   ],
   "registries": {
@@ -663,6 +715,7 @@
         "pb:bbb_90",
         "pb:ql_01"
       ],
+      "designs": [],
       "flags": [
         "pb:test_covert"
       ]
@@ -677,6 +730,9 @@
         "pb:ql_01",
         "pb:ql_03"
       ],
+      "designs": [
+        "pb:design_0003"
+      ],
       "flags": []
     },
     {
@@ -687,6 +743,9 @@
       "doctrines": [
         "pb:bbb_90",
         "pb:ql_02"
+      ],
+      "designs": [
+        "pb:design_0006"
       ],
       "flags": []
     },
@@ -699,6 +758,7 @@
         "pb:bbb_90",
         "pb:ql_02"
       ],
+      "designs": [],
       "flags": []
     },
     {
@@ -711,6 +771,7 @@
         "pb:bbb_90",
         "pb:ql_02"
       ],
+      "designs": [],
       "flags": []
     },
     {
@@ -722,6 +783,7 @@
         "pb:bbb_90",
         "pb:ql_02"
       ],
+      "designs": [],
       "flags": []
     },
     {
@@ -733,6 +795,7 @@
         "pb:bbb_90",
         "pb:ql_02"
       ],
+      "designs": [],
       "flags": []
     }
   ],

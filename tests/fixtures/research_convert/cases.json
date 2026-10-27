@@ -31,7 +31,8 @@
         ["Northland", "Armour", "Light tank", "Lancer Mk II", "Lancer Mk I (prototype B)", 1933, "Ostwerk, Kessel", null, "design:Lancer Mk I (prototype B)", null, "fielded:test_heavy", null, "prose"],
         ["Southland", "Aircraft", "Fighter", "Kestrel 12(t)", null, "base", "import:Testvendor AB", null, null, null, null, "COND", "prose"],
         ["Southland", "Naval", "Submarine", "Varenne Q-5", null, 1934, "Varenne", null, "SSS-01", null, null, "PAPER", "prose"],
-        ["Upland", "Armour", "Captured", "ZX-3", null, 1940, "captured:Northland", null, null, null, null, null, "prose"]
+        ["Upland", "Armour", "Captured", "ZX-3", null, 1940, "captured:Northland", null, null, null, null, null, "prose"],
+        ["Westland", "Aircraft", "Fighter", "Heron 1927", null, 1927, "import:Oakfield-Marsh", null, null, null, null, "COND", "prose"]
       ],
       "Bureaus": [
         ["ID", "Nation", "Bureau", "Role", "Primary", "Primary category", "Secondary", "Traits", "Active from", "Notes"],
@@ -117,10 +118,12 @@
         {"nation": "Midland", "treaty": "accord_of_trials", "scope": {"category": "AAA"}, "lifted_by": null}
       ],
       "bureaus": {"DE_OSTWERK": {"active": true, "capacity": 2}, "DE_KESSEL": {"active": false}},
-      "effects": {"AAA-02": {"gate_only": false, "modifiers": [{"target": "design_stat", "scope": "pb:tank", "stat": "armour_front_mm", "per_mille": 100}]},
-                  "QL-01": {"gate_only": true, "modifiers": []}},
       "readings": {"base_holders": {}}
-    }
+    },
+    "effects": {"format": "pb-research-effects/1",
+                "effects": {"AAA-02": {"gate_only": false, "modifiers": [{"target": "design_stat", "scope": "pb:tank", "stat": "armour_front_mm", "per_mille": 100}]},
+                            "QL-01": {"gate_only": true, "modifiers": []},
+                            "BBB-01": {"no_target": {"needs": "test_writer", "reason": "synthetic: no writer target exists for this yet"}}}}
   },
   "refuse": [
     {"id": "x101_missing_sheet", "code": "X101", "patch": [{"drop_sheet": "Vendors"}]},
@@ -146,7 +149,7 @@
     {"id": "x112_restriction_unknown_type", "code": "X112", "patch": [{"overlay": {"restrictions": [{"nation": "Northland", "treaty": "pact_of_testing", "scope": {"category": "SSS"}, "lifted_by": "test_covert"}, {"nation": "Northland", "treaty": "pact_of_testing", "scope": {"design_types": ["Submarine", "Light tank"]}, "lifted_by": "test_covert_two"}, {"nation": "Midland", "treaty": "accord_of_trials", "scope": {"category": "AAA"}, "lifted_by": null}, {"nation": "Northland", "treaty": "pact_of_testing", "scope": {"design_types": ["Airship"]}, "lifted_by": "test_covert"}]}}]},
     {"id": "x112_restriction_unknown_flag", "code": "X112", "patch": [{"overlay": {"restrictions": [{"nation": "Northland", "treaty": "pact_of_testing", "scope": {"category": "SSS"}, "lifted_by": "test_covert"}, {"nation": "Northland", "treaty": "pact_of_testing", "scope": {"design_types": ["Submarine", "Light tank"]}, "lifted_by": "test_covert_two"}, {"nation": "Midland", "treaty": "accord_of_trials", "scope": {"category": "AAA"}, "lifted_by": null}, {"nation": "Northland", "treaty": "pact_of_testing", "scope": {"category": "AAA"}, "lifted_by": "test_nothing"}]}}]},
     {"id": "x112_flags_held_unknown_flag", "code": "X112", "patch": [{"overlay": {"flags_held": {"Northland": ["test_nothing"]}}}]},
-    {"id": "x112_effect_unknown_id", "code": "X112", "patch": [{"overlay": {"effects": {"ZZ-99": {"gate_only": true, "modifiers": []}}}}]},
+    {"id": "x112_effect_unknown_id", "code": "X112", "patch": [{"effects": {"ZZ-99": {"gate_only": true, "modifiers": []}}}]},
     {"id": "x113_nations_missing", "code": "X113", "patch": [{"overlay": {"nations": {}}}]},
     {"id": "x113_nation_tag_malformed", "code": "X113", "patch": [{"overlay": {"nations": {"Northland": {"tag": "nth", "code": "NO"}}}}]},
     {"id": "x106_nation_tag_shared", "code": "X106", "patch": [{"overlay": {"nations": {"Northland": {"tag": "NTH", "code": "NO"}, "Southland": {"tag": "NTH", "code": "SO"}, "Westland": {"tag": "WST", "code": "WE"}, "Eastland": {"tag": "EST", "code": "EA"}, "Upland": {"tag": "UPL", "code": "UP"}, "Lowland": {"tag": "LOW", "code": "LO"}, "Midland": {"tag": "MID", "code": "MI"}}}}]},
@@ -182,7 +185,11 @@
     {"id": "x113_restriction_without_treaty", "code": "X113", "patch": [{"overlay": {"restrictions": [{"nation": "Northland", "treaty": "pact_of_testing", "scope": {"category": "SSS"}, "lifted_by": "test_covert"}, {"nation": "Northland", "treaty": "pact_of_testing", "scope": {"design_types": ["Submarine", "Light tank"]}, "lifted_by": "test_covert_two"}, {"nation": "Midland", "treaty": "accord_of_trials", "scope": {"category": "AAA"}, "lifted_by": null}, {"nation": "Midland", "scope": {"category": "BBB"}, "lifted_by": null}]}}]},
     {"id": "x113_overlay_unknown_key", "code": "X113", "patch": [{"overlay": {"bogus_key": {}}}]},
     {"id": "x113_overlay_format", "code": "X113", "patch": [{"overlay": {"format": "pb-research-overlay/2"}}]},
-    {"id": "x113_effect_shape", "code": "X113", "patch": [{"overlay": {"effects": {"AAA-02": {"modifiers": []}}}}]},
+    {"id": "x113_effect_shape", "code": "X113", "patch": [{"effects": {"AAA-02": {"modifiers": []}}}]},
+    {"id": "x113_effect_mixes_two_forms", "code": "X113", "patch": [{"effects": {"AAA-02": {"gate_only": true, "modifiers": [], "no_target": {"needs": "x", "reason": "y"}}}}]},
+    {"id": "x113_no_target_without_reason", "code": "X113", "patch": [{"effects": {"BBB-01": {"no_target": {"needs": "test_writer", "reason": "  "}}}}]},
+    {"id": "x113_effects_file_missing", "code": "X113", "patch": [{"effects_file": null}]},
+    {"id": "x113_overlay_still_carries_effects", "code": "X113", "patch": [{"overlay": {"effects": {}}}]},
     {"id": "x114_base_holders_prose", "code": "X114", "patch": [{"set": ["Doctrines", "QL-01", "Base holders", "NO; SO via a mission"]}]},
     {"id": "x114_base_holders_on_dated", "code": "X114", "patch": [{"set": ["Doctrines", "QL-03", "Base holders", "NO"]}]},
     {"id": "x114_active_from_prose", "code": "X114", "patch": [{"set": ["Bureaus", "DE_KESSEL", "Active from", "early 1930s"]}]},

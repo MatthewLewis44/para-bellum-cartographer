@@ -324,6 +324,12 @@ class Validator:
             if p["kind"] == "design" or e is None:
                 continue
             effects += 1
+            if isinstance(e, dict) and set(e) == {"no_target"}:   # declared: the writer target it needs, and why
+                n = e["no_target"]
+                if not (isinstance(n, dict) and set(n) == {"needs", "reason"}
+                        and all(isinstance(n[k], str) and n[k].strip() for k in ("needs", "reason"))):
+                    self.fail("V111", self.label(p), e, "no_target names the target it needs and a one-line reason")
+                continue
             if not (isinstance(e, dict) and set(e) == {"gate_only", "modifiers"} and isinstance(e["gate_only"], bool)
                     and isinstance(e["modifiers"], list)):
                 self.fail("V111", self.label(p), e, "an effect is exactly {gate_only: bool, modifiers: [...]}")

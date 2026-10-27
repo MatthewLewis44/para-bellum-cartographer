@@ -63,6 +63,9 @@ RETIRED = {c["code"] for c in _REGISTER if "retired" in c}   # kept so the numbe
 NS = "pb"
 HEADER_ROW = 4   # rows 1-3 are a title, a note and a blank on every data sheet
 BASE = "base"    # the one declared non-integer Year: held by every nation before 1930
+START_YEAR = 1930   # the game starts on 1 January 1930; a design dated before it is in service
+EFFECTS_FORMAT = "pb-research-effects/1"
+EFFECT_TARGETS = {"design_stat": "stat", "facility_output": "pool", "power_supply": None}
 
 TAGS = ("DEMO", "PAPER", "COND")
 _TAG = re.compile(r"[A-Z]{3}")    # the map's owner tags; not content ids
@@ -82,7 +85,7 @@ COLUMNS = {
 }
 OVERLAY_FORMAT = "pb-research-overlay/1"
 OVERLAY_KEYS = {"format", "_comment", "nations", "design_roles", "role_classes", "unmodelled_roles", "costs", "treaties", "flag_names", "inert_flags", "category_fold", "category_fallback", "flags", "flags_held",
-                "restrictions", "bureaus", "effects", "readings"}
+                "restrictions", "bureaus", "readings"}
 LEDGER_FORMAT = "pb-research-ledger/1"
 LEDGER_KINDS = {"designs": "design", "vendors": "vendor"}   # section -> id stem
 _LEDGER_ID = re.compile(r"pb:(design|vendor)_([0-9]{4})")
@@ -166,6 +169,45 @@ def read_registries(wb, bad: Refusals) -> dict[str, list]:
             else:
                 found[section].append(a)
     return found
+
+
+def effect_shape(v) -> bool:
+    """Exactly one of the three effect forms (D19 E5, and the no_target form agreed with PB-SIM13):
+    gate_only true with no modifiers; gate_only false with at least one; or no_target, naming the
+    writer target the row would need and a one-line reason."""
+    if not isinstance(v, dict):
+        return False
+    if set(v) == {"no_target"}:
+        n = v["no_target"]
+        return (isinstance(n, dict) and set(n) == {"needs", "reason"}
+                and all(isinstance(n[k], str) and n[k].strip() for k in ("needs", "reason")))
+    if (set(v) != {"gate_only", "modifiers"} or not isinstance(v["gate_only"], bool)
+            or not isinstance(v["modifiers"], list) or v["gate_only"] == bool(v["modifiers"])):
+        return False
+    for m in v["modifiers"]:
+        want = EFFECT_TARGETS.get(m.get("target")) if isinstance(m, dict) else "?"
+        keys = {"target", "scope", "per_mille"} | ({want} if want else set())
+        if want == "?" or m.get("target") not in EFFECT_TARGETS or set(m) != keys:
+            return False
+        if not (isinstance(m["scope"], str) and isinstance(m["per_mille"], int) and not isinstance(m["per_mille"], bool)
+                and (want is None or isinstance(m[want], str))):
+            return False
+    return True
+
+
+def load_effects(path: Path, bad: Refusals) -> dict:
+    """PB-SIM13's effects file (D32: its own file, its own owner), keyed by AUTHORED id."""
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        bad.add("X113", str(path), path.name, f"cannot read the effects file: {e}")
+        return {}
+    if (not isinstance(doc, dict) or doc.get("format") != EFFECTS_FORMAT
+            or set(doc) - {"format", "_comment", "effects"} or not isinstance(doc.get("effects"), dict)):
+        bad.add("X113", "effects", doc.get("format") if isinstance(doc, dict) else doc,
+                f"expected {{format: {EFFECTS_FORMAT!r}, effects: {{authored id: effect}}}}")
+        return {}
+    return doc["effects"]
 
 
 def year(value: object, where: str, bad: Refusals) -> dict:
@@ -312,6 +354,7 @@ class Convert:
     bad: Refusals = field(default_factory=Refusals)
     pools: frozenset = frozenset()   # material currencies, from the game's vocabulary
     templates: dict = field(default_factory=dict)   # the game's authored models, by id
+    effects: dict = field(default_factory=dict)     # PB-SIM13's encoded effects, by authored id
     broken_chains: list = field(default_factory=list)   # (design, parent, why), reported by name
 
     def __post_init__(self) -> None:
@@ -510,7 +553,7 @@ class Convert:
         readings = ov.get("readings", {})
         for k in sorted(set(readings) - {"base_holders"}):   # a reading nothing reads is a silent no-op
             bad.add("X113", "overlay.readings", k, "not a declared reading (base_holders)")
-        effects = ov.get("effects", {})
+        effects = self.effects
         projects = []
 
         for where, r in techs:
@@ -571,10 +614,10 @@ class Convert:
 
         for k, v in effects.items():
             if k not in project_by_authored:
-                bad.add("X112", "overlay.effects", k, "not a technology or doctrine id")
-            elif not (isinstance(v, dict) and set(v) == {"gate_only", "modifiers"}
-                      and isinstance(v["gate_only"], bool) and isinstance(v["modifiers"], list)):
-                bad.add("X113", f"overlay.effects.{k}", v, "an effect is exactly {gate_only: bool, modifiers: []}")
+                bad.add("X112", "effects", k, "not a technology or doctrine id")
+            elif not effect_shape(v):
+                bad.add("X113", f"effects.{k}", v, "an effect is exactly one of {gate_only: true, modifiers: []}, "
+                        "{gate_only: false, modifiers: [>=1]} or {no_target: {needs, reason}}")
 
         # bureaus out, with the roster cut (a FLAG; all rows kept) and capacity
         roster = ov.get("bureaus", {})
@@ -821,9 +864,15 @@ class Convert:
             for f in fl:
                 if f not in known_flags:
                     bad.add("X112", f"overlay.flags_held.{n}", f, "not a declared flag")
+            # In service before the start: the nation's own designs dated base OR before 1930 (D38's ruling).
+            # Derived, never read from the In-service prose, whose status words ("on order", "trials") the
+            # derivation correctly does NOT grant.
+            designs = [p["id"] for p in projects if p["kind"] == "design" and p["nation"] == tag
+                       and (p["year_declared"] == BASE or (p["year"] is not None and p["year"] < START_YEAR))]
             out.append({"nation": tag,
                         "technologies": sorted(set(base_techs) | {qualify(t) for t in techs}),
                         "doctrines": sorted(set(base_docs) | {qualify(d) for d in docs}),
+                        "designs": designs,
                         "flags": [qualify(f) for f in fl]})
         for n in sorted(set(self.nations) - listed):
             bad.add("X104", "Start 1930", n, "nation has no start-state row")
@@ -948,6 +997,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="the game's Content/pb/model.json: the templates generated design models copy from")
     ap.add_argument("--overlay", required=True, type=Path)
     ap.add_argument("--ledger", required=True, type=Path)
+    ap.add_argument("--effects", required=True, type=Path,
+                    help="the encoded effects (PB-SIM13's file, D32), keyed by authored id")
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--mint", action="store_true", help="append ledger ids for names it lacks")
     a = ap.parse_args(argv)
@@ -962,11 +1013,13 @@ def main(argv: list[str] | None = None) -> int:
     print(f"models   {a.models}  sha256 {sha256(a.models) if a.models.exists() else '(missing)'}")
     pools = load_pools(a.vocabulary, bad)
     templates = load_templates(a.models, bad)
+    print(f"effects  {a.effects}  sha256 {sha256(a.effects) if a.effects.exists() else '(missing)'}")
+    effects = load_effects(a.effects, bad)
     files = {}
     conv = None
     if not bad.items:
         conv = Convert(openpyxl.load_workbook(a.workbook, data_only=True), overlay, ledger, a.mint, bad, pools,
-                       templates)
+                       templates, effects=effects)
         files = conv.run()
     if bad.items:
         print(f"REFUSED - {len(bad.items)} refusal(s), nothing written. By code: "

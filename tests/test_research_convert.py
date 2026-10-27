@@ -73,6 +73,10 @@ def apply(base: dict, patch: list) -> dict:
             case["overlay"].update(arg)
         elif verb == "ledger":
             case["ledger"] = {"format": rc.LEDGER_FORMAT, "designs": [], "vendors": [], **arg}
+        elif verb == "effects":   # replaces the effects map in the effects file
+            case["effects"]["effects"] = arg
+        elif verb == "effects_file":   # null: no effects file is written
+            case["effects"] = arg
         elif verb == "models":   # null: no template model file is written
             case["models"] = arg
         elif verb == "vocabulary":   # null: no vocabulary file is written
@@ -102,6 +106,8 @@ def build(case: dict, d: Path) -> tuple[Path, Path, Path]:
         paths[2].write_text(json.dumps(case["ledger"], ensure_ascii=False), encoding="utf-8")
     if case.get("vocabulary") is not None:
         (d / "vocabulary.json").write_text(json.dumps(case["vocabulary"]), encoding="utf-8")
+    if case.get("effects") is not None:
+        (d / "effects.json").write_text(json.dumps(case["effects"], ensure_ascii=False), encoding="utf-8")
     if case.get("models") is not None:
         (d / "model.json").write_text(json.dumps(case["models"]), encoding="utf-8")
     return paths
@@ -110,7 +116,8 @@ def build(case: dict, d: Path) -> tuple[Path, Path, Path]:
 def run(wb: Path, ov: Path, led: Path, out: Path, mint: bool = True) -> tuple[int, str]:
     """The vocabulary and template models are read from beside the workbook, where build() writes them."""
     argv = ["--workbook", str(wb), "--vocabulary", str(wb.parent / "vocabulary.json"),
-            "--models", str(wb.parent / "model.json"), "--overlay", str(ov),
+            "--models", str(wb.parent / "model.json"), "--effects", str(wb.parent / "effects.json"),
+            "--overlay", str(ov),
             "--ledger", str(led), "--out", str(out)]
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
@@ -142,8 +149,10 @@ def main() -> int:
         out = d / "out"
         code, text = run(wb, ov, led, out)
         check("accept/base converts", code == 0, text)
-        if code != 0:
-            print(text)
+        if code != 0:   # nothing downstream can run; name the failure so a mutation's kill is attributable
+            print("research_convert: base refused; stopping")
+            for f in fails:
+                print(f"  FAIL  {f}")
             return 1
         produced = {n: (out / n).read_bytes() for n in OUT_FILES} | {"ledger.json": led.read_bytes()}
         if bless:
@@ -280,6 +289,13 @@ def main() -> int:
         check("models/template cost and production, with provenance", mk1 is not None
               and (mk1["cost"], mk1["production"], mk1["production_template"], mk1["year"], mk1["year_declared"]) ==
               ({"steel": 4, "oil": 1}, {"units_per_factory_per_month": 2}, "pb:test_tank", 1931, None))
+        held = {s["nation"]: s["designs"] for s in research["start"]}
+        heron, kestrel = projects["Heron 1927"]["id"], projects["Kestrel 12(t)"]["id"]
+        check("start/designs: own designs dated base OR before 1930, derived, never read from prose",
+              held == {"NTH": [], "STH": [kestrel], "WST": [heron], "EST": [], "UPL": [], "LOW": [], "MID": []},
+              json.dumps(held))
+        check("effects/a no_target effect ships as declared", projects["BBB-01"]["effect"] ==
+              {"no_target": {"needs": "test_writer", "reason": "synthetic: no writer target exists for this yet"}})
         no_route = [x for x in research["restrictions"] if x["nation"] == "MID"]
         check("ships/a restriction with no covert route ships lifted_by null", no_route ==
               [{"nation": "MID", "treaty": "pb:accord_of_trials", "scope": {"category": "pb:aaa"}, "lifted_by": None}],
