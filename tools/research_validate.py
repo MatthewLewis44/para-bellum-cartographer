@@ -1,4 +1,4 @@
-"""The research validator, R1-R9 and R12, over the SHIPPED content JSON (Sprint 13, AD-M37, D17).
+"""The research validator, R1-R12, over the SHIPPED content JSON (Sprint 13, AD-M37, D17).
 
     uv run python tools/research_validate.py <dir holding research.json, bureau.json, vendor.json, design_model.json>
 
@@ -53,6 +53,7 @@ class Validator:
         self.nations = {s["nation"] for s in research["start"]}
         self.failures: list[tuple[str, str, str, object, str]] = []   # code, where, token, detail
         self.measured: dict[str, str] = {}
+        self.size: dict[str, int] = {}   # the rule's subject: n=0 passes vacuously (D32)
 
     def fail(self, code: str, where: str, token: object, detail: str) -> None:
         self.failures.append((code, where, token, detail))
@@ -106,6 +107,7 @@ class Validator:
                 if x["lifted_by"] not in self.flags:
                     self.fail("V101", f"restrictions[{i}] lifted_by", x["lifted_by"], "not a flag")
         self.measured["V101"] = f"{n} references resolved by kind"
+        self.size["V101"] = n
 
     # R2 -----------------------------------------------------------------
     def r2(self) -> None:
@@ -127,6 +129,7 @@ class Validator:
             if c > 1:
                 self.fail("V102", f"bureaus of {nat}", name, f"bureau name used {c} times")
         self.measured["V102"] = f"{len(designs)} design names, {len(self.bureaus)} bureau names"
+        self.size["V102"] = len(designs) + len(self.bureaus)
 
     # R3 -----------------------------------------------------------------
     def r3(self) -> None:
@@ -172,6 +175,7 @@ class Validator:
         for comp in out:
             self.fail("V103", "cycle", comp, f"{len(comp)} project(s) depend on each other")
         self.measured["V103"] = f"{sum(map(len, edges.values()))} edges over {len(self.projects)} projects"
+        self.size["V103"] = len(self.projects)
 
     # R4 -----------------------------------------------------------------
     def r4(self) -> None:
@@ -189,6 +193,7 @@ class Validator:
                     self.fail("V104", f"{self.label(p)} prerequisites[{ci}]", later,
                               f"every alternative is later than {p['year'] or 'base'}")
         self.measured["V104"] = f"{n} prerequisite clauses"
+        self.size["V104"] = n
 
     # R5 -----------------------------------------------------------------
     def r5(self) -> None:
@@ -210,6 +215,7 @@ class Validator:
                 if b is not None and b["nation"] != p["nation"]:
                     self.fail("V105", f"{self.label(p)} producers", bid, f"a bureau of {b['nation']}, not {p['nation']}")
         self.measured["V105"] = f"{n} designs"
+        self.size["V105"] = n
 
     # R6 -----------------------------------------------------------------
     def r6(self) -> None:
@@ -223,6 +229,7 @@ class Validator:
                 self.fail("V106", self.label(p), p["tags"],
                           "uses an off-map vendor without COND" if vendor else "COND without an off-map vendor")
         self.measured["V106"] = f"{uses} designs use a vendor"
+        self.size["V106"] = sum(p["kind"] == "design" for p in self.r["projects"])
 
     # R7 -----------------------------------------------------------------
     def r7(self) -> None:
@@ -236,6 +243,7 @@ class Validator:
                 elif x in docs and pid not in docs[x]["exclusive_with"]:
                     self.fail("V107", self.label(p), x, f"{x} does not list {pid} back")
         self.measured["V107"] = f"{pairs} exclusive_with entries"
+        self.size["V107"] = pairs
 
     # R8 -----------------------------------------------------------------
     def r8(self) -> None:
@@ -255,6 +263,7 @@ class Validator:
                             self.fail("V108", f"start {s['nation']} {self.label(p)} prerequisites[{ci}]", ids,
                                       "held, but none of these is held")
         self.measured["V108"] = f"{n} id clauses of held projects"
+        self.size["V108"] = n
 
     # R9 -----------------------------------------------------------------
     def r9(self) -> None:
@@ -266,6 +275,73 @@ class Validator:
                 if parent["nation"] != p["nation"]:
                     self.fail("V109", self.label(p), p["variant_of"], f"parent is {parent['nation']}, not {p['nation']}")
         self.measured["V109"] = f"{n} variants"
+        self.size["V109"] = n
+
+    # R10 ----------------------------------------------------------------
+    def r10(self) -> None:
+        cats = {c["id"]: c for c in self.r["categories"]}
+        techs = [p for p in self.projects.values() if p["kind"] == "technology"]
+        disagree = 0
+        for p in techs:
+            c = cats.get(p["category"])
+            if c is None or c["folded_into"] is not None:
+                self.fail("V110", self.label(p), p["category"], "not a live category (unknown, or folded away)")
+                continue
+            # MEASUREMENT ONLY: does the authored id disagree with the category? Never used to decide one.
+            if not p["authored_id"].startswith(c["authored_id"]):
+                disagree += 1
+        if techs and not disagree:
+            self.fail("V110", "technologies", 0, "no id disagrees with its category: prefix-derivation would go "
+                                                 "undetected (AD-M37 s4 asks for one such row, deliberately)")
+        self.measured["V110"] = f"{len(techs)} technologies, {disagree} with an id that disagrees with its category"
+        self.size["V110"] = len(techs)
+
+    # R11 ----------------------------------------------------------------
+    KEYS = {
+        "technology": {"id", "authored_id", "kind", "name", "category", "year", "year_declared", "prerequisites",
+                       "prerequisites_source", "cost_reducers", "cost_reducers_source", "effect", "cost",
+                       "cost_source", "cost_reason"},
+        "doctrine": {"id", "authored_id", "kind", "name", "domain", "branch", "year", "year_declared",
+                     "base_holders", "prerequisites", "prerequisites_source", "exclusive_with", "effect", "cost",
+                     "cost_source", "cost_reason"},
+        "design": {"id", "kind", "name", "nation", "domain", "role", "variant_of", "year", "year_declared",
+                   "acquisition", "acquisition_source", "lead", "producers", "prerequisites", "prerequisites_source",
+                   "doctrine_role", "doctrine_role_source", "cost_reducers", "cost_reducers_source", "tags", "cost",
+                   "cost_source", "cost_reason"},
+    }
+    TARGET_FIELD = {"design_stat": "stat", "facility_output": "pool", "power_supply": "pool"}
+
+    def r11(self) -> None:
+        for p in self.r["projects"]:
+            extra = set(p) ^ self.KEYS.get(p["kind"], set())
+            if extra:
+                self.fail("V111", self.label(p), sorted(extra), "not exactly this kind's keys (prose enters by a field)")
+        effects = 0
+        for p in self.r["projects"]:
+            e = p.get("effect")
+            if p["kind"] == "design" or e is None:
+                continue
+            effects += 1
+            if not (isinstance(e, dict) and set(e) == {"gate_only", "modifiers"} and isinstance(e["gate_only"], bool)
+                    and isinstance(e["modifiers"], list)):
+                self.fail("V111", self.label(p), e, "an effect is exactly {gate_only: bool, modifiers: [...]}")
+                continue
+            if e["gate_only"] == bool(e["modifiers"]):
+                self.fail("V111", self.label(p), e, "gate_only true needs no modifiers; false needs at least one")
+            for m in e["modifiers"]:
+                want = self.TARGET_FIELD.get(m.get("target")) if isinstance(m, dict) else None
+                if not (want and set(m) == {"target", "scope", want, "per_mille"} and isinstance(m["scope"], str)
+                        and isinstance(m[want], str) and isinstance(m["per_mille"], int)
+                        and not isinstance(m["per_mille"], bool) and m["per_mille"] != 0):
+                    self.fail("V111", self.label(p), m, "a modifier is {target, scope, stat|pool, per_mille != 0}")
+        per_design = collections.Counter(m["id"] for m in self.models)
+        for mid, c in per_design.items():
+            if c != 1:
+                self.fail("V111", f"model {mid}", c, "a slice design has exactly one model")
+        self.measured["V111"] = (f"{effects} technologies/doctrines with an effect"
+                                 f"{' (this half VACUOUS: none encoded yet)' if effects == 0 else ''}, "
+                                 f"{len(per_design)} design models")
+        self.size["V111"] = effects + len(per_design)
 
     # R12 ----------------------------------------------------------------
     def r12(self) -> None:
@@ -291,9 +367,10 @@ class Validator:
             if sup is not None and (sup not in models or models[sup]["class"] != m["class"]):
                 self.fail("V112", f"model {self.label(p)}", sup, "supersedes no model of the same class in the slice")
         self.measured["V112"] = f"{len(self.models)} models in the slice"
+        self.size["V112"] = len(self.models)
 
     def run(self) -> list:
-        for rule in (self.r1, self.r2, self.r3, self.r4, self.r5, self.r6, self.r7, self.r8, self.r9, self.r12):
+        for rule in (self.r1, self.r2, self.r3, self.r4, self.r5, self.r6, self.r7, self.r8, self.r9, self.r10, self.r11, self.r12):
             rule()
         return self.failures
 
@@ -314,7 +391,10 @@ def main(argv: list[str]) -> int:
           f"{len(v.vendor_ids)} vendors")
     by = collections.Counter(f[0] for f in failures)
     for code, c in CODES.items():
-        print(f"  {'FAIL' if by[code] else 'PASS'}  {c['rule']:<26} {v.measured[code]}; {by[code]} failure(s)")
+        n = v.size[code]
+        verdict = "FAIL" if by[code] else "PASS"
+        print(f"  {verdict} n={n}{' (VACUOUS: nothing to check)' if n == 0 else ''}  {c['rule']:<24} "
+              f"{v.measured[code]}; {by[code]} failure(s)")
     for code, where, token, detail in failures:
         print(f"  {where}: PB-{code} {CODES[code]['rule']}: {token!r}: {detail}")
     return 1 if failures else 0

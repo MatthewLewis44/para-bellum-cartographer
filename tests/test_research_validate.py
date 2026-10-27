@@ -68,8 +68,12 @@ def main() -> int:
             fails.append(f"{name}: {detail}")
 
     for case in CASES["accept"]:
-        got = apply(case["patch"]).run()
+        v = apply(case["patch"])
+        got = v.run()
         check(f"accept/{case['id']}", not got, "; ".join(f"{c} {w}: {t!r} {d}" for c, w, t, d in got))
+        # D32: every verdict carries its subject size, so a vacuous pass is visible
+        check(f"accept/{case['id']} every rule reports its subject size", set(v.size) == set(rv.CODES),
+              f"missing {sorted(set(rv.CODES) - set(v.size))}")
     for case in CASES["refuse"]:
         got = apply(case["patch"]).run()
         codes = {c for c, *_ in got}
