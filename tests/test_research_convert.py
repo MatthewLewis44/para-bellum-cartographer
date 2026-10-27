@@ -202,20 +202,20 @@ def main() -> int:
                 encoding="utf-8"))["projects"] if p["kind"] == "design"}
             check("ledger/rename keeps the id", after.get("ZX-3 Ausf. A") == ids_before["ZX-3"])
 
-        # 4b. a base-year design in the slice, through the declared reading only (D29)
-        based = apply(CASES["base"], [{"set": ["Designs", "Lancer Mk I (prototype B)", "Year", "base"]},
-                                      {"overlay": {"readings": {"base_holders": {}, "base_model_year": 1930}}}])
+        # 4b. a base-year design in the slice: modelled with year null, year_declared "base",
+        #     never a stamped year, because a model's year is HISTORICAL and ranks equipment (D30)
+        based = apply(CASES["base"], [{"set": ["Designs", "Lancer Mk I (prototype B)", "Year", "base"]}])
         d5 = d / "based"
         d5.mkdir()
         wb5, ov5, led5 = build(based, d5)
         led5.write_bytes(ledger_before)
         code, text = run(wb5, ov5, led5, d5 / "out", mint=False)
-        check("models/a base design is modelled only through the reading", code == 0, text)
+        check("models/a base design in the slice converts", code == 0, text)
         if code == 0:
             m = {x["name"]: x for x in json.loads((d5 / "out" / "design_model.json").read_text(
                 encoding="utf-8"))["models"]}["Lancer Mk I (prototype B)"]
-            check("models/the reading is recorded as the year's source",
-                  (m["year"], m["year_source"]) == (1930, "reading:base_model_year"), json.dumps(m))
+            check("models/a base design ships year null, year_declared base, like its project",
+                  (m["year"], m["year_declared"]) == (None, "base") and "year_source" not in m, json.dumps(m))
 
         # 4c. lineage broken at the slice edge: shipped as null and reported BY NAME (D29)
         edge = apply(CASES["base"], [{"set": ["Designs", "Lancer Mk I (prototype B)", "Design bureau", "Kessel"]}])
@@ -278,8 +278,8 @@ def main() -> int:
               and mk1["id"] == mk1["unlock"] == projects["Lancer Mk I (prototype B)"]["id"])
         check("models/lineage ships as supersedes", mk2 is not None and mk2["supersedes"] == mk1["id"])
         check("models/template cost and production, with provenance", mk1 is not None
-              and (mk1["cost"], mk1["production"], mk1["production_template"], mk1["year_source"]) ==
-              ({"steel": 4, "oil": 1}, {"units_per_factory_per_month": 2}, "pb:test_tank", "workbook"))
+              and (mk1["cost"], mk1["production"], mk1["production_template"], mk1["year"], mk1["year_declared"]) ==
+              ({"steel": 4, "oil": 1}, {"units_per_factory_per_month": 2}, "pb:test_tank", 1931, None))
         no_route = [x for x in research["restrictions"] if x["nation"] == "MID"]
         check("ships/a restriction with no covert route ships lifted_by null", no_route ==
               [{"nation": "MID", "treaty": "pb:accord_of_trials", "scope": {"category": "pb:aaa"}, "lifted_by": None}],
@@ -312,8 +312,12 @@ def main() -> int:
     ids = [c["id"] for c in CASES["refuse"]]
     check("cases/ids unique", len(ids) == len(set(ids)))
     covered = {c["code"] for c in CASES["refuse"]}
-    for code in sorted(rc.RULES):
+    for code in sorted(set(rc.RULES) - rc.RETIRED):
         check(f"cases/{code} has a refuse case", code in covered)
+    for code in sorted(rc.RETIRED):   # retired: nothing may raise it, so nothing may expect it
+        check(f"cases/{code} is retired and has no case", code not in covered)
+        check(f"cases/{code} is raised nowhere in the converter",
+              f'"{code}"' not in (ROOT / "tools" / "research_convert.py").read_text(encoding="utf-8"))
     for code in sorted(covered):
         check(f"cases/{code} is registered", code in rc.RULES or code in rc.rg.RULES)
 

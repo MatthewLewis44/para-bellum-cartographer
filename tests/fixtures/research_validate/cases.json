@@ -36,6 +36,7 @@
     {"id": "r12_lead_inactive", "code": "V112", "patch": [{"bureau": "pb:de_ostwerk", "set": {"active": false, "capacity": null}}]},
     {"id": "r12_unlock_names_another_study", "code": "V112", "patch": [{"model": "pb:design_0001", "set": {"unlock": "pb:design_0002"}}]},
     {"id": "r12_supersedes_another_class", "code": "V112", "patch": [{"model": "pb:design_0001", "set": {"class": "pb:artillery"}}]},
+    {"id": "r12_model_year_stamped", "code": "V112", "patch": [{"model": "pb:design_0001", "set": {"year": 1930}}]},
     {"id": "r12_import_only_design_in_the_slice", "code": "V112", "patch": [{"project": "pb:design_0001", "set": {"lead": null, "acquisition": [[{"kind": "import", "value": "pb:vendor_0001"}]], "tags": ["DEMO", "COND"]}}]}
   ]
 }

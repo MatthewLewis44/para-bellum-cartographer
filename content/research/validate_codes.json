@@ -32,6 +32,6 @@
       "reading": "A design with variant_of has a parent of the same nation." },
     { "code": "V112", "rule": "R12 slice reachability",
       "definition": "Every design in the slice has an active lead of its own nation, or a declared acquisition (D26 ruling 2; V110 and V111 are reserved for R10 and R11).",
-      "reading": "The slice is design_model.json. Every model there is a design project, its unlock names its own id, and its design either has an ACTIVE Lead bureau of its own nation as lead, or has no lead and an acquisition made only of seized and captured routes (import and licence are DEFER-BETA, so an import-only or licence-only design is not reachable in alpha, D4). A model's supersedes names a model in the same file, of the same class." }
+      "reading": "The slice is design_model.json. Every model there is a design project, its unlock names its own id, its year and year_declared equal its design's (a model's year is HISTORICAL and ranks equipment, so a base design is never stamped with a year, D30), and its design either has an ACTIVE Lead bureau of its own nation as lead, or has no lead and an acquisition made only of seized and captured routes (import and licence are DEFER-BETA, so an import-only or licence-only design is not reachable in alpha, D4). A model's supersedes names a model in the same file, of the same class." }
   ]
 }

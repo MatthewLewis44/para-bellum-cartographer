@@ -154,7 +154,7 @@
     {"id": "x114_role_reworded_on_one_row", "code": "X114", "patch": [{"set": ["Designs", "Lancer Mk II", "Type / role", "Light Tank"]}]},
     {"id": "x112_role_declared_unused", "code": "X112", "patch": [{"overlay": {"design_roles": ["Light tank", "Fighter", "Submarine", "Captured", "Airship"], "unmodelled_roles": {"Fighter": "synthetic: no air class exists", "Submarine": "synthetic: no naval class exists", "Airship": "synthetic"}}}]},
     {"id": "x116_template_models_missing", "code": "X116", "patch": [{"models": null}]},
-    {"id": "x117_base_design_in_the_slice", "code": "X117", "patch": [{"set": ["Designs", "Lancer Mk I (prototype B)", "Year", "base"]}]},
+    {"id": "x113_reading_nothing_reads", "code": "X113", "patch": [{"overlay": {"readings": {"base_holders": {}, "base_model_year": 1930}}}]},
     {"id": "x113_role_neither_mapped_nor_unmodelled", "code": "X113", "patch": [{"overlay": {"unmodelled_roles": {"Fighter": "synthetic: no air class exists"}}}]},
     {"id": "x113_role_both_mapped_and_unmodelled", "code": "X113", "patch": [{"overlay": {"unmodelled_roles": {"Fighter": "synthetic", "Submarine": "synthetic", "Captured": "synthetic"}}}]},
     {"id": "x112_role_template_unknown", "code": "X112", "patch": [{"overlay": {"role_classes": {"Light tank": {"class": "pb:tank", "template": "pb:no_such_model"}, "Captured": {"class": "pb:tank", "template": "pb:test_tank"}}}}]},

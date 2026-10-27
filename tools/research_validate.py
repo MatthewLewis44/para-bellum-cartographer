@@ -277,6 +277,9 @@ class Validator:
                 continue
             if m["unlock"] != m["id"]:
                 self.fail("V112", f"model {self.label(p)}", m["unlock"], "unlock does not name its own study")
+            if (m["year"], m["year_declared"]) != (p["year"], p["year_declared"]):
+                self.fail("V112", f"model {self.label(p)}", (m["year"], m["year_declared"]),
+                          f"year differs from its design's {(p['year'], p['year_declared'])} (historical, D30)")
             lead = self.bureau.get(p["lead"] or "")
             if lead is not None:
                 if not (lead["active"] and lead["nation"] == p["nation"] and lead["role"] == "Lead"):

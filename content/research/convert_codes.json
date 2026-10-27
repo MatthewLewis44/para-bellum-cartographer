@@ -36,6 +36,7 @@
     { "code": "X116", "rule": "bad-model-templates",
       "summary": "The game's Content/pb/model.json (passed as --models) cannot be read. Its hand-authored models are the templates a generated design model copies its production cost and rate from (D29)." },
     { "code": "X117", "rule": "base-model-year-undeclared",
-      "summary": "A design in the slice has the year 'base', and the overlay declares no readings.base_model_year. A model needs an integer year, and what that year MEANS is the engine's to say, so the converter never picks one." }
+      "summary": "A design in the slice has the year 'base', and the overlay declares no readings.base_model_year. A model needs an integer year, and what that year MEANS is the engine's to say, so the converter never picks one.",
+      "retired": "D30, 2026-10-27: a model's year is HISTORICAL, so a base design ships year null and year_declared base exactly like its project, and no reading supplies a year. Nothing can raise this code; it stays so the number is never reused." }
   ]
 }

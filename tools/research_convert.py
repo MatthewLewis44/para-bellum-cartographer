@@ -57,7 +57,9 @@ sys.path.insert(0, str(ROOT / "tools"))
 import research_grammar as rg  # noqa: E402
 
 CODES_FILE = ROOT / "content" / "research" / "convert_codes.json"
-RULES = {c["code"]: c["rule"] for c in json.loads(CODES_FILE.read_text(encoding="utf-8"))["codes"]}
+_REGISTER = json.loads(CODES_FILE.read_text(encoding="utf-8"))["codes"]
+RULES = {c["code"]: c["rule"] for c in _REGISTER}
+RETIRED = {c["code"] for c in _REGISTER if "retired" in c}   # kept so the number is never reused
 NS = "pb"
 HEADER_ROW = 4   # rows 1-3 are a title, a note and a blank on every data sheet
 BASE = "base"    # the one declared non-integer Year: held by every nation before 1930
@@ -99,6 +101,7 @@ class Refusals:
     codes: collections.Counter = field(default_factory=collections.Counter)
 
     def add(self, code: str, where: str, token: object, detail: str) -> None:
+        assert code not in RETIRED, f"{code} is retired and must never be raised"
         rule = RULES.get(code) or rg.RULES[code]
         self.codes[code] += 1
         self.items.append(f"{where}: PB-{code} {rule}: {token!r}: {detail}")
@@ -505,6 +508,8 @@ class Convert:
                     "role declared twice")
 
         readings = ov.get("readings", {})
+        for k in sorted(set(readings) - {"base_holders"}):   # a reading nothing reads is a silent no-op
+            bad.add("X113", "overlay.readings", k, "not a declared reading (base_holders)")
         effects = ov.get("effects", {})
         projects = []
 
@@ -633,7 +638,8 @@ class Convert:
         role has a class. A role with no class is declared unmodelled, with a reason. The
         workbook's 'Variant of' is LINEAGE and ships as supersedes, never as an AD-M36 variant:
         a chain whose parent is outside the slice, or of another class, ships supersedes null
-        and is reported by name. Cost and production are the named template's (placeholders)."""
+        and is reported by name. Cost and production are the named template's (placeholders).
+        Year mirrors the project row: year int|null plus year_declared "base"|null (D30)."""
         bad, ov = self.bad, self.overlay
         rc, um = ov.get("role_classes"), ov.get("unmodelled_roles")
         if not isinstance(rc, dict) or not isinstance(um, dict):
@@ -658,9 +664,6 @@ class Convert:
                 bad.add("X112", where, v["template"], "not a model in the template file")
             elif self.templates[v["template"]]["class"] != v["class"]:
                 bad.add("X113", where, v["template"], f"is class {self.templates[v['template']]['class']}, not {v['class']}")
-        base_year = ov.get("readings", {}).get("base_model_year")
-        if base_year is not None and not (isinstance(base_year, int) and not isinstance(base_year, bool)):
-            bad.add("X113", "overlay.readings.base_model_year", base_year, "an integer year")
         if bad.items:
             return []
         lead_ok = {b["id"]: (b["nation"], b["active"]) for b in bureaus}
@@ -671,14 +674,6 @@ class Convert:
         models = []
         for p in in_slice:
             cls, tpl = rc[p["role"]]["class"], rc[p["role"]]["template"]
-            if p["year_declared"] == BASE:
-                if base_year is None:
-                    bad.add("X117", f"design {p['id']}", p["name"], "a base-year design in the slice needs "
-                            "readings.base_model_year (what a model's year means is the engine's, not ours)")
-                    continue
-                year, source = base_year, "reading:base_model_year"
-            else:
-                year, source = p["year"], "workbook"
             sup = p["variant_of"]
             if sup is not None:
                 parent = designs[sup]
@@ -689,7 +684,10 @@ class Convert:
                     self.broken_chains.append((p["name"], parent["name"], f"parent is class {rc[parent['role']]['class']}"))
                     sup = None
             t = self.templates[tpl]
-            models.append({"id": p["id"], "class": cls, "name": p["name"], "year": year, "year_source": source,
+            # A model's year is its HISTORICAL year (NewestFirst ranks by it), so a base design ships
+            # exactly as its project does, year null and year_declared "base": never a stamped 1930 (D30)
+            models.append({"id": p["id"], "class": cls, "name": p["name"],
+                           "year": p["year"], "year_declared": p["year_declared"],
                            "unlock": p["id"], "supersedes": sup, "stats": {}, "traits": [],
                            "cost": dict(t["cost"]), "production": dict(t["production"]),
                            "production_template": tpl})
