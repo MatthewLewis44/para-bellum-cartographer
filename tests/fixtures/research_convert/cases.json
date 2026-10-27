@@ -32,7 +32,8 @@
         ["Southland", "Aircraft", "Fighter", "Kestrel 12(t)", null, "base", "import:Testvendor AB", null, null, null, null, "COND", "prose"],
         ["Southland", "Naval", "Submarine", "Varenne Q-5", null, 1934, "Varenne", null, "SSS-01", null, null, "PAPER", "prose"],
         ["Upland", "Armour", "Captured", "ZX-3", null, 1940, "captured:Northland", null, null, null, null, null, "prose"],
-        ["Westland", "Aircraft", "Fighter", "Heron 1927", null, 1927, "import:Oakfield-Marsh", null, null, null, null, "COND", "prose"]
+        ["Westland", "Aircraft", "Fighter", "Heron 1927", null, 1927, "import:Oakfield-Marsh", null, null, null, null, "COND", "prose"],
+        ["Westland", "Aircraft", "Fighter", "Heron 1928 prototype", null, 1928, "import:Oakfield-Marsh", null, null, null, null, "PAPER, COND", "prose"]
       ],
       "Bureaus": [
         ["ID", "Nation", "Bureau", "Role", "Primary", "Primary category", "Secondary", "Traits", "Active from", "Notes"],

@@ -864,11 +864,13 @@ class Convert:
             for f in fl:
                 if f not in known_flags:
                     bad.add("X112", f"overlay.flags_held.{n}", f, "not a declared flag")
-            # In service before the start: the nation's own designs dated base OR before 1930 (D38's ruling).
+            # In service before the start: the nation's own designs dated base OR before 1930, and NOT tagged
+            # PAPER, which means prototype-only or never built, so never in service whatever its date (D38).
             # Derived, never read from the In-service prose, whose status words ("on order", "trials") the
             # derivation correctly does NOT grant.
             designs = [p["id"] for p in projects if p["kind"] == "design" and p["nation"] == tag
-                       and (p["year_declared"] == BASE or (p["year"] is not None and p["year"] < START_YEAR))]
+                       and (p["year_declared"] == BASE or (p["year"] is not None and p["year"] < START_YEAR))
+                       and "PAPER" not in p["tags"]]
             out.append({"nation": tag,
                         "technologies": sorted(set(base_techs) | {qualify(t) for t in techs}),
                         "doctrines": sorted(set(base_docs) | {qualify(d) for d in docs}),

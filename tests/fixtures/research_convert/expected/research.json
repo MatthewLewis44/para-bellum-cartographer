@@ -638,6 +638,54 @@
       ],
       "cost_source": "rule",
       "cost_reason": null
+    },
+    {
+      "id": "pb:design_0007",
+      "kind": "design",
+      "name": "Heron 1928 prototype",
+      "nation": "WST",
+      "domain": "Aircraft",
+      "role": "Fighter",
+      "variant_of": null,
+      "year": 1928,
+      "year_declared": null,
+      "acquisition": [
+        [
+          {
+            "kind": "import",
+            "value": "pb:vendor_0002"
+          }
+        ]
+      ],
+      "acquisition_source": "import:Oakfield-Marsh",
+      "lead": null,
+      "producers": [],
+      "prerequisites": [],
+      "prerequisites_source": null,
+      "doctrine_role": [],
+      "doctrine_role_source": null,
+      "cost_reducers": [],
+      "cost_reducers_source": null,
+      "tags": [
+        "PAPER",
+        "COND"
+      ],
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 60
+        },
+        {
+          "currency": "money",
+          "amount": 40
+        },
+        {
+          "currency": "steel",
+          "amount": 20
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
     }
   ],
   "registries": {
