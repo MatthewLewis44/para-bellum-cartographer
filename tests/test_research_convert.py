@@ -291,7 +291,7 @@ def main() -> int:
               ({"steel": 4, "oil": 1}, {"units_per_factory_per_month": 2}, "pb:test_tank", 1931, None))
         held = {s["nation"]: s["designs"] for s in research["start"]}
         heron, kestrel = projects["Heron 1927"]["id"], projects["Kestrel 12(t)"]["id"]
-        check("start/designs: own designs dated base OR before 1930, derived, never read from prose",
+        check("start/designs: own designs dated base OR before 1930, not PAPER, derived, never read from prose",
               held == {"NTH": [], "STH": [kestrel], "WST": [heron], "EST": [], "UPL": [], "LOW": [], "MID": []},
               json.dumps(held))
         check("effects/a no_target effect ships as declared", projects["BBB-01"]["effect"] ==
