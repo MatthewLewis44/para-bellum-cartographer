@@ -1,0 +1,35 @@
+{
+  "format": "pb-test/research-validate-cases/1",
+  "_comment": "Cases for tools/research_validate.py. The base is the converter's golden output, tests/fixtures/research_convert/expected/ (SYNTHETIC), which must pass all nine rules: it is valid content by construction. Each case patches a copy. An accept case must still pass every rule; it pins a reading, for example that an OR clause passes when one alternative is early enough. Each refuse case must fail with EXACTLY its one code. Patch verbs: project / bureau / start select a row by id (start by nation tag) and set fields on it.",
+  "accept": [
+    {"id": "a01_base_is_valid", "patch": []},
+    {"id": "a02_r4_or_clause_passes_on_one_early_alternative",
+     "patch": [{"project": "pb:sss_01", "set": {"prerequisites": [[{"kind": "technology", "value": "pb:aaa_02"}, {"kind": "design", "value": "pb:design_0005"}]]}}]},
+    {"id": "a03_r8_or_clause_needs_one_held_alternative",
+     "patch": [{"start": "NTH", "set": {"technologies": ["pb:aaa_01", "pb:aaa_02", "pb:sss_01"]}}]},
+    {"id": "a05_r2_one_bureau_name_in_two_nations",
+     "patch": [{"bureau": "pb:fr_varenne", "set": {"name": "Ostwerk"}}]},
+    {"id": "a04_r8_non_id_alternatives_ignored",
+     "patch": [{"start": "STH", "set": {"technologies": ["pb:aaa_01", "pb:aaa_02"], "doctrines": ["pb:bbb_90", "pb:ql_01", "pb:ql_03"]}}]}
+  ],
+  "refuse": [
+    {"id": "r1_unknown_technology", "code": "V101", "patch": [{"project": "pb:sss_01", "set": {"prerequisites": [[{"kind": "technology", "value": "pb:zzz_01"}]]}}]},
+    {"id": "r1_atom_of_the_wrong_kind", "code": "V101", "patch": [{"project": "pb:sss_01", "set": {"prerequisites": [[{"kind": "doctrine", "value": "pb:aaa_02"}]]}}]},
+    {"id": "r1_variant_parent_not_a_design", "code": "V101", "patch": [{"project": "pb:design_0002", "set": {"variant_of": "pb:aaa_01"}}]},
+    {"id": "r1_unknown_flag", "code": "V101", "patch": [{"project": "pb:bbb_01", "set": {"cost_reducers": [[{"kind": "flag", "value": "pb:test_nothing"}]]}}]},
+    {"id": "r2_name_not_token_safe", "code": "V102", "patch": [{"project": "pb:design_0005", "set": {"name": "ZX-3, part two"}}]},
+    {"id": "r2_design_name_twice", "code": "V102", "patch": [{"project": "pb:design_0005", "set": {"name": "Kestrel 12(t)"}}]},
+    {"id": "r2_bureau_name_twice_in_a_nation", "code": "V102", "patch": [{"bureau": "pb:de_kessel", "set": {"name": "Ostwerk"}}]},
+    {"id": "r3_cycle_through_a_design", "code": "V103", "patch": [{"project": "pb:aaa_02", "set": {"prerequisites": [[{"kind": "technology", "value": "pb:aaa_01"}], [{"kind": "doctrine", "value": "pb:bbb_90"}], [{"kind": "design", "value": "pb:design_0001"}]]}}]},
+    {"id": "r4_requires_a_later_item", "code": "V104", "patch": [{"project": "pb:design_0003", "set": {"prerequisites": [[{"kind": "technology", "value": "pb:aaa_02"}]]}}]},
+    {"id": "r5_supplier_leads_a_design", "code": "V105", "patch": [{"bureau": "pb:fr_varenne", "set": {"role": "Supplier"}}]},
+    {"id": "r5_producer_of_another_nation", "code": "V105", "patch": [{"project": "pb:design_0001", "set": {"producers": ["pb:fr_varenne"]}}]},
+    {"id": "r5_no_bureau_and_no_acquisition", "code": "V105", "patch": [{"project": "pb:design_0005", "set": {"acquisition": []}}]},
+    {"id": "r6_cond_without_a_vendor", "code": "V106", "patch": [{"project": "pb:design_0001", "set": {"tags": ["DEMO", "COND"]}}]},
+    {"id": "r6_vendor_without_cond", "code": "V106", "patch": [{"project": "pb:design_0003", "set": {"tags": []}}]},
+    {"id": "r7_asymmetric_pair", "code": "V107", "patch": [{"project": "pb:ql_02", "set": {"exclusive_with": []}}]},
+    {"id": "r7_exclusive_with_itself", "code": "V107", "patch": [{"project": "pb:ql_02", "set": {"exclusive_with": ["pb:ql_01", "pb:ql_02"]}}]},
+    {"id": "r8_held_without_its_prerequisite", "code": "V108", "patch": [{"start": "STH", "set": {"doctrines": ["pb:bbb_90", "pb:ql_03"]}}]},
+    {"id": "r9_variant_of_another_nation", "code": "V109", "patch": [{"project": "pb:design_0004", "set": {"variant_of": "pb:design_0001"}}]}
+  ]
+}

@@ -16,7 +16,7 @@
         ["AAA-01", "AAA", "Alpha works", "First alpha", "base", null, null, "prose that must not ship"],
         ["AAA-02", "AAA", "Alpha works", "Second alpha", 1931, "AAA-01, BBB-90", null, "prose that must not ship"],
         ["BBB-01", "BBB", "Beta works", "First beta", 1932, "AAA-01", "flag:test_shortage", "prose"],
-        ["SSS-01", "SSS", "Sigma works", "First sigma", 1935, "AAA-02 | BBB-01, xp:land:2", null, "prose"]
+        ["SSS-01", "SSS", "Sigma works", "First sigma", 1933, "AAA-02 | BBB-01, xp:land:2", null, "prose"]
       ],
       "Doctrines": [
         ["ID", "Domain", "Branch", "Doctrine", "Year", "Base holders", "Prerequisites", "Unlocks", "Exclusive with"],
@@ -38,7 +38,7 @@
         ["DE_OSTWERK", "Northland", "Ostwerk", "Lead", "AAA", "Alpha works", "BBB, CCC", "prose", "1930 (as Ostwerk-Hall)", "prose"],
         ["DE_KESSEL", "Northland", "Kessel", "Lead", "SSS", "Sigma works", null, "prose", "1932", "prose"],
         ["DE_OSTWERK_PLANT", "Northland", "Ostwerk Plant", "Producer", "AAA", "Alpha works", null, null, "1930", null],
-        ["FR_VARENNE", "Southland", "Varenne", "Supplier", "CCC", "Gamma works", null, null, "1930", null]
+        ["FR_VARENNE", "Southland", "Varenne", "Lead", "CCC", "Gamma works", null, null, "1930", null]
       ],
       "Vendors": [
         ["Country", "Vendor", "Fields", "Sells"],
