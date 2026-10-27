@@ -40,7 +40,8 @@
     "CivilianFactory",
     "MilitaryFactory",
     "Refinery",
-    "RailYard"
+    "RailYard",
+    "ResearchInstitute"
   ],
   "settlement_types": [
     "none",

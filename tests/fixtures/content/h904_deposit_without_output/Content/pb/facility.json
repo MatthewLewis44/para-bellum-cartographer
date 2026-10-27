@@ -100,6 +100,18 @@
       "power_supply_per_tier": 0,
       "deposits": [],
       "output": {}
+    },
+    {
+      "kind": "ResearchInstitute",
+      "cost": {
+        "money": 100,
+        "manpower": 10000,
+        "steel": 20
+      },
+      "power_draw": 1,
+      "power_supply_per_tier": 0,
+      "deposits": [],
+      "output": {}
     }
   ]
 }
