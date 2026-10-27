@@ -1,7 +1,7 @@
 """Convert the research database workbook to content JSON (Sprint 13, AD-M37).
 
-    uv run python tools/research_convert.py --workbook X.xlsx --overlay overlay.json \\
-        --ledger ledger.json --out DIR [--mint]
+    uv run python tools/research_convert.py --workbook X.xlsx --vocabulary Content/vocabulary.json \\
+        --overlay overlay.json --ledger ledger.json --out DIR [--mint]
 
 Three inputs, none of them in this repository (they are Matthew's catalogue and
 live in the private game repository, D5):
@@ -79,7 +79,7 @@ COLUMNS = {
     "Treaties 1930": ("Nation",),
 }
 OVERLAY_FORMAT = "pb-research-overlay/1"
-OVERLAY_KEYS = {"format", "_comment", "nations", "design_roles", "category_fold", "category_fallback", "flags", "flags_held",
+OVERLAY_KEYS = {"format", "_comment", "nations", "design_roles", "costs", "category_fold", "category_fallback", "flags", "flags_held",
                 "restrictions", "bureaus", "effects", "readings"}
 LEDGER_FORMAT = "pb-research-ledger/1"
 LEDGER_KINDS = {"designs": "design", "vendors": "vendor"}   # section -> id stem
@@ -191,6 +191,20 @@ def code_list(cell: object, where: str, allowed, bad: Refusals, what: str) -> li
 
 # ---------------------------------------------------------------- overlay and ledger
 
+def load_pools(path: Path, bad: Refusals) -> frozenset:
+    """The resource pools the game's code knows (Content/vocabulary.json). Read, never
+    copied here, so a pool the engine does not have cannot be a study currency."""
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        pools = doc["pools"]
+        if doc.get("format") != "pb-content/vocabulary/1" or not all(isinstance(p, str) for p in pools):
+            raise ValueError("expected format pb-content/vocabulary/1 with a list of pool names")
+        return frozenset(pools)
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        bad.add("X115", str(path), path.name, f"cannot read the pools: {e}")
+        return frozenset()
+
+
 def load_overlay(path: Path, bad: Refusals) -> dict:
     try:
         ov = json.loads(path.read_text(encoding="utf-8"))
@@ -279,6 +293,7 @@ class Convert:
     ledger: Ledger
     mint: bool
     bad: Refusals = field(default_factory=Refusals)
+    pools: frozenset = frozenset()   # material currencies, from the game's vocabulary
 
     def __post_init__(self) -> None:
         """The nation table is DATA (overlay.nations), so a new nation is an overlay row,
@@ -526,6 +541,7 @@ class Convert:
                              "cost_reducers": cr, "cost_reducers_source": cr_src,
                              "tags": code_list(r["Tags"], f"{where} Tags", TAGS, bad, "tag")})
 
+        era = self.apply_costs(projects)
         ids = collections.Counter(p["id"] for p in projects)
         for i, c in ids.items():
             if c > 1:
@@ -584,10 +600,94 @@ class Convert:
         return {
             "research.json": {"format": "pb-content/research/1", "categories": categories,
                               "projects": projects, "registries": registries,
-                              "start": start, "restrictions": restrictions},
+                              "start": start, "restrictions": restrictions,
+                              "era_multiplier": era},
             "bureau.json": {"format": "pb-content/bureau/1", "bureaus": bureaus},
             "vendor.json": {"format": "pb-content/vendor/1", "vendors": vendors},
         }
+
+    def apply_costs(self, projects: list[dict]) -> dict | None:
+        """Bake each project's PRE-ERA cost (D19, D24): the flat base for its kind, times the
+        variant fraction for a variant, or a per-project override with a one-line reason.
+        Ships cost, cost_source ("rule" | "override") and cost_reason on every project, and
+        returns era_multiplier: the constants of the ONE function the engine evaluates at
+        runtime, M(start date), whose shape PB-SIM13 owns. Every number here is a placeholder
+        that the pacing test will set."""
+        bad, c = self.bad, self.overlay.get("costs")
+        keys = {"_comment", "technology", "doctrine", "design", "variant_fraction_per_mille",
+                "era_multiplier", "overrides"}
+        if not isinstance(c, dict) or set(c) - keys or keys - {"_comment", "overrides"} - set(c):
+            bad.add("X113", "overlay.costs", sorted(c) if isinstance(c, dict) else c,
+                    f"costs needs {sorted(keys - {'_comment', 'overrides'})}, optionally overrides")
+            return None
+
+        def is_int(v, lo):
+            return isinstance(v, int) and not isinstance(v, bool) and v >= lo
+
+        def entries(v, kind, where) -> list[dict] | None:
+            """A cost list, checked against the currencies its kind may use (PB-SIM13)."""
+            if not (isinstance(v, list) and v and all(isinstance(e, dict) and set(e) == {"currency", "amount"}
+                                                      for e in v)):
+                bad.add("X113", where, v, "a cost is a non-empty list of {currency, amount}")
+                return None
+            ok = True
+            cur = [e["currency"] for e in v]
+            for e in v:
+                if not is_int(e["amount"], 0):
+                    bad.add("X113", where, e, "amount is an integer >= 0")
+                    ok = False
+                if e["currency"] not in {"research", "doctrine"} | self.pools:
+                    bad.add("X112", where, e["currency"], "not research, doctrine or a vocabulary pool")
+                    ok = False
+            for x in sorted({x for x in cur if cur.count(x) > 1}):
+                bad.add("X106", where, x, "currency appears twice in one cost")
+                ok = False
+            want = {"technology": ["research"], "doctrine": ["doctrine"]}.get(kind)
+            if want is not None and cur != want:
+                bad.add("X113", where, cur, f"a {kind} costs exactly {want}")
+                ok = False
+            if kind == "design" and not ({"research", "money"} <= set(cur)
+                                         and set(cur) & (self.pools - {"money"}) and "doctrine" not in cur):
+                bad.add("X113", where, cur, "a design study costs research, money and at least one material pool")
+                ok = False
+            return v if ok else None
+
+        base = {k: entries(c[k], k, f"overlay.costs.{k}") for k in ("technology", "doctrine", "design")}
+        frac = c["variant_fraction_per_mille"]
+        if not (is_int(frac, 1) and frac < 1000):
+            bad.add("X113", "overlay.costs.variant_fraction_per_mille", frac, "an integer 1..999: a variant is cheaper")
+        era = c["era_multiplier"]
+        if not (isinstance(era, dict) and set(era) == {"growth_per_year_per_mille", "cap_per_mille"}
+                and is_int(era["growth_per_year_per_mille"], 1000) and is_int(era["cap_per_mille"], 1000)
+                and era["growth_per_year_per_mille"] <= era["cap_per_mille"]):
+            bad.add("X113", "overlay.costs.era_multiplier", era,
+                    "exactly {growth_per_year_per_mille, cap_per_mille}, integers >= 1000, growth <= cap")
+        overrides = c.get("overrides", {})
+        key = {p.get("authored_id", p["name"]): p for p in projects}   # authored id, or a design's name
+        shared = collections.Counter(p.get("authored_id", p["name"]) for p in projects)
+        for k, o in overrides.items():
+            where = f"overlay.costs.overrides.{k}"
+            if shared[k] > 1:   # a design name spelled exactly like an id (ids are opaque, D5)
+                bad.add("X108", where, k, "names both a design and a technology or doctrine")
+            elif k not in key:
+                bad.add("X112", where, k, "not a technology id, doctrine id or design name")
+            elif not (isinstance(o, dict) and set(o) == {"cost", "reason"}
+                      and isinstance(o["reason"], str) and o["reason"].strip()):
+                bad.add("X113", where, o, "an override is {cost, reason} with a one-line reason (D19)")
+            else:
+                entries(o["cost"], key[k]["kind"], f"{where}.cost")
+        if bad.items:
+            return None
+        for p in projects:
+            o = overrides.get(p.get("authored_id", p["name"]))
+            if o is not None:
+                p.update(cost=o["cost"], cost_source="override", cost_reason=o["reason"])
+            else:
+                b = base[p["kind"]]
+                if p.get("variant_of"):
+                    b = [{"currency": e["currency"], "amount": e["amount"] * frac // 1000} for e in b]
+                p.update(cost=[dict(e) for e in b], cost_source="rule", cost_reason=None)
+        return dict(era)
 
     def base_holders(self, r: dict, y: dict, where: str, reading) -> list[str]:
         """Base holders: who starts with a base doctrine. Blank = every nation (sheet note).
@@ -688,8 +788,10 @@ def dump(doc: dict) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap =argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--workbook", required=True, type=Path)
+    ap.add_argument("--vocabulary", required=True, type=Path,
+                    help="the game's Content/vocabulary.json: its pools are the material currencies")
     ap.add_argument("--overlay", required=True, type=Path)
     ap.add_argument("--ledger", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
@@ -702,9 +804,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"workbook {a.workbook}  sha256 {sha256(a.workbook)}")
     print(f"overlay  {a.overlay}  sha256 {sha256(a.overlay) if a.overlay.exists() else '(missing)'}")
     print(f"ledger   {a.ledger}  sha256 {sha256(a.ledger) if a.ledger.exists() else '(new)'}")
+    print(f"vocabulary {a.vocabulary}  sha256 {sha256(a.vocabulary) if a.vocabulary.exists() else '(missing)'}")
+    pools = load_pools(a.vocabulary, bad)
     files = {}
     if not bad.items:
-        conv = Convert(openpyxl.load_workbook(a.workbook, data_only=True), overlay, ledger, a.mint, bad)
+        conv = Convert(openpyxl.load_workbook(a.workbook, data_only=True), overlay, ledger, a.mint, bad, pools)
         files = conv.run()
     if bad.items:
         print(f"REFUSED - {len(bad.items)} refusal(s), nothing written. By code: "

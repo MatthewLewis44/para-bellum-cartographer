@@ -73,6 +73,8 @@ def apply(base: dict, patch: list) -> dict:
             case["overlay"].update(arg)
         elif verb == "ledger":
             case["ledger"] = {"format": rc.LEDGER_FORMAT, "designs": [], "vendors": [], **arg}
+        elif verb == "vocabulary":   # null: no vocabulary file is written
+            case["vocabulary"] = arg
         else:
             raise AssertionError(f"unknown patch verb {verb!r}")
     return case
@@ -96,11 +98,15 @@ def build(case: dict, d: Path) -> tuple[Path, Path, Path]:
     paths[1].write_text(json.dumps(case["overlay"], ensure_ascii=False), encoding="utf-8")
     if case.get("ledger") is not None:
         paths[2].write_text(json.dumps(case["ledger"], ensure_ascii=False), encoding="utf-8")
+    if case.get("vocabulary") is not None:
+        (d / "vocabulary.json").write_text(json.dumps(case["vocabulary"]), encoding="utf-8")
     return paths
 
 
 def run(wb: Path, ov: Path, led: Path, out: Path, mint: bool = True) -> tuple[int, str]:
-    argv = ["--workbook", str(wb), "--overlay", str(ov), "--ledger", str(led), "--out", str(out)]
+    """The vocabulary is read from beside the workbook, where build() writes it."""
+    argv = ["--workbook", str(wb), "--vocabulary", str(wb.parent / "vocabulary.json"), "--overlay", str(ov),
+            "--ledger", str(led), "--out", str(out)]
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
         code = rc.main(argv + (["--mint"] if mint else []))
@@ -215,6 +221,19 @@ def main() -> int:
               json.dumps(kinds))
         check("ships/year declared, never coerced", projects["AAA-01"]["year"] is None
               and projects["AAA-01"]["year_declared"] == "base")
+        cost = {k: (p["cost"], p["cost_source"], p["cost_reason"]) for k, p in projects.items()}
+        check("ships/cost by rule per kind", cost["AAA-02"] == ([{"currency": "research", "amount": 100}], "rule", None)
+              and cost["QL-03"] == ([{"currency": "doctrine", "amount": 80}], "rule", None)
+              and cost["Lancer Mk I (prototype B)"][0] == [{"currency": "research", "amount": 60},
+                                                         {"currency": "money", "amount": 40},
+                                                         {"currency": "steel", "amount": 20}], json.dumps(cost))
+        check("ships/a variant costs the fraction, truncated", cost["Lancer Mk II"] ==
+              ([{"currency": "research", "amount": 30}, {"currency": "money", "amount": 20},
+                {"currency": "steel", "amount": 10}], "rule", None), json.dumps(cost["Lancer Mk II"]))
+        check("ships/an override carries its source and reason", cost["BBB-01"] ==
+              ([{"currency": "research", "amount": 150}], "override", "synthetic: a deliberately dearer row"))
+        check("ships/era multiplier constants, as data", research["era_multiplier"] ==
+              {"growth_per_year_per_mille": 1100, "cap_per_mille": 2000})
         no_route = [x for x in research["restrictions"] if x["nation"] == "MID"]
         check("ships/a restriction with no covert route ships lifted_by null", no_route ==
               [{"nation": "MID", "scope": {"category": "pb:aaa"}, "lifted_by": None}], json.dumps(no_route))

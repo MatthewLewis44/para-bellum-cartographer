@@ -43,7 +43,15 @@
       "prerequisites_source": null,
       "cost_reducers": [],
       "cost_reducers_source": null,
-      "effect": null
+      "effect": null,
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 100
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
     },
     {
       "id": "pb:aaa_02",
@@ -80,7 +88,15 @@
             "per_mille": 100
           }
         ]
-      }
+      },
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 100
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
     },
     {
       "id": "pb:bbb_01",
@@ -108,7 +124,15 @@
         ]
       ],
       "cost_reducers_source": "flag:test_shortage",
-      "effect": null
+      "effect": null,
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 150
+        }
+      ],
+      "cost_source": "override",
+      "cost_reason": "synthetic: a deliberately dearer row"
     },
     {
       "id": "pb:sss_01",
@@ -142,7 +166,15 @@
       "prerequisites_source": "AAA-02 | BBB-01, xp:land:2",
       "cost_reducers": [],
       "cost_reducers_source": null,
-      "effect": null
+      "effect": null,
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 100
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
     },
     {
       "id": "pb:ql_01",
@@ -165,7 +197,15 @@
       "effect": {
         "gate_only": true,
         "modifiers": []
-      }
+      },
+      "cost": [
+        {
+          "currency": "doctrine",
+          "amount": 80
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
     },
     {
       "id": "pb:ql_02",
@@ -188,7 +228,15 @@
       "exclusive_with": [
         "pb:ql_01"
       ],
-      "effect": null
+      "effect": null,
+      "cost": [
+        {
+          "currency": "doctrine",
+          "amount": 80
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
     },
     {
       "id": "pb:bbb_90",
@@ -211,7 +259,15 @@
       "prerequisites": [],
       "prerequisites_source": null,
       "exclusive_with": [],
-      "effect": null
+      "effect": null,
+      "cost": [
+        {
+          "currency": "doctrine",
+          "amount": 80
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
     },
     {
       "id": "pb:ql_03",
@@ -239,7 +295,15 @@
       ],
       "prerequisites_source": "QL-01, focus:test_plan",
       "exclusive_with": [],
-      "effect": null
+      "effect": null,
+      "cost": [
+        {
+          "currency": "doctrine",
+          "amount": 80
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
     },
     {
       "id": "pb:design_0001",
@@ -294,7 +358,23 @@
       "cost_reducers_source": null,
       "tags": [
         "DEMO"
-      ]
+      ],
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 60
+        },
+        {
+          "currency": "money",
+          "amount": 40
+        },
+        {
+          "currency": "steel",
+          "amount": 20
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
     },
     {
       "id": "pb:design_0002",
@@ -343,7 +423,23 @@
         ]
       ],
       "cost_reducers_source": "fielded:test_heavy",
-      "tags": []
+      "tags": [],
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 30
+        },
+        {
+          "currency": "money",
+          "amount": 20
+        },
+        {
+          "currency": "steel",
+          "amount": 10
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
     },
     {
       "id": "pb:design_0003",
@@ -374,7 +470,23 @@
       "cost_reducers_source": null,
       "tags": [
         "COND"
-      ]
+      ],
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 60
+        },
+        {
+          "currency": "money",
+          "amount": 40
+        },
+        {
+          "currency": "steel",
+          "amount": 20
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
     },
     {
       "id": "pb:design_0004",
@@ -412,7 +524,23 @@
       "cost_reducers_source": null,
       "tags": [
         "PAPER"
-      ]
+      ],
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 60
+        },
+        {
+          "currency": "money",
+          "amount": 40
+        },
+        {
+          "currency": "steel",
+          "amount": 20
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
     },
     {
       "id": "pb:design_0005",
@@ -441,7 +569,23 @@
       "doctrine_role_source": null,
       "cost_reducers": [],
       "cost_reducers_source": null,
-      "tags": []
+      "tags": [],
+      "cost": [
+        {
+          "currency": "research",
+          "amount": 60
+        },
+        {
+          "currency": "money",
+          "amount": 40
+        },
+        {
+          "currency": "steel",
+          "amount": 20
+        }
+      ],
+      "cost_source": "rule",
+      "cost_reason": null
     }
   ],
   "registries": {
@@ -592,5 +736,9 @@
       },
       "lifted_by": null
     }
-  ]
+  ],
+  "era_multiplier": {
+    "growth_per_year_per_mille": 1100,
+    "cap_per_mille": 2000
+  }
 }

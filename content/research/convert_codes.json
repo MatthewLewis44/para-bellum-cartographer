@@ -30,6 +30,8 @@
     { "code": "X113", "rule": "overlay-malformed",
       "summary": "The overlay has the wrong format line, an unknown key, or a value of the wrong type." },
     { "code": "X114", "rule": "undeclared-cell",
-      "summary": "A cell outside the grammar (Base holders, Active from, Secondary, Tags, Exclusive with, a Type / role absent from overlay.design_roles) that does not match its declared form. The overlay may declare its reading; the converter never guesses." }
+      "summary": "A cell outside the grammar (Base holders, Active from, Secondary, Tags, Exclusive with, a Type / role absent from overlay.design_roles) that does not match its declared form. The overlay may declare its reading; the converter never guesses." },
+    { "code": "X115", "rule": "bad-vocabulary",
+      "summary": "The game's Content/vocabulary.json (passed as --vocabulary) cannot be read, or has no list of pools. Its pools are the only material currencies a study may cost." }
   ]
 }
