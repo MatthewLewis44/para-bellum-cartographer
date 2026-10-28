@@ -26,6 +26,8 @@ sys.path.insert(0, str(ROOT / "tools"))
 import research_validate as rv  # noqa: E402
 
 BASE = ROOT / "tests" / "fixtures" / "research_convert" / "expected"
+# The game content R11's target validity reads: the shared control set, whose research half IS this golden.
+GAME = rv.load_game(ROOT / "tests" / "fixtures" / "content" / "h000_valid" / "Content")
 CASES = json.loads((ROOT / "tests" / "fixtures" / "research_validate" / "cases.json").read_text(encoding="utf-8"))
 
 
@@ -52,7 +54,7 @@ def apply(patch: list) -> rv.Validator:
         hits = [r for r in rows if r[key] == sel]
         assert len(hits) == 1, f"patch {op}: {len(hits)} rows match"
         hits[0].update(op["set"])
-    return rv.Validator(research, bureaus, vendors, models)
+    return rv.Validator(research, bureaus, vendors, models, GAME)
 
 
 def main() -> int:

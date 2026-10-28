@@ -1,6 +1,11 @@
 """The research validator, R1-R12, over the SHIPPED content JSON (Sprint 13, AD-M37, D17).
 
-    uv run python tools/research_validate.py <dir holding research.json, bureau.json, vendor.json, design_model.json>
+    uv run python tools/research_validate.py <shipped dir> <game Content dir>
+
+<shipped dir> holds research.json, bureau.json, vendor.json and design_model.json.
+<game Content dir> is the game's Content/: R11's target validity reads its classes,
+facilities and vocabulary (a modifier naming a stat its class lacks resolves, never
+lands, and says nothing, D37).
 
 validate.py does not exist (Matthew, 2026-10-27), so this port is the REFERENCE
 implementation, and the reading recorded beside each rule in
@@ -41,8 +46,9 @@ def atoms(p: dict, fields=ATOM_FIELDS):
 
 
 class Validator:
-    def __init__(self, research: dict, bureaus: list[dict], vendors: list[dict], models: list[dict]):
-        self.r, self.bureaus, self.vendors, self.models = research, bureaus, vendors, models
+    def __init__(self, research: dict, bureaus: list[dict], vendors: list[dict], models: list[dict], game: dict):
+        """game: the game's classes, facilities and vocabulary (load_game), which R11's target validity reads."""
+        self.r, self.bureaus, self.vendors, self.models, self.game = research, bureaus, vendors, models, game
         self.projects = {p["id"]: p for p in research["projects"]}
         self.bureau = {b["id"]: b for b in bureaus}
         self.vendor_ids = {v["id"] for v in vendors}
@@ -313,17 +319,37 @@ class Validator:
     # power_supply carries neither a stat nor a pool.
     TARGET_FIELD = {"design_stat": "stat", "facility_output": "pool", "power_supply": None}
 
+    def slice_subject(self) -> set[str]:
+        """The R11 SUBJECT, as ruled (D37), computed WITHOUT consulting any effect, so the slice cannot be
+        derived from its own encoding: the prerequisite closure of every slice design (technology,
+        doctrine and design atoms in prerequisites, plus variant_of, recursively), plus every start
+        holding, plus every doctrine with a non-empty exclusive_with. Technologies and doctrines only."""
+        seen, stack = set(), [m["id"] for m in self.models if m["id"] in self.projects]
+        while stack:
+            pid = stack.pop()
+            if pid in seen or pid not in self.projects:
+                continue
+            seen.add(pid)
+            p = self.projects[pid]
+            stack += [a["value"] for _, a in atoms(p, ("prerequisites",)) if a["kind"] in PROJECT_KINDS]
+            if p.get("variant_of"):
+                stack.append(p["variant_of"])
+        subject = {pid for pid in seen if self.projects[pid]["kind"] in ("technology", "doctrine")}
+        for s in self.r["start"]:
+            subject |= set(s["technologies"]) | set(s["doctrines"])
+        subject |= {pid for pid, p in self.projects.items() if p["kind"] == "doctrine" and p["exclusive_with"]}
+        return subject & set(self.projects)
+
     def r11(self) -> None:
         for p in self.r["projects"]:
             extra = set(p) ^ self.KEYS.get(p["kind"], set())
             if extra:
                 self.fail("V111", self.label(p), sorted(extra), "not exactly this kind's keys (prose enters by a field)")
-        effects = 0
+        # every effect that exists has a valid shape and valid targets, in the slice or not
         for p in self.r["projects"]:
             e = p.get("effect")
             if p["kind"] == "design" or e is None:
                 continue
-            effects += 1
             if isinstance(e, dict) and set(e) == {"no_target"}:   # declared: the writer target it needs, and why
                 n = e["no_target"]
                 if not (isinstance(n, dict) and set(n) == {"needs", "reason"}
@@ -344,14 +370,63 @@ class Validator:
                         and (want is None or isinstance(m[want], str)) and isinstance(m["per_mille"], int)
                         and not isinstance(m["per_mille"], bool) and m["per_mille"] != 0):
                     self.fail("V111", self.label(p), m, "a modifier is {target, scope, [stat|pool], per_mille != 0}")
+                    continue
+                why = self.target_invalid(m)
+                if why:
+                    self.fail("V111", self.label(p), m, f"target does not exist: {why}")
+        # the subject: every row encoded (gate_only and no_target ARE encoded; only null is not)
+        subject = self.slice_subject()
+        forms = collections.Counter()
+        needs = collections.Counter()
+        for pid in sorted(subject):
+            e = self.projects[pid]["effect"]
+            if e is None:
+                self.fail("V111", self.label(self.projects[pid]), None,
+                          f"in the R11 subject of {len(subject)} rows, and its effect is null")
+            elif isinstance(e, dict) and "no_target" in e:
+                forms["no_target"] += 1
+                needs[e["no_target"].get("needs")] += 1
+            elif isinstance(e, dict):
+                forms["gate_only" if e.get("gate_only") else "modifiers"] += 1
         per_design = collections.Counter(m["id"] for m in self.models)
         for mid, c in per_design.items():
             if c != 1:
                 self.fail("V111", f"model {mid}", c, "a slice design has exactly one model")
-        self.measured["V111"] = (f"{effects} technologies/doctrines with an effect"
-                                 f"{' (this half VACUOUS: none encoded yet)' if effects == 0 else ''}, "
-                                 f"{len(per_design)} design models")
-        self.size["V111"] = effects + len(per_design)
+        unencoded = len(subject) - sum(forms.values())
+        self.measured["V111"] = (
+            f"subject {len(subject)} technologies/doctrines: {forms['modifiers']} with modifiers, "
+            f"{forms['gate_only']} gate-only, {forms['no_target']} no_target, {unencoded} null; "
+            f"no_target by needed target: {dict(sorted(needs.items())) or '-'}; {len(per_design)} design models")
+        self.size["V111"] = len(subject)
+
+    def target_invalid(self, m: dict) -> str | None:
+        """Why a modifier's target does not exist in the game's content, or None. The order and the cases are
+        the game reader's (ContentReader.Research.cs, Unity 93bed30): a design stat needs its class and the
+        stat on that class's surface; a facility output needs an engine kind and a pool that kind outputs;
+        a power supply needs an engine kind that supplies power."""
+        g = self.game
+        if m["target"] == "design_stat":
+            if m["scope"] not in g["classes"]:
+                return f'"{m["scope"]}" is not a class'
+            if m["stat"] not in g["stat_keys"]:
+                return f'"{m["stat"]}" is not an engine stat key'
+            if m["stat"] not in g["classes"][m["scope"]]:
+                return f'"{m["stat"]}" is not on class "{m["scope"]}"'
+            return None
+        if m["scope"] not in g["kinds"]:
+            return f'"{m["scope"]}" is not an engine facility kind'
+        row = g["facilities"].get(m["scope"])
+        if row is None:
+            return None   # the content set's own C903 reports a missing row
+        if m["target"] == "facility_output":
+            if m["pool"] not in g["pools"]:
+                return f'"{m["pool"]}" is not an engine pool'
+            if m["pool"] not in row["output"]:
+                return f'{m["scope"]} does not output {m["pool"]}'
+            return None
+        if row["power_supply_per_tier"] <= 0:
+            return f"{m['scope']} supplies no power"
+        return None
 
     # R12 ----------------------------------------------------------------
     def r12(self) -> None:
@@ -385,17 +460,35 @@ class Validator:
         return self.failures
 
 
-def load(d: Path) -> Validator:
+def load_game(content: Path) -> dict:
+    """The game content R11's target validity needs: every class's stat surface, every facility row, and the
+    vocabulary's stat keys, pools and facility kinds. Read from the game's Content/ directory, never copied."""
+    vocab = json.loads((content / "vocabulary.json").read_text(encoding="utf-8"))
+    classes, facilities = {}, {}
+    for ns in sorted(d for d in content.iterdir() if d.is_dir() and d.name != "schemas"):
+        cf, ff = ns / "class.json", ns / "facility.json"
+        if cf.exists():
+            for c in json.loads(cf.read_text(encoding="utf-8"))["classes"]:
+                if "extends" not in c:   # an extension adds traits, never stats
+                    classes[c["id"]] = set(c["stats"])
+        if ff.exists():
+            for f in json.loads(ff.read_text(encoding="utf-8"))["facilities"]:
+                facilities[f["kind"]] = f
+    return {"classes": classes, "facilities": facilities, "stat_keys": set(vocab["stat_keys"]),
+            "pools": set(vocab["pools"]), "kinds": set(vocab["facility_kinds"])}
+
+
+def load(d: Path, content: Path) -> Validator:
     def read(name):
         return json.loads((d / name).read_text(encoding="utf-8"))
     return Validator(read("research.json"), read("bureau.json")["bureaus"], read("vendor.json")["vendors"],
-                     read("design_model.json")["models"])
+                     read("design_model.json")["models"], load_game(content))
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 1:
+    if len(argv) != 2:
         raise SystemExit(__doc__)
-    v = load(Path(argv[0]))
+    v = load(Path(argv[0]), Path(argv[1]))
     failures = v.run()
     print(f"research_validate over {argv[0]}: {len(v.projects)} projects, {len(v.bureaus)} bureaus, "
           f"{len(v.vendor_ids)} vendors")
