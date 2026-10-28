@@ -175,6 +175,30 @@ def _schema_problems(rel: str, stem: str, doc) -> list[Problem]:
     return out
 
 
+def _fractional_numbers(rel: str, doc, errs: list[Problem]) -> list[Problem]:
+    """C103 is universal, as the C# reader enforces it (every number it reads must be integral), not only
+    where a schema happens to declare "integer": a schema that declared "number" would otherwise let a
+    fraction through on this side alone. One diagnosis per path: a path the schema already refused (C103,
+    or a wrong type) is not reported again."""
+    seen = {e.path for e in errs}
+    out = []
+
+    def walk(v, parts):
+        if isinstance(v, float) and not v.is_integer():
+            path = _json_path(parts)
+            if path not in seen:
+                out.append(Problem(rel, "C103", path, f"{v} has a fractional part"))
+        elif isinstance(v, dict):
+            for key, x in v.items():
+                walk(x, parts + [key])
+        elif isinstance(v, list):
+            for i, x in enumerate(v):
+                walk(x, parts + [i])
+
+    walk(doc, [])
+    return errs + out
+
+
 ATOM_FIELDS = ("prerequisites", "cost_reducers", "acquisition", "doctrine_role")
 
 
@@ -245,7 +269,7 @@ class ContentSet:
         except (json.JSONDecodeError, UnicodeDecodeError) as e:
             self.problems.append(Problem(rel, "C108", "$", str(e)))
             return rel, None
-        errs = _schema_problems(rel, stem, doc)
+        errs = _fractional_numbers(rel, doc, _schema_problems(rel, stem, doc))
         if stem == "research":
             errs = _whitespace_first(rel, doc, errs)
         self.problems += errs

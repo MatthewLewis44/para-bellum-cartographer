@@ -28,17 +28,17 @@
         "active": { "type": "boolean" },
         "capacity": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] },
         "home": {
-          "description": "Where the bureau is: the place and its coordinates AS AUTHORED (facts, checkable against history), and the province DERIVED from them, side by side so a near-border miss is visible. province is null when no province reaches the point; the bureau still exists. null for a bureau with no home (only an inactive one may lack it).",
+          "description": "Where the bureau is: the place and its coordinates AS AUTHORED (facts, checkable against history; integer MICRODEGREES, since every number in content is an integer, C103), and the province DERIVED from them, side by side so a near-border miss is visible. province is null when no province reaches the point; the bureau still exists. null for a bureau with no home (only an inactive one may lack it).",
           "oneOf": [
             { "type": "null" },
             {
               "type": "object",
               "additionalProperties": false,
-              "required": ["place", "lon", "lat", "province"],
+              "required": ["place", "lon_e6", "lat_e6", "province"],
               "properties": {
                 "place": { "type": "string" },
-                "lon": { "type": "number", "minimum": -180, "maximum": 180 },
-                "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+                "lon_e6": { "type": "integer", "minimum": -180000000, "maximum": 180000000 },
+                "lat_e6": { "type": "integer", "minimum": -90000000, "maximum": 90000000 },
                 "province": { "type": ["string", "null"] }
               }
             }

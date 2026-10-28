@@ -314,13 +314,13 @@ def main() -> int:
               {"no_target": {"needs": "test_writer", "reason": "synthetic: no writer target exists for this yet"}})
         homes = {b["authored_id"]: b["home"] for b in json.loads(produced["bureau.json"])["bureaus"]}
         check("homes/place, coordinates and the DERIVED province ship side by side",
-              homes["DE_OSTWERK"] == {"place": "Ostburg", "lon": 0.5, "lat": 0.5, "province": "NTH_ONE"},
+              homes["DE_OSTWERK"] == {"place": "Ostburg", "lon_e6": 500000, "lat_e6": 500000, "province": "NTH_ONE"},
               json.dumps(homes["DE_OSTWERK"]))
         check("homes/a home in an unshipped province keeps its derived province",
               homes["FR_VARENNE"]["province"] == "STH_ONE", json.dumps(homes["FR_VARENNE"]))
         check("homes/an inactive bureau with no home ships null", homes["DE_OSTWERK_PLANT"] is None)
         check("homes/an inactive bureau may carry a home (it contributes nothing)",
-              homes["DE_KESSEL"] == {"place": "Kesselstadt", "lon": 1.5, "lat": 0.5, "province": "NTH_TWO"})
+              homes["DE_KESSEL"] == {"place": "Kesselstadt", "lon_e6": 1500000, "lat_e6": 500006, "province": "NTH_TWO"})
         ai = research["ai"]
         check("ai/weights for every nation x LIVE category (the folded one excluded)",
               sorted(ai["weights"]) == sorted(["NTH", "STH", "WST", "EST", "UPL", "LOW", "MID"])

@@ -748,12 +748,16 @@ class Convert:
         ok = (isinstance(h, dict) and set(h) == {"place", "lon", "lat"} and isinstance(h["place"], str)
               and h["place"].strip() and all(isinstance(h[k], (int, float)) and not isinstance(h[k], bool)
                                              for k in ("lon", "lat"))
-              and -180 <= h["lon"] <= 180 and -90 <= h["lat"] <= 90)
+              and -180 <= h["lon"] <= 180 and -90 <= h["lat"] <= 90
+              and all(round(h[k] * 1_000_000) / 1_000_000 == h[k] for k in ("lon", "lat")))
         if not ok:
             self.bad.add("X118", f"overlay.bureau_homes.{authored}", h,
-                         "a home is {place, lon, lat}, with lon in [-180, 180] and lat in [-90, 90]")
+                         "a home is {place, lon, lat}, with lon in [-180, 180] and lat in [-90, 90], "
+                         "at most 6 decimal places")
             return None
-        return {"place": h["place"], "lon": h["lon"], "lat": h["lat"],
+        # Every number in content is an integer (C103), so the coordinates ship as integer MICRODEGREES,
+        # exact for any authored value of up to 6 decimal places (checked above, never silently rounded).
+        return {"place": h["place"], "lon_e6": round(h["lon"] * 1_000_000), "lat_e6": round(h["lat"] * 1_000_000),
                 "province": province_at(self.geo.get("provinces", []), h["lon"], h["lat"])}
 
     def ai_weights(self, cats: dict, fold: dict, bureaus: list[dict]) -> dict:
