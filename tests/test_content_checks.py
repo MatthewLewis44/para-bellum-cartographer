@@ -31,8 +31,9 @@ cross-check: both implementations must agree on WHY each file is wrong.
      must pass the checker. When both measured trees are clean it compares the
      EXACT COMMITTED BLOBS at each HEAD (ls-tree + cat-file), with no line-ending
      normalisation: git archive and the working tree both convert line endings, so
-     neither is the bytes the repositories hold. Only a dirty tree falls back to
-     normalised working-tree reads, and the method is printed. Both trees are printed with their SHA and whether the
+     neither is the bytes the repositories hold. A DIRTY measured tree REFUSES both
+     drift checks by name (D39): there is no honest byte claim about uncommitted
+     files, so the old silent fallback to working-tree reads is gone. Both trees are printed with their SHA and whether the
      working tree differs from it (D24), so a red result during a handover is
      readable as a pending handover rather than a broken instrument. If the game repository is absent, or has not vendored the
      schemas yet, this prints a LOUD SKIP rather than a silent pass.
@@ -107,13 +108,6 @@ def committed_blobs(repo: Path, prefix: str) -> dict[str, bytes]:
         if kind == "blob" and not path.endswith(".meta"):
             files[path[len(prefix):].lstrip("/")] = _git(repo, "cat-file", "blob", sha, binary=True)
     return files
-
-
-def _tree_files(root: Path) -> dict[str, bytes]:
-    """Every file under root, keyed by relative path, line endings normalised.
-    Unity's .meta sidecars are ignored: the game adds one beside every asset."""
-    return {p.relative_to(root).as_posix(): _lf(p.read_bytes())
-            for p in root.rglob("*") if p.is_file() and p.suffix != ".meta"}
 
 
 def _lf(b: bytes) -> bytes:
@@ -331,42 +325,41 @@ def main() -> int:
         print(f"  SKIP  !!! {game_schemas} does not exist yet: the schemas are not vendored into "
               f"the game. NO DRIFT CHECK RAN.")
     else:
-        # EXACT COMMITTED BYTES when both measured trees are clean: the blobs at each
-        # HEAD, compared with NO normalisation. Only a dirty tree (a handover in flight,
-        # uncommitted work) falls back to working-tree reads with line endings
-        # normalised, and the method used is printed either way.
+        # EXACT COMMITTED BYTES or nothing (D39). A drift check is a BYTE claim, and there is no honest byte
+        # claim to make about uncommitted files: a dirty tree used to fall back SILENTLY to normalised
+        # working-tree reads and still print green, which is a check passing for the wrong reason (D66's
+        # class). Now a dirty measured tree REFUSES both drift checks by name; commit, then re-run, or compare
+        # named revisions with tools/vendor_drift.py.
         mine_scope = ("content", "tests/fixtures/content")
         game_scope = ("Assets/StreamingAssets/Content", "Assets/Tests/EditMode/Fixtures/content")
-        exact = _is_clean(ROOT, *mine_scope) and _is_clean(unity, *game_scope)
-        print("  METHOD " + ("EXACT committed blobs at both HEADs (ls-tree + cat-file), no line-ending "
-                             "normalisation" if exact else
-                             "working-tree files, line endings normalised (a measured tree is dirty)"))
-        names = {p.name for p in contract_files()}
-        if exact:
+        dirty_sides = [side for side, repo, scope in (("this repo", ROOT, mine_scope), ("the game", unity, game_scope))
+                       if not _is_clean(repo, *scope)]
+        print(f"  TREE  compared (the game): "
+              f"{tree_of(unity, 'Assets/StreamingAssets/Content', 'Assets/Tests/EditMode/Fixtures/content')}")
+        if dirty_sides:
+            why = (f"REFUSED: {' and '.join(dirty_sides)} has uncommitted changes in the measured paths, so no byte "
+                   f"claim can be made (D39). Commit, then re-run, or use tools/vendor_drift.py <game-rev> <pipeline-rev>")
+            print("  METHOD none: " + why)
+            check("the game's Content/schemas/ (schemas + rule_codes.json) equals the pinned copy", False, why)
+            check("the game's vendored hostile set (EditMode Fixtures/content) equals ours", False, why)
+        else:
+            print("  METHOD EXACT committed blobs at both HEADs (ls-tree + cat-file), no line-ending normalisation")
+            names = {p.name for p in contract_files()}
             mine = {k: v for k, v in committed_blobs(ROOT, "content/schemas").items() if k in names}
             theirs = {k: v for k, v in committed_blobs(unity, "Assets/StreamingAssets/Content/schemas").items()
                       if k.endswith(".schema.json") or k == cc.RULE_CODES_FILE.name}
-        else:
-            mine = {p.name: _lf(p.read_bytes()) for p in contract_files()}
-            theirs = {p.name: _lf(p.read_bytes()) for p in game_schemas.iterdir() if p.is_file()
-                      and (p.name.endswith(".schema.json") or p.name == cc.RULE_CODES_FILE.name)}
-        print(f"  TREE  compared (the game): "
-              f"{tree_of(unity, 'Assets/StreamingAssets/Content', 'Assets/Tests/EditMode/Fixtures/content')}")
-        drift = sorted(k for k in mine.keys() | theirs.keys() if mine.get(k) != theirs.get(k))
-        check("the game's Content/schemas/ (schemas + rule_codes.json) equals the pinned copy",
-              not drift, f"{drift}")
-        if game_fixtures.exists():
-            if exact:
+            drift = sorted(k for k in mine.keys() | theirs.keys() if mine.get(k) != theirs.get(k))
+            check("the game's Content/schemas/ (schemas + rule_codes.json) equals the pinned copy",
+                  not drift, f"{drift}")
+            if game_fixtures.exists():
                 mine_f = committed_blobs(ROOT, "tests/fixtures/content")
                 theirs_f = committed_blobs(unity, "Assets/Tests/EditMode/Fixtures/content")
+                fdrift = sorted(k for k in mine_f.keys() | theirs_f.keys() if mine_f.get(k) != theirs_f.get(k))
+                check("the game's vendored hostile set (EditMode Fixtures/content) equals ours",
+                      not fdrift, f"{len(fdrift)} file(s) differ, e.g. {fdrift[:3]}")
             else:
-                mine_f, theirs_f = _tree_files(FIXTURES), _tree_files(game_fixtures)
-            fdrift = sorted(k for k in mine_f.keys() | theirs_f.keys() if mine_f.get(k) != theirs_f.get(k))
-            check("the game's vendored hostile set (EditMode Fixtures/content) equals ours",
-                  not fdrift, f"{len(fdrift)} file(s) differ, e.g. {fdrift[:3]}")
-        else:
-            print(f"  SKIP  !!! {game_fixtures} does not exist: the hostile set is not vendored. "
-                  f"NO FIXTURE DRIFT CHECK RAN.")
+                print(f"  SKIP  !!! {game_fixtures} does not exist: the hostile set is not vendored. "
+                      f"NO FIXTURE DRIFT CHECK RAN.")
         game_fac = game_content / "pb" / "facility.json"
         if game_fac.exists():
             gm = bf.PowerModel.from_facility_json(json.loads(game_fac.read_text(encoding="utf-8")))
