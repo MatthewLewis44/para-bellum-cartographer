@@ -1,0 +1,116 @@
+{
+  "format": "pb-content/facility/1",
+  "tier": {
+    "step_per_mille": 1000,
+    "cost_multiplier_per_mille": 1750,
+    "build_days": 180
+  },
+  "repair_per_mille": 400,
+  "facilities": [
+    {
+      "kind": "Mine",
+      "cost": {
+        "money": 40,
+        "manpower": 12000,
+        "steel": 15
+      },
+      "power_draw": 1,
+      "power_supply_per_tier": 0,
+      "deposits": [
+        "iron"
+      ],
+      "output": {
+        "iron": 100
+      }
+    },
+    {
+      "kind": "PowerPlant",
+      "cost": {
+        "money": 35,
+        "manpower": 8000,
+        "steel": 20
+      },
+      "power_draw": 0,
+      "power_supply_per_tier": 1,
+      "deposits": [],
+      "output": {}
+    },
+    {
+      "kind": "SteelMill",
+      "cost": {
+        "money": 120,
+        "manpower": 20000,
+        "steel": 30,
+        "iron": 40
+      },
+      "power_draw": 2,
+      "power_supply_per_tier": 0,
+      "deposits": [],
+      "output": {
+        "steel": 150
+      }
+    },
+    {
+      "kind": "CivilianFactory",
+      "cost": {
+        "money": 100,
+        "manpower": 56000,
+        "steel": 40
+      },
+      "power_draw": 1,
+      "power_supply_per_tier": 0,
+      "deposits": [],
+      "output": {}
+    },
+    {
+      "kind": "MilitaryFactory",
+      "cost": {
+        "money": 200,
+        "manpower": 40000,
+        "steel": 90
+      },
+      "power_draw": 2,
+      "power_supply_per_tier": 0,
+      "deposits": [],
+      "output": {}
+    },
+    {
+      "kind": "Refinery",
+      "cost": {
+        "money": 150,
+        "manpower": 24000,
+        "steel": 60
+      },
+      "power_draw": 2,
+      "power_supply_per_tier": 0,
+      "deposits": [],
+      "output": {
+        "oil": 120
+      }
+    },
+    {
+      "kind": "RailYard",
+      "cost": {
+        "money": 80,
+        "manpower": 16000,
+        "steel": 50
+      },
+      "power_draw": 1,
+      "power_supply_per_tier": 0,
+      "deposits": [],
+      "output": {}
+    },
+    {
+      "kind": "ResearchInstitute",
+      "cost": {
+        "money": 100,
+        "manpower": 10000,
+        "steel": 20
+      },
+      "power_draw": 1,
+      "power_supply_per_tier": 0,
+      "deposits": [],
+      "output": {}
+    }
+  ]
+}

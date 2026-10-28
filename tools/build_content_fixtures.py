@@ -111,6 +111,8 @@ MUTATIONS = [
     ("h102_wrong_type", "C102", M, 'models[0].year is the string "1930"', _set([M, "models", 0, "year"], "1930")),
     ("h103_not_integer", "C103", M, "models[2].stats.armour_front_mm is 13.5",
      _set([M, "models", 2, "stats", "armour_front_mm"], 13.5)),
+    ("h103b_integral_float", "C103", M, "models[2].stats.armour_front_mm is 13.0 (integral, but written as a float)",
+     _set([M, "models", 2, "stats", "armour_front_mm"], 13.0)),
     ("h104_negative_cost", "C104", M, "models[0].cost.steel is -1", _set([M, "models", 0, "cost", "steel"], -1)),
     ("h105_unknown_key", "C105", M, 'models[0] carries an undeclared key "colour"',
      _set([M, "models", 0, "colour"], "green")),

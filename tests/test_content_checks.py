@@ -307,12 +307,12 @@ def main() -> int:
               "before AND after the defining mod", tank2 == ["pb:sloped_armour", "pb:unreliable_transmission",
                                                             "mymod:wet_stowage"], f"{tank2}")
 
-    # 5b. C103 is universal, as the C# reader enforces it: a fraction is refused even where no schema
-    # declares "integer" (here, a path with no schema error), once per path, and an integral float passes.
-    doc = {"a": {"b": [1, 2.5]}, "c": 3.0, "d": 7.25}
+    # 5b. C103 is universal, as the C# reader enforces it: any float token is refused even where no schema
+    # declares "integer" (here, paths with no schema error), 3.0 included, once per path; integers pass.
+    doc = {"a": {"b": [1, 2.5]}, "c": 3.0, "d": 7.25, "e": 4}
     got = [(p.code, p.path) for p in cc._fractional_numbers("x.json", doc, [cc.Problem("x.json", "C102", "$.d", "")])]
-    check("C103 is universal: a fraction with no schema error is refused, once per path, 3.0 passes",
-          got == [("C102", "$.d"), ("C103", "$.a.b[1]")], f"{got}")
+    check("C103 is universal: any float token with no schema error is refused (3.0 too), once per path; integers pass",
+          got == [("C102", "$.d"), ("C103", "$.a.b[1]"), ("C103", "$.c")], f"{got}")
 
     # 6. The hash pin.
     check("content/SHA256SUMS matches the schemas and fixtures",

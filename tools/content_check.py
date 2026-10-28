@@ -176,18 +176,20 @@ def _schema_problems(rel: str, stem: str, doc) -> list[Problem]:
 
 
 def _fractional_numbers(rel: str, doc, errs: list[Problem]) -> list[Problem]:
-    """C103 is universal, as the C# reader enforces it (every number it reads must be integral), not only
-    where a schema happens to declare "integer": a schema that declared "number" would otherwise let a
-    fraction through on this side alone. One diagnosis per path: a path the schema already refused (C103,
-    or a wrong type) is not reported again."""
+    """C103 is universal, as the C# reader enforces it, not only where a schema happens to declare "integer":
+    a schema that declared "number" would otherwise let a fraction through on this side alone. The reading is
+    the TOKEN's, never the value's: a number written with a fractional part, a decimal point or an exponent
+    (any JSON float, so 3.0 too) is refused, as Newtonsoft's Float token is. Content numbers are integers by
+    contract, so 3.0 is an authoring slip, and neither side has to judge float equality. One diagnosis per
+    path: a path the schema already refused (C103, or a wrong type) is not reported again."""
     seen = {e.path for e in errs}
     out = []
 
     def walk(v, parts):
-        if isinstance(v, float) and not v.is_integer():
+        if isinstance(v, float):
             path = _json_path(parts)
             if path not in seen:
-                out.append(Problem(rel, "C103", path, f"{v} has a fractional part"))
+                out.append(Problem(rel, "C103", path, f"{v} is written as a non-integer number"))
         elif isinstance(v, dict):
             for key, x in v.items():
                 walk(x, parts + [key])

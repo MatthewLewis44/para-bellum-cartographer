@@ -8,7 +8,7 @@
     { "code": "C102", "rule": "wrong-type", "layer": "schema", "python": "refuse", "csharp": "refuse",
       "summary": "A value is not the declared type or shape." },
     { "code": "C103", "rule": "not-integer", "layer": "schema", "python": "refuse", "csharp": "refuse",
-      "summary": "A number has a fractional part. Every number in content is an integer." },
+      "summary": "A number has a fractional part, or is written with a decimal point or an exponent (3.0 is refused: the reading is the token's, not the value's). Every number in content is an integer." },
     { "code": "C104", "rule": "negative-value", "layer": "schema", "python": "refuse", "csharp": "refuse",
       "summary": "A value that may not be negative is negative, as authored." },
     { "code": "C105", "rule": "unknown-key", "layer": "schema", "python": "refuse", "csharp": "refuse",
