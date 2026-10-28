@@ -108,6 +108,9 @@ R = "pb/research.json"
 MUTATIONS = [
     ("h108_invalid_json", "C108", M, "model.json is not JSON (truncated)", "RAW"),
     ("h101_missing_key", "C101", M, "models[0] has no year", _del([M, "models", 0, "year"])),
+    ("h101b_active_bureau_without_home", "C101", "pb/bureau.json",
+     "bureaus[0] (DE_OSTWERK, ACTIVE) has home null; the control set's inactive DE_OSTWERK_PLANT with a null "
+     "home is accepted, so the rule is scoped to active bureaus", _set(["pb/bureau.json", "bureaus", 0, "home"], None)),
     ("h102_wrong_type", "C102", M, 'models[0].year is the string "1930"', _set([M, "models", 0, "year"], "1930")),
     ("h103_not_integer", "C103", M, "models[2].stats.armour_front_mm is 13.5",
      _set([M, "models", 2, "stats", "armour_front_mm"], 13.5)),

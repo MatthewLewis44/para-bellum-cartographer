@@ -314,6 +314,31 @@ def main() -> int:
     check("C103 is universal: any float token with no schema error is refused (3.0 too), once per path; integers pass",
           got == [("C102", "$.d"), ("C103", "$.a.b[1]"), ("C103", "$.c")], f"{got}")
 
+    # 5c. The dirty-tree refusal's CONTROL (D39). Section 7 refuses both drift checks when _is_clean says a
+    # measured tree is dirty; a refusal is only worth having if it stays SILENT on a clean tree, so the
+    # decision is proven both ways in a throwaway repository: clean -> compared; an edit or an untracked file
+    # inside the measured scope -> refused; a change OUTSIDE the scope -> still compared.
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td)
+        g = ["-c", "user.name=t", "-c", "user.email=t@t", "-c", "core.autocrlf=false"]
+        (repo / "content").mkdir()
+        (repo / "content" / "a.json").write_text("{}\n", encoding="utf-8")
+        (repo / "other.txt").write_text("x\n", encoding="utf-8")
+        for a in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "c"]):
+            _git(repo, *g, *a)
+        clean = _is_clean(repo, "content")
+        (repo / "other.txt").write_text("y\n", encoding="utf-8")
+        outside = _is_clean(repo, "content")
+        (repo / "content" / "b.json").write_text("{}\n", encoding="utf-8")
+        untracked = _is_clean(repo, "content")
+        (repo / "content" / "b.json").unlink()
+        (repo / "content" / "a.json").write_text("{ }\n", encoding="utf-8")
+        edited = _is_clean(repo, "content")
+        check("dirty-tree refusal CONTROL: a clean measured tree is compared, a change outside the scope is "
+              "ignored; an untracked or edited file inside it refuses (D39)",
+              (clean, outside, untracked, edited) == (True, True, False, False),
+              f"clean={clean} outside={outside} untracked={untracked} edited={edited}")
+
     # 6. The hash pin.
     check("content/SHA256SUMS matches the schemas and fixtures",
           PIN.exists() and _lf(PIN.read_bytes()).decode("utf-8") == pin_text(),

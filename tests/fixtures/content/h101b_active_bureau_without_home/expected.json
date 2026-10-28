@@ -1,0 +1,8 @@
+{
+  "code": "C101",
+  "rule": "missing-key",
+  "file": "pb/bureau.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "bureaus[0] (DE_OSTWERK, ACTIVE) has home null; the control set's inactive DE_OSTWERK_PLANT with a null home is accepted, so the rule is scoped to active bureaus"
+}
