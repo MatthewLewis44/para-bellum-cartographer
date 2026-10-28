@@ -313,6 +313,14 @@ def main() -> int:
     got = [(p.code, p.path) for p in cc._fractional_numbers("x.json", doc, [cc.Problem("x.json", "C102", "$.d", "")])]
     check("C103 is universal: any float token with no schema error is refused (3.0 too), once per path; integers pass",
           got == [("C102", "$.d"), ("C103", "$.a.b[1]"), ("C103", "$.c")], f"{got}")
+    # The refusal names the fix (AD-M36): the exact integer for 13.0, a scaled unit for 13.5, read from the
+    # two hostile fixtures as the checker reports them, so the schema-path and walk-path messages both count.
+    hints = {}
+    for fx, want in (("h103_not_integer", "scale the unit"), ("h103b_integral_float", "write 13 ")):
+        msgs = [p.detail for p in cc.ContentSet(FIXTURES / fx / "Content").problems if p.code == "C103"]
+        hints[fx] = len(msgs) == 1 and want in msgs[0]
+    check("a C103 refusal names the fix: 13.0 is told to write 13, 13.5 to scale its unit",
+          all(hints.values()), f"{hints}")
 
     # 5c. The dirty-tree refusal's CONTROL (D39). Section 7 refuses both drift checks when _is_clean says a
     # measured tree is dirty; a refusal is only worth having if it stays SILENT on a clean tree, so the

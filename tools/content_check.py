@@ -162,6 +162,15 @@ def _schema_code(err) -> str:
     return "C102"   # oneOf, minLength and the rest: the value is not the declared shape
 
 
+def c103_detail(v: float) -> str:
+    """A C103 refusal names the FIX, not only the code (AD-M36: content people author by hand). An integral
+    float is told the exact integer to write; a fraction is told to scale its unit, as the bureau homes do."""
+    if v.is_integer():
+        return f"{v!r} is written with a decimal point: write {int(v)} (content numbers are integers, C103)"
+    return (f"{v!r} has a fractional part: content numbers are integers, so scale the unit until the value is "
+            f"whole (as home coordinates ship in microdegrees, lon_e6) and write that integer (C103)")
+
+
 def _schema_problems(rel: str, stem: str, doc) -> list[Problem]:
     out = []
     for err in sorted(_schema(stem).iter_errors(doc), key=lambda e: list(e.absolute_path)):
@@ -171,7 +180,8 @@ def _schema_problems(rel: str, stem: str, doc) -> list[Problem]:
             # One error per missing key; name THAT key's path, as the C# reader does.
             m = re.match(r"'(.+?)' is a required property", err.message)
             path += f".{m.group(1)}" if m else ""
-        out.append(Problem(rel, _schema_code(err), path, err.message))
+        code = _schema_code(err)
+        out.append(Problem(rel, code, path, c103_detail(err.instance) if code == "C103" else err.message))
     return out
 
 
@@ -189,7 +199,7 @@ def _fractional_numbers(rel: str, doc, errs: list[Problem]) -> list[Problem]:
         if isinstance(v, float):
             path = _json_path(parts)
             if path not in seen:
-                out.append(Problem(rel, "C103", path, f"{v} is written as a non-integer number"))
+                out.append(Problem(rel, "C103", path, c103_detail(v)))
         elif isinstance(v, dict):
             for key, x in v.items():
                 walk(x, parts + [key])
