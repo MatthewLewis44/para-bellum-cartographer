@@ -595,8 +595,8 @@ class ContentSet:
         fielded, focus, xp, start = set(), set(), set(), {}
         for _, _, doc in self.research:
             reg = doc["registries"]
-            fielded |= set(reg["fielded"])
-            focus |= set(reg["focus"])
+            fielded |= {x["id"] for x in reg["fielded"]}   # {id, authored_id, name} rows
+            focus |= {x["id"] for x in reg["focus"]}
             xp |= {(x["branch"], x["tier"]) for x in reg["xp"]}
             for s in doc["start"]:
                 start.setdefault(s["nation"], s)
@@ -691,7 +691,13 @@ class ContentSet:
                     ref(rel, ["restrictions", i, "lifted_by"], r["lifted_by"], r["lifted_by"] in flags, "flag")
         self._effect_targets(ref)
         self._slice_encoded()
+        for rel, _, doc in self.research:
+            for tag, row in doc["ai"]["weights"].items():
+                for c in row:
+                    ref(rel, ["ai", "weights", tag, c], c, c in cats, "category")
         for rel, _, i, b in self.entries["bureau"]:
+            if b["active"] and b["home"] is None:
+                self._add(rel, "C101", _json_path(["bureaus", i, "home"]), "an active bureau carries its home")
             ref(rel, ["bureaus", i, "primary"], b["primary"], b["primary"] in cats, "category")
             for j, c in enumerate(b["secondary"]):
                 ref(rel, ["bureaus", i, "secondary", j], c, c in cats, "category")

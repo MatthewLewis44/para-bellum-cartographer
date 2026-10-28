@@ -5,7 +5,7 @@
   "description": "File: Content/<namespace>/research.json, ONE per content set (C907). Categories, every research project in one id space (technology, doctrine, design study), the gate registries, the 1930 start state, the treaty restrictions and the era multiplier's constants. Written by the pipeline's converter (tools/research_convert.py) from the research workbook; prerequisites ship PRE-PARSED as CNF atoms, and the game contains no string parser (AD-M37 section 5). Atom values are matched exactly: never trimmed, normalised or case-folded. Cost amounts are in lab-days (research) and nation-days (doctrine), D37. Rules a schema cannot express (a cost reason that matches its source, gate_only agreeing with its modifiers, the era multiplier's floor and ordering, references) are checked by both readers beside it, under the same codes.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["format", "categories", "projects", "registries", "start", "restrictions", "era_multiplier"],
+  "required": ["format", "categories", "projects", "registries", "start", "restrictions", "era_multiplier", "ai"],
   "properties": {
     "format": { "const": "pb-content/research/1" },
     "categories": { "type": "array", "items": { "$ref": "#/$defs/category" } },
@@ -17,13 +17,42 @@
       "properties": {
         "flags": { "type": "array", "items": { "$ref": "#/$defs/flag" } },
         "treaties": { "type": "array", "items": { "$ref": "#/$defs/treaty" } },
-        "fielded": { "type": "array", "items": { "$ref": "#/$defs/id" } },
-        "focus": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+        "fielded": { "type": "array", "items": { "$ref": "#/$defs/namedEntry" } },
+        "focus": { "type": "array", "items": { "$ref": "#/$defs/namedEntry" } },
         "xp": { "type": "array", "items": { "$ref": "#/$defs/xp" } }
       }
     },
     "start": { "type": "array", "items": { "$ref": "#/$defs/start" } },
     "restrictions": { "type": "array", "items": { "$ref": "#/$defs/restriction" } },
+    "ai": {
+      "description": "What the strategic AI reads (brief item 13, D19: impossible to retrofit once the AI exists). weights: per nation tag, per live category id, an integer per mille (PLACEHOLDERS). province_research_value: one row per SHIPPED province, derived at build time from the active bureaus homed there and the authored 1930 facilities in it, shipped WITH its components so the number is attributable; the engine derives nothing.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["weights", "province_research_value"],
+      "properties": {
+        "weights": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "propertyNames": { "$ref": "#/$defs/id" },
+            "additionalProperties": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "province_research_value": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["province", "value", "components"],
+            "properties": {
+              "province": { "type": "string" },
+              "value": { "type": "integer", "minimum": 0 },
+              "components": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } }
+            }
+          }
+        }
+      }
+    },
     "era_multiplier": {
       "description": "The constants of M(start date), the one function the engine evaluates at runtime (D24): growth per whole year a project starts ahead of its historical year, capped. Both at least 1000 (M never discounts) and growth no more than the cap, checked beside the schema (C102).",
       "type": "object",
@@ -42,6 +71,13 @@
       "pattern": "^[a-z0-9_]+:[a-z0-9_]+$"
     },
     "nullableId": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+    "namedEntry": {
+      "description": "A fielded or focus registry entry, with a display name (the Registries sheet carries none).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "authored_id", "name"],
+      "properties": { "id": { "$ref": "#/$defs/id" }, "authored_id": { "type": "string" }, "name": { "type": "string" } }
+    },
     "source": {
       "description": "The authored string beside an atom list: provenance only, never read for meaning.",
       "type": ["string", "null"]

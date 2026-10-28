@@ -14,7 +14,13 @@
       ],
       "active_from": 1930,
       "active": true,
-      "capacity": 2
+      "capacity": 2,
+      "home": {
+        "place": "Ostburg",
+        "lon": 0.5,
+        "lat": 0.5,
+        "province": "NTH_ONE"
+      }
     },
     {
       "id": "pb:de_kessel",
@@ -26,7 +32,13 @@
       "secondary": [],
       "active_from": 1932,
       "active": false,
-      "capacity": null
+      "capacity": null,
+      "home": {
+        "place": "Kesselstadt",
+        "lon": 1.5,
+        "lat": 0.5,
+        "province": "NTH_TWO"
+      }
     },
     {
       "id": "pb:de_ostwerk_plant",
@@ -38,7 +50,8 @@
       "secondary": [],
       "active_from": 1930,
       "active": false,
-      "capacity": null
+      "capacity": null,
+      "home": null
     },
     {
       "id": "pb:fr_varenne",
@@ -49,8 +62,14 @@
       "primary": "pb:ccc",
       "secondary": [],
       "active_from": 1930,
-      "active": false,
-      "capacity": null
+      "active": true,
+      "capacity": 1,
+      "home": {
+        "place": "Southhaven",
+        "lon": 10.5,
+        "lat": 0.5,
+        "province": "STH_ONE"
+      }
     }
   ]
 }

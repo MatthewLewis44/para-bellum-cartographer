@@ -749,10 +749,18 @@
       }
     ],
     "fielded": [
-      "pb:test_heavy"
+      {
+        "id": "pb:test_heavy",
+        "authored_id": "test_heavy",
+        "name": "Test heavy unit"
+      }
     ],
     "focus": [
-      "pb:test_plan"
+      {
+        "id": "pb:test_plan",
+        "authored_id": "test_plan",
+        "name": "Test plan"
+      }
     ],
     "xp": [
       {
@@ -896,5 +904,66 @@
   "era_multiplier": {
     "growth_per_year_per_mille": 1100,
     "cap_per_mille": 2000
+  },
+  "ai": {
+    "weights": {
+      "NTH": {
+        "pb:aaa": 1000,
+        "pb:bbb": 800,
+        "pb:ccc": 600
+      },
+      "STH": {
+        "pb:aaa": 900,
+        "pb:bbb": 900,
+        "pb:ccc": 900
+      },
+      "WST": {
+        "pb:aaa": 500,
+        "pb:bbb": 500,
+        "pb:ccc": 500
+      },
+      "EST": {
+        "pb:aaa": 500,
+        "pb:bbb": 500,
+        "pb:ccc": 500
+      },
+      "UPL": {
+        "pb:aaa": 700,
+        "pb:bbb": 600,
+        "pb:ccc": 500
+      },
+      "LOW": {
+        "pb:aaa": 600,
+        "pb:bbb": 600,
+        "pb:ccc": 600
+      },
+      "MID": {
+        "pb:aaa": 400,
+        "pb:bbb": 400,
+        "pb:ccc": 400
+      }
+    },
+    "province_research_value": [
+      {
+        "province": "NTH_ONE",
+        "value": 130,
+        "components": {
+          "active_bureaus": 1,
+          "mine": 0,
+          "power_plant": 0,
+          "steel_mill": 1
+        }
+      },
+      {
+        "province": "NTH_TWO",
+        "value": 0,
+        "components": {
+          "active_bureaus": 0,
+          "mine": 0,
+          "power_plant": 0,
+          "steel_mill": 0
+        }
+      }
+    ]
   }
 }
