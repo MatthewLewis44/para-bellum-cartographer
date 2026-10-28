@@ -54,7 +54,8 @@ class Validator:
         self.vendor_ids = {v["id"] for v in vendors}
         reg = research["registries"]
         self.flags = {f["id"] for f in reg["flags"]}
-        self.fielded, self.focus = set(reg["fielded"]), set(reg["focus"])
+        self.fielded = {x["id"] for x in reg["fielded"]}   # {id, authored_id, name} rows
+        self.focus = {x["id"] for x in reg["focus"]}
         self.xp = {(x["branch"], x["tier"]) for x in reg["xp"]}
         self.nations = {s["nation"] for s in research["start"]}
         self.failures: list[tuple[str, str, str, object, str]] = []   # code, where, token, detail

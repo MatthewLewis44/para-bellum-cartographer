@@ -101,6 +101,21 @@ MUTATIONS = (
     ("M25 a PAPER prototype counted as in service at the start",
      '\n                       and "PAPER" not in p["tags"]]',
      ']'),
+    ("M26 a home's province not derived from the polygons",
+     '"province": province_at(self.geo.get("provinces", []), h["lon"], h["lat"])}',
+     '"province": None}'),
+    ("M27 the province value covers every polygon, not only the SHIPPED provinces",
+     '        comp = {pid: dict({"active_bureaus": 0}, **{k: 0 for k in kinds}) for pid in sorted(shipped)}',
+     '        comp = {pid: dict({"active_bureaus": 0}, **{k: 0 for k in kinds})\n'
+     '                for pid in sorted({q for q, _ in geo.get("provinces", [])})}'),
+    ("M28 a missing nation x category AI weight accepted",
+     '                if not (isinstance(v, int) and not isinstance(v, bool) and v >= 0):\n'
+     '                    self.bad.add("X119"',
+     '                if v is not None and not (isinstance(v, int) and not isinstance(v, bool) and v >= 0):\n'
+     '                    self.bad.add("X119"'),
+    ("M29 an INACTIVE bureau's home counted in the province value",
+     '            if not b["active"] or b["home"] is None:',
+     '            if b["home"] is None:'),
     ("M12 a refused run still writes its files",
      "    if bad.items:\n        print(f\"REFUSED",
      "    if bad.items and not files:\n        print(f\"REFUSED"),

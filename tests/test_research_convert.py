@@ -73,6 +73,8 @@ def apply(base: dict, patch: list) -> dict:
             case["overlay"].update(arg)
         elif verb == "ledger":
             case["ledger"] = {"format": rc.LEDGER_FORMAT, "designs": [], "vendors": [], **arg}
+        elif verb == "map_inputs":   # null: the three map inputs are not written
+            case["provinces"] = case["facilities"] = case["map"] = arg
         elif verb == "effects":   # replaces the effects map in the effects file
             case["effects"]["effects"] = arg
         elif verb == "effects_file":   # null: no effects file is written
@@ -106,6 +108,18 @@ def build(case: dict, d: Path) -> tuple[Path, Path, Path]:
         paths[2].write_text(json.dumps(case["ledger"], ensure_ascii=False), encoding="utf-8")
     if case.get("vocabulary") is not None:
         (d / "vocabulary.json").write_text(json.dumps(case["vocabulary"]), encoding="utf-8")
+    if case.get("provinces") is not None:
+        def square(pid, x, y):
+            ring = [[x, y], [x + 1, y], [x + 1, y + 1], [x, y + 1], [x, y]]
+            return {"type": "Feature", "properties": {"province_id": pid},
+                    "geometry": {"type": "Polygon", "coordinates": [ring]}}
+        (d / "provinces.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": [
+            square(pid, x, y) for pid, x, y in case["provinces"]]}), encoding="utf-8")
+        rows = ["name,kind,tier,country,lon,lat,deposit,confidence,note"] + [
+            f"{n},{k},1,{c},{lon},{lat},,site,synthetic" for n, k, c, lon, lat in case["facilities"]]
+        (d / "facilities.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")
+        (d / "map.json").write_text(json.dumps({"hexes": [
+            {"political": {"province_at_start": pid}} for pid in case["map"] + [""]]}), encoding="utf-8")
     if case.get("effects") is not None:
         (d / "effects.json").write_text(json.dumps(case["effects"], ensure_ascii=False), encoding="utf-8")
     if case.get("models") is not None:
@@ -117,6 +131,8 @@ def run(wb: Path, ov: Path, led: Path, out: Path, mint: bool = True) -> tuple[in
     """The vocabulary and template models are read from beside the workbook, where build() writes them."""
     argv = ["--workbook", str(wb), "--vocabulary", str(wb.parent / "vocabulary.json"),
             "--models", str(wb.parent / "model.json"), "--effects", str(wb.parent / "effects.json"),
+            "--provinces", str(wb.parent / "provinces.geojson"), "--facilities", str(wb.parent / "facilities.csv"),
+            "--map", str(wb.parent / "map.json"),
             "--overlay", str(ov),
             "--ledger", str(led), "--out", str(out)]
     buf = io.StringIO()
@@ -296,6 +312,30 @@ def main() -> int:
               json.dumps(held))
         check("effects/a no_target effect ships as declared", projects["BBB-01"]["effect"] ==
               {"no_target": {"needs": "test_writer", "reason": "synthetic: no writer target exists for this yet"}})
+        homes = {b["authored_id"]: b["home"] for b in json.loads(produced["bureau.json"])["bureaus"]}
+        check("homes/place, coordinates and the DERIVED province ship side by side",
+              homes["DE_OSTWERK"] == {"place": "Ostburg", "lon": 0.5, "lat": 0.5, "province": "NTH_ONE"},
+              json.dumps(homes["DE_OSTWERK"]))
+        check("homes/a home in an unshipped province keeps its derived province",
+              homes["FR_VARENNE"]["province"] == "STH_ONE", json.dumps(homes["FR_VARENNE"]))
+        check("homes/an inactive bureau with no home ships null", homes["DE_OSTWERK_PLANT"] is None)
+        check("homes/an inactive bureau may carry a home (it contributes nothing)",
+              homes["DE_KESSEL"] == {"place": "Kesselstadt", "lon": 1.5, "lat": 0.5, "province": "NTH_TWO"})
+        ai = research["ai"]
+        check("ai/weights for every nation x LIVE category (the folded one excluded)",
+              sorted(ai["weights"]) == sorted(["NTH", "STH", "WST", "EST", "UPL", "LOW", "MID"])
+              and all(sorted(v) == ["pb:aaa", "pb:bbb", "pb:ccc"] for v in ai["weights"].values()),
+              json.dumps(ai["weights"]))
+        prv = {r["province"]: r for r in ai["province_research_value"]}
+        check("ai/province value over SHIPPED provinces only, with its components",
+              sorted(prv) == ["NTH_ONE", "NTH_TWO"]
+              and prv["NTH_ONE"] == {"province": "NTH_ONE", "value": 130,
+                                     "components": {"active_bureaus": 1, "mine": 0, "power_plant": 0, "steel_mill": 1}}
+              and prv["NTH_TWO"]["value"] == 0, json.dumps(prv))
+        reg = research["registries"]
+        check("registries/fielded and focus carry display names",
+              reg["fielded"] == [{"id": "pb:test_heavy", "authored_id": "test_heavy", "name": "Test heavy unit"}]
+              and reg["focus"] == [{"id": "pb:test_plan", "authored_id": "test_plan", "name": "Test plan"}])
         no_route = [x for x in research["restrictions"] if x["nation"] == "MID"]
         check("ships/a restriction with no covert route ships lifted_by null", no_route ==
               [{"nation": "MID", "treaty": "pb:accord_of_trials", "scope": {"category": "pb:aaa"}, "lifted_by": None}],

@@ -84,7 +84,8 @@ COLUMNS = {
     "Treaties 1930": ("Nation", "Treaty / alignment"),
 }
 OVERLAY_FORMAT = "pb-research-overlay/1"
-OVERLAY_KEYS = {"format", "_comment", "nations", "design_roles", "role_classes", "unmodelled_roles", "costs", "treaties", "flag_names", "inert_flags", "category_fold", "category_fallback", "flags", "flags_held",
+OVERLAY_KEYS = {"format", "_comment", "bureau_homes", "ai_research_weights", "province_value_weights",
+                "fielded_names", "focus_names", "nations", "design_roles", "role_classes", "unmodelled_roles", "costs", "treaties", "flag_names", "inert_flags", "category_fold", "category_fallback", "flags", "flags_held",
                 "restrictions", "bureaus", "readings"}
 LEDGER_FORMAT = "pb-research-ledger/1"
 LEDGER_KINDS = {"designs": "design", "vendors": "vendor"}   # section -> id stem
@@ -250,6 +251,41 @@ def load_pools(path: Path, bad: Refusals) -> frozenset:
         return frozenset()
 
 
+def load_map_inputs(provinces: Path, facilities: Path, game_map: Path, bad: Refusals) -> dict:
+    """The three PUBLIC pipeline inputs item 13 needs, read and never copied: the province polygons
+    (data/boundaries/provinces_1930.geojson, the authoring source of province ids), the authored 1930
+    facility points (data/facilities/facilities_1930.csv), and the hex artifact the game loads, whose
+    province_at_start values are the provinces the shipped game has (a SUBSET of the polygons)."""
+    import csv
+    from shapely.geometry import shape
+    from shapely.prepared import prep
+    out = {"provinces": [], "facilities": [], "shipped": set()}
+    try:
+        for f in json.loads(provinces.read_text(encoding="utf-8"))["features"]:
+            geom = shape(f["geometry"])
+            out["provinces"].append((f["properties"]["province_id"], prep(geom)))
+        with facilities.open(encoding="utf-8", newline="") as fh:
+            for r in csv.DictReader(fh):
+                out["facilities"].append({"name": r["name"], "kind": r["kind"], "country": r["country"],
+                                          "lon": float(r["lon"]), "lat": float(r["lat"])})
+        hexes = json.loads(game_map.read_text(encoding="utf-8"))["hexes"]
+        out["shipped"] = {h["political"]["province_at_start"] for h in hexes} - {"", None}
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        bad.add("X120", "map inputs", f"{provinces.name}, {facilities.name}, {game_map.name}", f"cannot read: {e}")
+    return out
+
+
+def province_at(provinces: list, lon: float, lat: float) -> str | None:
+    """The province whose polygon covers the point, or None when no province does (the map does not reach
+    it). Ambiguity (a point on a shared border) resolves to the first in file order, deterministically."""
+    from shapely.geometry import Point
+    pt = Point(lon, lat)
+    for pid, poly in provinces:
+        if poly.covers(pt):
+            return pid
+    return None
+
+
 def load_templates(path: Path, bad: Refusals) -> dict[str, dict]:
     """The game's hand-authored models (Content/pb/model.json). A generated design model copies
     its production cost and rate from one of these, named per role in the overlay: read here,
@@ -356,6 +392,8 @@ class Convert:
     templates: dict = field(default_factory=dict)   # the game's authored models, by id
     effects: dict = field(default_factory=dict)     # PB-SIM13's encoded effects, by authored id
     broken_chains: list = field(default_factory=list)   # (design, parent, why), reported by name
+    geo: dict = field(default_factory=dict)          # provinces, facilities, shipped province ids (item 13)
+    coverage: dict = field(default_factory=dict)     # what the province research value can see, reported
 
     def __post_init__(self) -> None:
         """The nation table is DATA (overlay.nations), so a new nation is an overlay row,
@@ -643,7 +681,10 @@ class Convert:
                             "secondary": [cat(c, f"{where} Secondary") for c in
                                           code_list(r["Secondary"], f"{where} Secondary", cats, bad, "category code")],
                             "active_from": int(m.group(1)) if m else None,
-                            "active": active, "capacity": capacity if active else None})
+                            "active": active, "capacity": capacity if active else None,
+                            "home": self.bureau_home(r["ID"], active)})
+        for k in sorted(set(ov.get("bureau_homes", {})) - authored_bureaus):
+            bad.add("X112", "overlay.bureau_homes", k, "not a bureau id")
 
         vendors = [{"id": self.vendor_ids[r["Vendor"]], "name": r["Vendor"], "country": r["Country"],
                     "fields": [cat(c, f"{where} Fields") for c in
@@ -661,18 +702,132 @@ class Convert:
                       for c, name in cats.items()]
         registries = {"flags": flag_rows,
                       "treaties": list(treaties.values()),
-                      "fielded": [qualify(f) for f in regs["fielded"]],
-                      "focus": [qualify(f) for f in regs["focus"]],
+                      "fielded": self.named_registry("fielded", regs["fielded"]),
+                      "focus": self.named_registry("focus", regs["focus"]),
                       "xp": [{"branch": b, "tier": t} for b, t in regs["xp"]]}
         return {
             "research.json": {"format": "pb-content/research/1", "categories": categories,
                               "projects": projects, "registries": registries,
                               "start": start, "restrictions": restrictions,
-                              "era_multiplier": era},
+                              "era_multiplier": era,
+                              "ai": {"weights": self.ai_weights(cats, fold),
+                                     "province_research_value": self.province_research_value(bureaus)}},
             "bureau.json": {"format": "pb-content/bureau/1", "bureaus": bureaus},
             "vendor.json": {"format": "pb-content/vendor/1", "vendors": vendors},
             "design_model.json": {"format": "pb-content/model/1", "models": self.design_models(projects, bureaus)},
         }
+
+    def named_registry(self, kind: str, ids: list[str]) -> list[dict]:
+        """fielded and focus rows carry a display name, like flags (D26): the Registries sheet has an id and
+        a prose meaning only. Every entry named, and every name an entry (closed both ways)."""
+        names = self.overlay.get(f"{kind}_names", {})
+        if not isinstance(names, dict):
+            self.bad.add("X113", f"overlay.{kind}_names", names, "an object keyed by id")
+            return []
+        for k in sorted(set(names) - set(ids)):
+            self.bad.add("X112", f"overlay.{kind}_names", k, f"not a declared {kind} entry")
+        out = []
+        for i in ids:
+            n = names.get(i)
+            if not (isinstance(n, str) and n.strip()):
+                self.bad.add("X113", f"overlay.{kind}_names", i, f"every {kind} entry needs a display name")
+            out.append({"id": qualify(i), "authored_id": i, "name": n})
+        return out
+
+    def bureau_home(self, authored: str, active: bool) -> dict | None:
+        """A bureau's home as AUTHORED (a place and its coordinates, a fact checkable against history) with the
+        province DERIVED from the polygons beside it, so a near-border miss is visible (D39). The coordinates
+        survive a province re-cut; the province re-derives. A point no polygon covers ships province null:
+        the bureau exists, the map does not reach it, and it is reported, never refused. Required for every
+        ACTIVE bureau (X118)."""
+        h = self.overlay.get("bureau_homes", {}).get(authored)
+        if h is None:
+            if active:
+                self.bad.add("X118", f"overlay.bureau_homes.{authored}", None, "an active bureau needs its home")
+            return None
+        ok = (isinstance(h, dict) and set(h) == {"place", "lon", "lat"} and isinstance(h["place"], str)
+              and h["place"].strip() and all(isinstance(h[k], (int, float)) and not isinstance(h[k], bool)
+                                             for k in ("lon", "lat"))
+              and -180 <= h["lon"] <= 180 and -90 <= h["lat"] <= 90)
+        if not ok:
+            self.bad.add("X118", f"overlay.bureau_homes.{authored}", h,
+                         "a home is {place, lon, lat}, with lon in [-180, 180] and lat in [-90, 90]")
+            return None
+        return {"place": h["place"], "lon": h["lon"], "lat": h["lat"],
+                "province": province_at(self.geo.get("provinces", []), h["lon"], h["lat"])}
+
+    def ai_weights(self, cats: dict, fold: dict) -> dict:
+        """AI research weights per nation per LIVE category (folded categories excluded), every pair present
+        (X119). PLACEHOLDERS: the strategic AI that reads them does not exist yet (brief item 13, D19)."""
+        w = self.overlay.get("ai_research_weights")
+        live = [c for c in cats if c not in fold]
+        if not isinstance(w, dict):
+            self.bad.add("X119", "overlay.ai_research_weights", w, "a {nation: {category: per_mille}} table is required")
+            return {}
+        for n in sorted(set(w) - set(self.nations)):
+            self.bad.add("X112", "overlay.ai_research_weights", n, "not a nation")
+        out = {}
+        for n, (tag, _) in self.nations.items():
+            row = w.get(n, {})
+            for c in sorted(set(row) - set(live)) if isinstance(row, dict) else []:
+                self.bad.add("X112", f"overlay.ai_research_weights.{n}", c, "not a live category (folded or unknown)")
+            vals = {}
+            for c in live:
+                v = row.get(c) if isinstance(row, dict) else None
+                if not (isinstance(v, int) and not isinstance(v, bool) and v >= 0):
+                    self.bad.add("X119", f"overlay.ai_research_weights.{n}.{c}", v, "every nation x live category, an integer >= 0")
+                else:
+                    vals[qualify(c)] = v
+            out[tag] = vals
+        return out
+
+    def province_research_value(self, bureaus: list[dict]) -> list[dict]:
+        """A research value per SHIPPED province, derived at build time so the engine derives nothing:
+        per_active_bureau x the active bureaus homed there, plus each facility kind's weight x the authored
+        1930 facilities in it. Ships with its COMPONENTS so the AI's number is attributable (the cost_source
+        pattern). Homes and facilities outside the shipped provinces contribute to nothing, and are COUNTED."""
+        wts = self.overlay.get("province_value_weights")
+        geo = self.geo
+        if not (isinstance(wts, dict) and set(wts) == {"per_active_bureau", "facility"}
+                and isinstance(wts["per_active_bureau"], int) and isinstance(wts["facility"], dict)
+                and all(isinstance(v, int) and not isinstance(v, bool) and v >= 0 for v in wts["facility"].values())):
+            self.bad.add("X113", "overlay.province_value_weights", wts,
+                         "{per_active_bureau: int, facility: {kind: int >= 0}} (PLACEHOLDERS)")
+            return []
+        kinds = sorted({f["kind"] for f in geo.get("facilities", [])})
+        for k in kinds:
+            if k not in wts["facility"]:
+                self.bad.add("X113", "overlay.province_value_weights.facility", k, "an authored facility kind with no weight")
+        for k in sorted(set(wts["facility"]) - set(kinds)):
+            self.bad.add("X112", "overlay.province_value_weights.facility", k, "no authored facility has this kind")
+        shipped = geo.get("shipped", set())
+        comp = {pid: dict({"active_bureaus": 0}, **{k: 0 for k in kinds}) for pid in sorted(shipped)}
+        cov = {"homes_shipped": collections.Counter(), "homes_outside_shipped": collections.Counter(),
+               "homes_no_province": collections.Counter(), "facilities_shipped": 0, "facilities_outside": 0}
+        for b in bureaus:
+            if not b["active"] or b["home"] is None:
+                continue
+            pid = b["home"]["province"]
+            if pid is None:
+                cov["homes_no_province"][b["nation"]] += 1
+            elif pid not in comp:
+                cov["homes_outside_shipped"][b["nation"]] += 1
+            else:
+                cov["homes_shipped"][b["nation"]] += 1
+                comp[pid]["active_bureaus"] += 1
+        for f in geo.get("facilities", []):
+            pid = province_at(geo.get("provinces", []), f["lon"], f["lat"])
+            if pid in comp:
+                comp[pid][f["kind"]] += 1
+                cov["facilities_shipped"] += 1
+            else:
+                cov["facilities_outside"] += 1
+        self.coverage = cov
+        rows = []
+        for pid, c in comp.items():
+            value = c["active_bureaus"] * wts["per_active_bureau"] + sum(c[k] * wts["facility"].get(k, 0) for k in kinds)
+            rows.append({"province": pid, "value": value, "components": c})
+        return rows
 
     def design_models(self, projects: list[dict], bureaus: list[dict]) -> list[dict]:
         """One generated model per SLICE design (D28, D29): the model id IS the design id, and its
@@ -999,6 +1154,12 @@ def main(argv: list[str] | None = None) -> int:
                     help="the game's Content/pb/model.json: the templates generated design models copy from")
     ap.add_argument("--overlay", required=True, type=Path)
     ap.add_argument("--ledger", required=True, type=Path)
+    ap.add_argument("--provinces", required=True, type=Path,
+                    help="data/boundaries/provinces_1930.geojson: the province polygons homes are placed in")
+    ap.add_argument("--facilities", required=True, type=Path,
+                    help="data/facilities/facilities_1930.csv: the authored 1930 facility points")
+    ap.add_argument("--map", required=True, type=Path,
+                    help="the hex artifact the game loads: its province_at_start values are the shipped provinces")
     ap.add_argument("--effects", required=True, type=Path,
                     help="the encoded effects (PB-SIM13's file, D32), keyed by authored id")
     ap.add_argument("--out", required=True, type=Path)
@@ -1017,11 +1178,12 @@ def main(argv: list[str] | None = None) -> int:
     templates = load_templates(a.models, bad)
     print(f"effects  {a.effects}  sha256 {sha256(a.effects) if a.effects.exists() else '(missing)'}")
     effects = load_effects(a.effects, bad)
+    geo = load_map_inputs(a.provinces, a.facilities, a.map, bad)
     files = {}
     conv = None
     if not bad.items:
         conv = Convert(openpyxl.load_workbook(a.workbook, data_only=True), overlay, ledger, a.mint, bad, pools,
-                       templates, effects=effects)
+                       templates, effects=effects, geo=geo)
         files = conv.run()
     if bad.items:
         print(f"REFUSED - {len(bad.items)} refusal(s), nothing written. By code: "
@@ -1045,6 +1207,12 @@ def main(argv: list[str] | None = None) -> int:
           f"vendors {len(files['vendor.json']['vendors'])}, "
           f"effects encoded {sum(p.get('effect') is not None for p in r['projects'])}")
     print(f"  ledger: {ledger.minted} id(s) minted" + (f", written to {a.ledger}" if ledger.minted else ""))
+    cov = conv.coverage
+    print(f"  province research value over {len(files['research.json']['ai']['province_research_value'])} shipped "
+          f"provinces; active-lead homes: shipped {dict(sorted(cov['homes_shipped'].items()))}, "
+          f"outside the shipped map {dict(sorted(cov['homes_outside_shipped'].items()))}, "
+          f"in no province {dict(sorted(cov['homes_no_province'].items()))}; facilities in shipped provinces "
+          f"{cov['facilities_shipped']}, outside {cov['facilities_outside']}")
     dm = files["design_model.json"]["models"]
     print(f"  design models (the slice): {len(dm)} of {kinds['design']} designs, by class "
           + ", ".join(f"{c} {n}" for c, n in sorted(collections.Counter(m["class"] for m in dm).items())))
