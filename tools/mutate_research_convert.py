@@ -108,11 +108,12 @@ MUTATIONS = (
      '        comp = {pid: dict({"active_bureaus": 0}, **{k: 0 for k in kinds}) for pid in sorted(shipped)}',
      '        comp = {pid: dict({"active_bureaus": 0}, **{k: 0 for k in kinds})\n'
      '                for pid in sorted({q for q, _ in geo.get("provinces", [])})}'),
-    ("M28 a missing nation x category AI weight accepted",
-     '                if not (isinstance(v, int) and not isinstance(v, bool) and v >= 0):\n'
-     '                    self.bad.add("X119"',
-     '                if v is not None and not (isinstance(v, int) and not isinstance(v, bool) and v >= 0):\n'
-     '                    self.bad.add("X119"'),
+    ("M28 the AI weights' floor ignored (a category with no bureau weighs 0)",
+     "weights[tag] = {c: max(floor, ",
+     "weights[tag] = {c: max(0, "),
+    ("M30 the AI weights' inputs not shipped (a moved weight could not be traced)",
+     '            inputs[tag] = {"largest": largest, "bureaus": {c: counts[c] for c in live}}',
+     '            inputs[tag] = {"largest": largest, "bureaus": {}}'),
     ("M29 an INACTIVE bureau's home counted in the province value",
      '            if not b["active"] or b["home"] is None:',
      '            if b["home"] is None:'),

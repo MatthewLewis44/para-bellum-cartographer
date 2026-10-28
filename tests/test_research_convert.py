@@ -326,6 +326,14 @@ def main() -> int:
               sorted(ai["weights"]) == sorted(["NTH", "STH", "WST", "EST", "UPL", "LOW", "MID"])
               and all(sorted(v) == ["pb:aaa", "pb:bbb", "pb:ccc"] for v in ai["weights"].values()),
               json.dumps(ai["weights"]))
+        check("ai/weights DERIVED from the bureau table: 1000 x count / largest, floored",
+              ai["weights"]["NTH"] == {"pb:aaa": 1000, "pb:bbb": 500, "pb:ccc": 100}
+              and ai["weights"]["STH"] == {"pb:aaa": 100, "pb:bbb": 100, "pb:ccc": 1000}
+              and ai["weights"]["MID"] == {"pb:aaa": 100, "pb:bbb": 100, "pb:ccc": 100}, json.dumps(ai["weights"]))
+        check("ai/the counts each weight came from ship beside it",
+              ai["weight_inputs"]["NTH"] == {"largest": 2, "bureaus": {"pb:aaa": 2, "pb:bbb": 1, "pb:ccc": 0}}
+              and ai["weight_inputs"]["MID"] == {"largest": 0, "bureaus": {"pb:aaa": 0, "pb:bbb": 0, "pb:ccc": 0}}
+              and ai["weight_rule"] == {"floor_per_mille": 100}, json.dumps(ai["weight_inputs"]))
         prv = {r["province"]: r for r in ai["province_research_value"]}
         check("ai/province value over SHIPPED provinces only, with its components",
               sorted(prv) == ["NTH_ONE", "NTH_TWO"]

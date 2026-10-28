@@ -695,6 +695,9 @@ class ContentSet:
             for tag, row in doc["ai"]["weights"].items():
                 for c in row:
                     ref(rel, ["ai", "weights", tag, c], c, c in cats, "category")
+            for tag, row in doc["ai"]["weight_inputs"].items():
+                for c in row["bureaus"]:
+                    ref(rel, ["ai", "weight_inputs", tag, "bureaus", c], c, c in cats, "category")
         for rel, _, i, b in self.entries["bureau"]:
             if b["active"] and b["home"] is None:
                 self._add(rel, "C101", _json_path(["bureaus", i, "home"]), "an active bureau carries its home")

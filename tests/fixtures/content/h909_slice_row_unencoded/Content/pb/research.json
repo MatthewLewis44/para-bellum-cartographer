@@ -908,39 +908,100 @@
     "weights": {
       "NTH": {
         "pb:aaa": 1000,
-        "pb:bbb": 800,
-        "pb:ccc": 600
+        "pb:bbb": 500,
+        "pb:ccc": 100
       },
       "STH": {
-        "pb:aaa": 900,
-        "pb:bbb": 900,
-        "pb:ccc": 900
+        "pb:aaa": 100,
+        "pb:bbb": 100,
+        "pb:ccc": 1000
       },
       "WST": {
-        "pb:aaa": 500,
-        "pb:bbb": 500,
-        "pb:ccc": 500
+        "pb:aaa": 100,
+        "pb:bbb": 100,
+        "pb:ccc": 100
       },
       "EST": {
-        "pb:aaa": 500,
-        "pb:bbb": 500,
-        "pb:ccc": 500
+        "pb:aaa": 100,
+        "pb:bbb": 100,
+        "pb:ccc": 100
       },
       "UPL": {
-        "pb:aaa": 700,
-        "pb:bbb": 600,
-        "pb:ccc": 500
+        "pb:aaa": 100,
+        "pb:bbb": 100,
+        "pb:ccc": 100
       },
       "LOW": {
-        "pb:aaa": 600,
-        "pb:bbb": 600,
-        "pb:ccc": 600
+        "pb:aaa": 100,
+        "pb:bbb": 100,
+        "pb:ccc": 100
       },
       "MID": {
-        "pb:aaa": 400,
-        "pb:bbb": 400,
-        "pb:ccc": 400
+        "pb:aaa": 100,
+        "pb:bbb": 100,
+        "pb:ccc": 100
       }
+    },
+    "weight_inputs": {
+      "NTH": {
+        "largest": 2,
+        "bureaus": {
+          "pb:aaa": 2,
+          "pb:bbb": 1,
+          "pb:ccc": 0
+        }
+      },
+      "STH": {
+        "largest": 1,
+        "bureaus": {
+          "pb:aaa": 0,
+          "pb:bbb": 0,
+          "pb:ccc": 1
+        }
+      },
+      "WST": {
+        "largest": 0,
+        "bureaus": {
+          "pb:aaa": 0,
+          "pb:bbb": 0,
+          "pb:ccc": 0
+        }
+      },
+      "EST": {
+        "largest": 0,
+        "bureaus": {
+          "pb:aaa": 0,
+          "pb:bbb": 0,
+          "pb:ccc": 0
+        }
+      },
+      "UPL": {
+        "largest": 0,
+        "bureaus": {
+          "pb:aaa": 0,
+          "pb:bbb": 0,
+          "pb:ccc": 0
+        }
+      },
+      "LOW": {
+        "largest": 0,
+        "bureaus": {
+          "pb:aaa": 0,
+          "pb:bbb": 0,
+          "pb:ccc": 0
+        }
+      },
+      "MID": {
+        "largest": 0,
+        "bureaus": {
+          "pb:aaa": 0,
+          "pb:bbb": 0,
+          "pb:ccc": 0
+        }
+      }
+    },
+    "weight_rule": {
+      "floor_per_mille": 100
     },
     "province_research_value": [
       {

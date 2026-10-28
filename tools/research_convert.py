@@ -84,7 +84,7 @@ COLUMNS = {
     "Treaties 1930": ("Nation", "Treaty / alignment"),
 }
 OVERLAY_FORMAT = "pb-research-overlay/1"
-OVERLAY_KEYS = {"format", "_comment", "bureau_homes", "ai_research_weights", "province_value_weights",
+OVERLAY_KEYS = {"format", "_comment", "bureau_homes", "ai_weight_rule", "province_value_weights",
                 "fielded_names", "focus_names", "nations", "design_roles", "role_classes", "unmodelled_roles", "costs", "treaties", "flag_names", "inert_flags", "category_fold", "category_fallback", "flags", "flags_held",
                 "restrictions", "bureaus", "readings"}
 LEDGER_FORMAT = "pb-research-ledger/1"
@@ -710,8 +710,8 @@ class Convert:
                               "projects": projects, "registries": registries,
                               "start": start, "restrictions": restrictions,
                               "era_multiplier": era,
-                              "ai": {"weights": self.ai_weights(cats, fold),
-                                     "province_research_value": self.province_research_value(bureaus)}},
+                              "ai": dict(self.ai_weights(cats, fold, bureaus),
+                                         province_research_value=self.province_research_value(bureaus))},
             "bureau.json": {"format": "pb-content/bureau/1", "bureaus": bureaus},
             "vendor.json": {"format": "pb-content/vendor/1", "vendors": vendors},
             "design_model.json": {"format": "pb-content/model/1", "models": self.design_models(projects, bureaus)},
@@ -756,30 +756,29 @@ class Convert:
         return {"place": h["place"], "lon": h["lon"], "lat": h["lat"],
                 "province": province_at(self.geo.get("provinces", []), h["lon"], h["lat"])}
 
-    def ai_weights(self, cats: dict, fold: dict) -> dict:
-        """AI research weights per nation per LIVE category (folded categories excluded), every pair present
-        (X119). PLACEHOLDERS: the strategic AI that reads them does not exist yet (brief item 13, D19)."""
-        w = self.overlay.get("ai_research_weights")
-        live = [c for c in cats if c not in fold]
-        if not isinstance(w, dict):
-            self.bad.add("X119", "overlay.ai_research_weights", w, "a {nation: {category: per_mille}} table is required")
+    def ai_weights(self, cats: dict, fold: dict, bureaus: list[dict]) -> dict:
+        """AI research weights per nation per LIVE category, DERIVED at every run from the bureau table, so a
+        bureau edit moves a weight and the move is traceable: 1000 x the nation's bureaus whose primary category
+        is that one (all roles, all rows, the fold applied) / its largest such count, rounded half up in
+        integers, never below the declared floor. The INPUTS ship beside the weights (weight_inputs), because
+        the counts are an authoring choice (how many bureaus the workbook lists), not a fact about the nation,
+        and a reader must be able to tell a correction from a drift. PLACEHOLDERS: the strategic AI that reads
+        them does not exist yet (brief item 13, D19)."""
+        rule = self.overlay.get("ai_weight_rule")
+        if not (isinstance(rule, dict) and set(rule) == {"floor_per_mille"} and isinstance(rule["floor_per_mille"], int)
+                and not isinstance(rule["floor_per_mille"], bool) and 0 <= rule["floor_per_mille"] <= 1000):
+            self.bad.add("X119", "overlay.ai_weight_rule", rule, "{floor_per_mille: an integer 0..1000} is required")
             return {}
-        for n in sorted(set(w) - set(self.nations)):
-            self.bad.add("X112", "overlay.ai_research_weights", n, "not a nation")
-        out = {}
-        for n, (tag, _) in self.nations.items():
-            row = w.get(n, {})
-            for c in sorted(set(row) - set(live)) if isinstance(row, dict) else []:
-                self.bad.add("X112", f"overlay.ai_research_weights.{n}", c, "not a live category (folded or unknown)")
-            vals = {}
-            for c in live:
-                v = row.get(c) if isinstance(row, dict) else None
-                if not (isinstance(v, int) and not isinstance(v, bool) and v >= 0):
-                    self.bad.add("X119", f"overlay.ai_research_weights.{n}.{c}", v, "every nation x live category, an integer >= 0")
-                else:
-                    vals[qualify(c)] = v
-            out[tag] = vals
-        return out
+        floor = rule["floor_per_mille"]
+        live = [qualify(fold.get(c, c)) for c in cats if c not in fold]
+        weights, inputs = {}, {}
+        for _, (tag, _) in self.nations.items():
+            counts = collections.Counter(b["primary"] for b in bureaus if b["nation"] == tag)
+            largest = max((counts[c] for c in live), default=0)
+            # A nation with no bureau has nothing to lean on: every weight sits at the floor, and largest 0 says why.
+            weights[tag] = {c: max(floor, (1000 * counts[c] + largest // 2) // largest if largest else 0) for c in live}
+            inputs[tag] = {"largest": largest, "bureaus": {c: counts[c] for c in live}}
+        return {"weights": weights, "weight_inputs": inputs, "weight_rule": {"floor_per_mille": floor}}
 
     def province_research_value(self, bureaus: list[dict]) -> list[dict]:
         """A research value per SHIPPED province, derived at build time so the engine derives nothing:

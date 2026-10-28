@@ -25,10 +25,10 @@
     "start": { "type": "array", "items": { "$ref": "#/$defs/start" } },
     "restrictions": { "type": "array", "items": { "$ref": "#/$defs/restriction" } },
     "ai": {
-      "description": "What the strategic AI reads (brief item 13, D19: impossible to retrofit once the AI exists). weights: per nation tag, per live category id, an integer per mille (PLACEHOLDERS). province_research_value: one row per SHIPPED province, derived at build time from the active bureaus homed there and the authored 1930 facilities in it, shipped WITH its components so the number is attributable; the engine derives nothing.",
+      "description": "What the strategic AI reads (brief item 13, D19: impossible to retrofit once the AI exists). weights: per nation tag, per live category id, an integer per mille, DERIVED from the bureau table by weight_rule and shipped with its weight_inputs (PLACEHOLDERS). province_research_value: one row per SHIPPED province, derived at build time from the active bureaus homed there and the authored 1930 facilities in it, shipped WITH its components so the number is attributable; the engine derives nothing.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["weights", "province_research_value"],
+      "required": ["weights", "weight_inputs", "weight_rule", "province_research_value"],
       "properties": {
         "weights": {
           "type": "object",
@@ -37,6 +37,26 @@
             "propertyNames": { "$ref": "#/$defs/id" },
             "additionalProperties": { "type": "integer", "minimum": 0 }
           }
+        },
+        "weight_inputs": {
+          "description": "The counts each nation's weights were DERIVED from: its bureaus per category and the largest such count. They are an authoring choice (how many bureaus are listed), so they ship beside the weights: a weight that moves traces to the bureau edit that moved it.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["largest", "bureaus"],
+            "properties": {
+              "largest": { "type": "integer", "minimum": 0 },
+              "bureaus": { "type": "object", "propertyNames": { "$ref": "#/$defs/id" },
+                           "additionalProperties": { "type": "integer", "minimum": 0 } }
+            }
+          }
+        },
+        "weight_rule": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["floor_per_mille"],
+          "properties": { "floor_per_mille": { "type": "integer", "minimum": 0, "maximum": 1000 } }
         },
         "province_research_value": {
           "type": "array",

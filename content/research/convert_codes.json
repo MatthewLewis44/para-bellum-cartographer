@@ -41,7 +41,7 @@
     { "code": "X118", "rule": "bureau-home",
       "summary": "An active bureau has no home in overlay.bureau_homes, or a home is not {place, lon, lat} with lon in [-180, 180] and lat in [-90, 90]. A home is AUTHORED as a place and its coordinates (a fact, checkable against history); its province is DERIVED from the polygons, so a home the map does not reach ships province null and is reported, never refused (D39)." },
     { "code": "X119", "rule": "ai-weights-incomplete",
-      "summary": "overlay.ai_research_weights lacks a nation x live-category weight, or a weight is not an integer >= 0. Every nation has a weight for every category that is not folded away (brief item 13; placeholders until the strategic AI exists)." },
+      "summary": "The AI weights cannot be derived: overlay.ai_weight_rule is not {floor_per_mille: 0..1000}, (a nation with no bureau gets the floor everywhere, with largest 0 shipped). Weights are DERIVED at every run from the bureau table (1000 x the nation's bureaus in a category / its largest such count, floored), and ship with their input counts (brief item 13; placeholders until the strategic AI exists)." },
     { "code": "X120", "rule": "bad-map-input",
       "summary": "The province polygons (--provinces), the authored facility points (--facilities) or the hex artifact the game loads (--map) cannot be read. They are the public pipeline data item 13 derives the province research value from, read and never copied." }
   ]
