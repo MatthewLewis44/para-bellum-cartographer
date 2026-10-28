@@ -150,6 +150,13 @@ MUTATIONS = [
     ("h909_slice_row_unencoded", "C909", R,
      "pb:aaa_01, a prerequisite of a slice design and a start holding, has a null effect",
      _set([R, "projects", 0, "effect"], None)),
+    ("h909b_slice_rooted_on_unlock", "C909", R,
+     "design_model pb:design_0002 is renamed pb:kestrel_ii_model (its unlock is still the study pb:design_0002), "
+     "and that study now also needs pb:sss_01, whose effect is null. The subject is rooted on a model's UNLOCK, "
+     "so pb:sss_01 is in it; rooted on the model's id it would not be (AD-M37 section 4: ids are opaque)",
+     _both(_set(["pb/design_model.json", "models", 1, "id"], "pb:kestrel_ii_model"),
+           _set([R, "projects", 9, "prerequisites"],
+                [[{"kind": "design", "value": "pb:design_0001"}], [{"kind": "technology", "value": "pb:sss_01"}]]))),
     ("h301_dangling_reference", "C301", V, 'variants[1].model is "pb:light_tnak"',
      _set([V, "variants", 1, "model"], "pb:light_tnak")),
     ("h301b_extends_dangling", "C301", "mymod/class.json", 'a class extension of "pb:tnak", which is not a class',

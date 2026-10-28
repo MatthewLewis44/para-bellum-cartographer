@@ -324,8 +324,12 @@ class Validator:
         """The R11 SUBJECT, as ruled (D37), computed WITHOUT consulting any effect, so the slice cannot be
         derived from its own encoding: the prerequisite closure of every slice design (technology,
         doctrine and design atoms in prerequisites, plus variant_of, recursively), plus every start
-        holding, plus every doctrine with a non-empty exclusive_with. Technologies and doctrines only."""
-        seen, stack = set(), [m["id"] for m in self.models if m["id"] in self.projects]
+        holding, plus every doctrine with a non-empty exclusive_with. Technologies and doctrines only.
+        ROOTED on each model's UNLOCK when that is a design study, never on its id (AD-M37 section 4: ids are
+        opaque, and a generated model's id equalling its unlock is a fact R12 checks, not one to read meaning
+        into). This is the C909 register text and the game reader's root (ContentReader.Research.cs)."""
+        seen, stack = set(), [m["unlock"] for m in self.models
+                              if m["unlock"] in self.projects and self.projects[m["unlock"]]["kind"] == "design"]
         while stack:
             pid = stack.pop()
             if pid in seen or pid not in self.projects:

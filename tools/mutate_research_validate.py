@@ -98,6 +98,10 @@ MUTATIONS = (
     ("M26 R11: a stat accepted on any class (surface not checked)",
      '            if m["stat"] not in g["classes"][m["scope"]]:',
      "            if False:"),
+    ("M27 R11: the subject rooted on a model's id, not its unlock (AD-M37 section 4)",
+     ('        seen, stack = set(), [m["unlock"] for m in self.models\n'
+      '                              if m["unlock"] in self.projects and self.projects[m["unlock"]]["kind"] == "design"]'),
+     '        seen, stack = set(), [m["id"] for m in self.models if m["id"] in self.projects]'),
     ("M12 R9: lineage across nations accepted",
      'if parent["nation"] != p["nation"]:',
      "if False:"),

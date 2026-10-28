@@ -82,6 +82,16 @@ def main() -> int:
         check(f"refuse/{case['id']}", codes == {case["code"]},
               f"expected exactly {case['code']}, got {sorted(codes)}: "
               + "; ".join(f"{c} {w}: {t!r} {d}" for c, w, t, d in got))
+    # The R11 subject is ROOTED on a model's unlock, not its id (AD-M37 section 4). No case can isolate this:
+    # R12 refuses any generated model whose id differs from its unlock (V112), so the subject is read directly.
+    # A model renamed away from its study, whose study needs pb:sss_01, must pull pb:sss_01 into the subject;
+    # rooted on the id it would not. The vendored hostile fixture h909b pins the same root at load time.
+    v = apply([{"model": "pb:design_0002", "set": {"id": "pb:kestrel_ii_model"}},
+               {"project": "pb:design_0002", "set": {"prerequisites": [[{"kind": "design", "value": "pb:design_0001"}],
+                                                                       [{"kind": "technology", "value": "pb:sss_01"}]]}}])
+    sub = v.slice_subject()
+    check("R11 subject is rooted on a model's UNLOCK, not its id (a renamed model's study still seeds it)",
+          "pb:sss_01" in sub, f"{sorted(sub)}")
     ids = [c["id"] for c in CASES["accept"] + CASES["refuse"]]
     check("cases/ids unique", len(ids) == len(set(ids)))
     covered = {c["code"] for c in CASES["refuse"]}
