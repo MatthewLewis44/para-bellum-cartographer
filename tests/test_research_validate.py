@@ -92,6 +92,16 @@ def main() -> int:
     sub = v.slice_subject()
     check("R11 subject is rooted on a model's UNLOCK, not its id (a renamed model's study still seeds it)",
           "pb:sss_01" in sub, f"{sorted(sub)}")
+    # The other two clauses, read directly for the same reason (the edits would also trip R9 or R8). The vendored
+    # fixtures h909c and h909d pin the same clauses at load time.
+    sub = apply([{"project": "pb:design_0002", "set": {"variant_of": "pb:design_0004"}}]).slice_subject()
+    check("R11 subject walks variant_of (a slice design's lineage parent's prerequisites are in it)",
+          "pb:sss_01" in sub, f"{sorted(sub)}")
+    sub = apply([{"project": "pb:ql_03", "set": {"exclusive_with": ["pb:bbb_90"]}},
+                 {"project": "pb:bbb_90", "set": {"exclusive_with": ["pb:ql_03"]}},
+                 {"start": "STH", "set": {"doctrines": ["pb:bbb_90", "pb:ql_01"]}}]).slice_subject()
+    check("R11 subject takes every doctrine with a non-empty exclusive_with (held nowhere, needed by nothing)",
+          "pb:ql_03" in sub, f"{sorted(sub)}")
     ids = [c["id"] for c in CASES["accept"] + CASES["refuse"]]
     check("cases/ids unique", len(ids) == len(set(ids)))
     covered = {c["code"] for c in CASES["refuse"]}

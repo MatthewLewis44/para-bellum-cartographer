@@ -157,6 +157,19 @@ MUTATIONS = [
      _both(_set(["pb/design_model.json", "models", 1, "id"], "pb:kestrel_ii_model"),
            _set([R, "projects", 9, "prerequisites"],
                 [[{"kind": "design", "value": "pb:design_0001"}], [{"kind": "technology", "value": "pb:sss_01"}]]))),
+    ("h909c_slice_walks_variant_of", "C909", R,
+     "the slice design pb:design_0002 is now a variant of pb:design_0004, whose study needs pb:sss_01 (null effect), "
+     "and nothing else reaches pb:design_0004. The subject walks variant_of, so pb:sss_01 is in it; a walk of "
+     "prerequisites alone would leave it out and load",
+     _set([R, "projects", 9, "variant_of"], "pb:design_0004")),
+    ("h909d_slice_takes_every_exclusive_doctrine", "C909", R,
+     "pb:ql_03 is made exclusive with pb:bbb_90 (both ways), held by no nation at the start, outside every slice "
+     "design's closure, and has a null effect. The subject takes EVERY doctrine with a non-empty exclusive_with, "
+     "so pb:ql_03 is in it; a subject without that clause would leave it out and load",
+     _both(_set([R, "projects", 7, "exclusive_with"], ["pb:bbb_90"]),
+           _set([R, "projects", 6, "exclusive_with"], ["pb:ql_03"]),
+           _set([R, "projects", 7, "effect"], None),
+           _set([R, "start", 1, "doctrines"], ["pb:bbb_90", "pb:ql_01"]))),
     ("h301_dangling_reference", "C301", V, 'variants[1].model is "pb:light_tnak"',
      _set([V, "variants", 1, "model"], "pb:light_tnak")),
     ("h301b_extends_dangling", "C301", "mymod/class.json", 'a class extension of "pb:tnak", which is not a class',

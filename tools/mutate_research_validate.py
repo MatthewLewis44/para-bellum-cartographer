@@ -102,6 +102,13 @@ MUTATIONS = (
      ('        seen, stack = set(), [m["unlock"] for m in self.models\n'
       '                              if m["unlock"] in self.projects and self.projects[m["unlock"]]["kind"] == "design"]'),
      '        seen, stack = set(), [m["id"] for m in self.models if m["id"] in self.projects]'),
+    ("M28 R11: the subject does not walk variant_of",
+     ('            if p.get("variant_of"):\n'
+      '                stack.append(p["variant_of"])\n'),
+     ''),
+    ("M29 R11: the subject omits the exclusive doctrines",
+     '        subject |= {pid for pid, p in self.projects.items() if p["kind"] == "doctrine" and p["exclusive_with"]}\n',
+     ''),
     ("M12 R9: lineage across nations accepted",
      'if parent["nation"] != p["nation"]:',
      "if False:"),

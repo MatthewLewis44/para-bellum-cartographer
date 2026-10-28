@@ -1,0 +1,8 @@
+{
+  "code": "C909",
+  "rule": "slice-row-unencoded",
+  "file": "pb/research.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "the slice design pb:design_0002 is now a variant of pb:design_0004, whose study needs pb:sss_01 (null effect), and nothing else reaches pb:design_0004. The subject walks variant_of, so pb:sss_01 is in it; a walk of prerequisites alone would leave it out and load"
+}

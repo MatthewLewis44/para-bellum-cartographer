@@ -1,0 +1,52 @@
+{
+  "format": "pb-content/vocabulary/1",
+  "_comment": "Describes the engine's code. The game NEVER reads this file to decide behaviour: stat keys, pools and unit types are fixed in C#, and a test fails (C701) if this list and the code ever disagree. It exists so the JSON Schemas and the pipeline's Python cross-check can see the engine's vocabulary. See docs/design/CONTENT_MODEL.md section 2.",
+  "stat_keys": [
+    "weight_kg",
+    "crew",
+    "speed_road_kph",
+    "speed_offroad_kph",
+    "range_km",
+    "armour_front_mm",
+    "armour_side_mm",
+    "armour_top_mm",
+    "main_gun_mm",
+    "penetration_mm",
+    "rate_of_fire_rpm",
+    "transport_passengers",
+    "reliability_per_mille",
+    "fuel_capacity_l",
+    "ceiling_m"
+  ],
+  "pools": [
+    "money",
+    "manpower",
+    "coal",
+    "steel",
+    "iron",
+    "oil",
+    "agriculture"
+  ],
+  "unit_types": [
+    "Infantry",
+    "Motorized",
+    "Armored"
+  ],
+  "facility_kinds": [
+    "Mine",
+    "PowerPlant",
+    "SteelMill",
+    "CivilianFactory",
+    "MilitaryFactory",
+    "Refinery",
+    "RailYard",
+    "ResearchInstitute"
+  ],
+  "settlement_types": [
+    "none",
+    "suburb",
+    "town",
+    "city",
+    "metropolis"
+  ]
+}

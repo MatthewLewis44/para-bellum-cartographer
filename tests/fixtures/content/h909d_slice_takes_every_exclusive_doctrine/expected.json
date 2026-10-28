@@ -1,0 +1,8 @@
+{
+  "code": "C909",
+  "rule": "slice-row-unencoded",
+  "file": "pb/research.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "pb:ql_03 is made exclusive with pb:bbb_90 (both ways), held by no nation at the start, outside every slice design's closure, and has a null effect. The subject takes EVERY doctrine with a non-empty exclusive_with, so pb:ql_03 is in it; a subject without that clause would leave it out and load"
+}
