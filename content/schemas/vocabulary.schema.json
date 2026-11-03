@@ -5,7 +5,7 @@
   "description": "File: Content/vocabulary.json. Lists the engine-level names content files may use: stat keys, resource pools, unit types, facility kinds and settlement types. THE GAME NEVER READS THIS FILE TO DECIDE BEHAVIOUR. It describes the code; it does not extend it. A test in the game asserts that it equals the code exactly, so editing it cannot add a stat, a pool or a unit type. Adding one is a code change, by design.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["format", "_comment", "stat_keys", "pools", "unit_types", "facility_kinds", "settlement_types"],
+  "required": ["format", "_comment", "stat_keys", "pools", "unit_types", "facility_kinds", "settlement_types", "policy_targets", "claim_roles"],
   "properties": {
     "format": { "const": "pb-content/vocabulary/1" },
     "_comment": {
@@ -36,6 +36,25 @@
     },
     "settlement_types": {
       "description": "The settlement types the map produces, none included.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+    },
+    "policy_targets": {
+      "description": "What a policy level's effect may write, and how. A target of form share is one value from 0 to 1000 with exactly one writing policy; form modifier is a signed delta through the modifier stack's Policy layer, at least -1000, with any number of writers.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["target", "form"],
+        "properties": {
+          "target": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "form": { "enum": ["share", "modifier"] }
+        }
+      }
+    },
+    "claim_roles": {
+      "description": "What the engine can do with a claim's share. civilian and construction have exactly one claim each; production has any number.",
       "type": "array",
       "uniqueItems": true,
       "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }

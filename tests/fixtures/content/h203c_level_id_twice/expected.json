@@ -1,0 +1,8 @@
+{
+  "code": "C203",
+  "rule": "duplicate-id",
+  "file": "pb/policy.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "pb:state_take's first level takes the id of a pb:draft level"
+}

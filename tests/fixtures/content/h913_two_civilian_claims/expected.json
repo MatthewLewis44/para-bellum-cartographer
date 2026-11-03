@@ -1,0 +1,8 @@
+{
+  "code": "C913",
+  "rule": "claim-role-count",
+  "file": "pb/claim.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "pb:claim_navy has role civilian: two civilian claims"
+}

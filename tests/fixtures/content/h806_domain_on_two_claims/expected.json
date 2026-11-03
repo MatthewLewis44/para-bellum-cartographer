@@ -1,0 +1,8 @@
+{
+  "code": "C806",
+  "rule": "domain-claim-invalid",
+  "file": "pb/claim.json",
+  "python": "refuse",
+  "csharp": "accept",
+  "seeded": "Aircraft is on pb:claim_navy as well as pb:claim_air"
+}

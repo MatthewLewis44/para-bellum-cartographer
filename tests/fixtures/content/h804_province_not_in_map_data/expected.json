@@ -1,0 +1,8 @@
+{
+  "code": "C804",
+  "rule": "population-province-unknown",
+  "file": "pb/population.json",
+  "python": "refuse",
+  "csharp": "accept",
+  "seeded": "provinces[0] is DEU_ATLANTIS: a PROJECT INVARIANT, loaded by the game"
+}

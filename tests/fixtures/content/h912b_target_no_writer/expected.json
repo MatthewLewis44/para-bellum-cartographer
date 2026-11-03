@@ -1,0 +1,8 @@
+{
+  "code": "C912",
+  "rule": "policy-target-writers",
+  "file": "pb/policy.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "no policy writes industry_term_per_mille"
+}

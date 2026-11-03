@@ -1,0 +1,8 @@
+{
+  "code": "C403",
+  "rule": "unknown-pool",
+  "file": "pb/economy.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "economy prices money, which is not extracted"
+}

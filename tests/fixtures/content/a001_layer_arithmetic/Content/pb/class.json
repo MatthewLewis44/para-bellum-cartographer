@@ -8,7 +8,8 @@
         "weight_kg": 0,
         "reliability_per_mille": 900
       },
-      "traits": []
+      "traits": [],
+      "claim": "pb:claim_army"
     },
     {
       "id": "pb:artillery",
@@ -19,7 +20,8 @@
         "main_gun_mm": 0,
         "rate_of_fire_rpm": 0
       },
-      "traits": []
+      "traits": [],
+      "claim": "pb:claim_army"
     },
     {
       "id": "pb:tank",
@@ -41,7 +43,8 @@
         "pb:plus_b",
         "pb:minus_a",
         "pb:minus_b"
-      ]
+      ],
+      "claim": "pb:claim_army"
     },
     {
       "id": "pb:trucks",
@@ -51,7 +54,8 @@
         "speed_road_kph": 0,
         "transport_passengers": 0
       },
-      "traits": []
+      "traits": [],
+      "claim": "pb:claim_army"
     }
   ]
 }

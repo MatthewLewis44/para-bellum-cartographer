@@ -1,0 +1,8 @@
+{
+  "code": "C806",
+  "rule": "domain-claim-invalid",
+  "file": "pb/claim.json",
+  "python": "refuse",
+  "csharp": "accept",
+  "seeded": "the civilian claim lists a domain"
+}

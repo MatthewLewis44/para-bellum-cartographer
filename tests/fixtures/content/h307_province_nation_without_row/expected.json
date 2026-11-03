@@ -1,0 +1,8 @@
+{
+  "code": "C307",
+  "rule": "nation-without-population",
+  "file": "pb/population.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "FRA_MOSELLE belongs to POL, which has no nations row"
+}

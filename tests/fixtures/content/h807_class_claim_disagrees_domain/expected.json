@@ -1,0 +1,8 @@
+{
+  "code": "C807",
+  "rule": "class-claim-disagrees-domain",
+  "file": "pb/class.json",
+  "python": "refuse",
+  "csharp": "accept",
+  "seeded": "pb:tank is built by pb:claim_navy, but its generated models' studies are Armour, which maps to pb:claim_army"
+}

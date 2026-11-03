@@ -1,0 +1,8 @@
+{
+  "code": "C307",
+  "rule": "nation-without-population",
+  "file": "pb/policy.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "a policy start row for POL, which has no nations row"
+}

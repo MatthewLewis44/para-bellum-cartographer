@@ -1,0 +1,8 @@
+{
+  "code": "C407",
+  "rule": "unknown-policy-target",
+  "file": "pb/policy.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "pb:state_take has one level, which also writes \"morale_per_mille\", not an engine target"
+}

@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:population:1",
+  "title": "Para Bellum content: population",
+  "description": "Who lives where at the start, and how fast they grow. File: Content/<namespace>/population.json, exactly ONE across every namespace: the game refuses a second copy and refuses a content set with none. The military-civilian split is NOT here: it derives from the draft policy's level (policy.json), so there is one source for it. The contract is docs/design/CONTENT_MODEL.md in the game repository.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "nations", "provinces", "ceiling"],
+  "properties": {
+    "format": { "const": "pb-content/population/1" },
+    "nations": {
+      "description": "One row per nation owning a province at the start.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["nation", "growth_per_10k_per_year"],
+        "properties": {
+          "nation": { "$ref": "#/$defs/nation" },
+          "growth_per_10k_per_year": {
+            "description": "Natural increase per year, per 10,000 people: births less deaths. 65 is 0.65% a year. Not negative: signed arithmetic has no agreed rounding across the two implementations.",
+            "type": "integer", "minimum": 0
+          }
+        }
+      }
+    },
+    "provinces": {
+      "description": "One row per province. The figure is the people ON THE MAP: a province the map crops carries only its on-map share, because the rest of it is not in the game.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["province", "nation", "start_population", "urban_per_mille"],
+        "properties": {
+          "province": {
+            "description": "The province id, as the map spells it (political.province_at_start).",
+            "type": "string",
+            "pattern": "^[A-Z]{3}_[A-Z0-9_]+$"
+          },
+          "nation": { "$ref": "#/$defs/nation" },
+          "start_population": {
+            "description": "People at the start, whole persons. At least 1: zero would mean a census figure is missing, not that nobody lives there.",
+            "type": "integer", "minimum": 1
+          },
+          "urban_per_mille": {
+            "description": "The share of those people living in towns and cities, per mille. Feeds the dispersed half of the industry term (AD-M38).",
+            "type": "integer", "minimum": 0, "maximum": 1000
+          }
+        }
+      }
+    },
+    "ceiling": {
+      "description": "What agriculture can feed. A nation's ceiling is its monthly agriculture income x people_per_agriculture. Growth stops at the ceiling; a nation above it does not shrink.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["people_per_agriculture"],
+      "properties": {
+        "people_per_agriculture": {
+          "description": "People fed by one unit of monthly agriculture income.",
+          "type": "integer", "minimum": 1
+        }
+      }
+    }
+  },
+  "$defs": {
+    "nation": {
+      "description": "A nation code, as the map spells it (political.country_at_start).",
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    }
+  }
+}

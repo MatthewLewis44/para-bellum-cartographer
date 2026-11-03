@@ -1,0 +1,6 @@
+{
+  "code": null,
+  "python": "accept",
+  "csharp": "accept",
+  "seeded": "pb:claim_navy and pb:claim_air are declared with no class pointing at them, and a mod adds a claim of its own: a claim set is data, and a claim nobody builds for is legal, not a gap"
+}

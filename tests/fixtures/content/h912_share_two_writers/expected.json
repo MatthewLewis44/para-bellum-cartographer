@@ -1,0 +1,8 @@
+{
+  "code": "C912",
+  "rule": "policy-target-writers",
+  "file": "pb/policy.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "pb:mobilisation also writes state_take_per_mille at every level"
+}

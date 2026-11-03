@@ -1,0 +1,8 @@
+{
+  "code": "C301",
+  "rule": "dangling-reference",
+  "file": "pb/class.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "pb:tank's claim is \"pb:claim_ary\", which is not a claim"
+}

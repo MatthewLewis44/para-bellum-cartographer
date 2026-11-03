@@ -1,0 +1,8 @@
+{
+  "code": "C104",
+  "rule": "negative-value",
+  "file": "pb/facility.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "the Mine's staffing_per_tier is 0: a facility that can never be unmanned"
+}

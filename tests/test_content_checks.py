@@ -219,6 +219,7 @@ def main() -> int:
     for stem, _ in cc.TYPES:
         ok &= cli("--schemafile", str(SCHEMAS / f"{stem}.schema.json"), str(content / "pb" / f"{stem}.json"))
     ok &= cli("--schemafile", str(SCHEMAS / "research.schema.json"), str(content / "pb" / "research.json"))
+    ok &= cli("--schemafile", str(SCHEMAS / "population.schema.json"), str(content / "pb" / "population.json"))
     ok &= cli("--schemafile", str(SCHEMAS / "model.schema.json"), str(content / "pb" / "design_model.json"))
     check("check-jsonschema accepts the control set, file by file", ok)
     bad = FIXTURES / "h101_missing_key" / "Content" / "pb" / "model.json"

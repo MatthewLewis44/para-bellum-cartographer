@@ -1,0 +1,8 @@
+{
+  "code": "C104",
+  "rule": "negative-value",
+  "file": "pb/population.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "provinces[0].start_population is 0: a missing census figure, not an empty province"
+}

@@ -1,0 +1,8 @@
+{
+  "code": "C603",
+  "rule": "policy-value-out-of-range",
+  "file": "pb/policy.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "pb:mobilisation's first level sets commerce to -1001"
+}

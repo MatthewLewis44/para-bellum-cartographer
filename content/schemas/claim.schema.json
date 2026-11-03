@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:claim:1",
+  "title": "Para Bellum content: Industrial Capacity claims",
+  "description": "What bids for a nation's Industrial Capacity. File: Content/<namespace>/claim.json. A claim set is data, not an enum (AD-M36): a mod adds a claim by adding a row. An equipment class names the claim that builds it (class.json claim), so a production claim with no class pointing at it is declared and idle, and lights up the day a class does. The contract is docs/design/CONTENT_MODEL.md in the game repository.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "claims"],
+  "properties": {
+    "format": { "const": "pb-content/claim/1" },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "role"],
+        "properties": {
+          "id": {
+            "description": "A namespaced id, <namespace>:<name>, lower case.",
+            "type": "string",
+            "pattern": "^[a-z0-9_]+:[a-z0-9_]+$"
+          },
+          "name": { "type": "string" },
+          "role": {
+            "description": "What the engine does with this claim's share (vocabulary.json claim_roles). The code cannot branch on an opaque id, so this is the one thing it reads. Exactly one civilian and one construction claim exist.",
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "domains": {
+            "description": "The research catalogue's DESIGN domains this claim pays for, spelled as research.json spells them. The game never reads this: the pipeline's gate uses it to check that every design domain has one claim, and that a class's claim agrees with its designs' domain.",
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    }
+  }
+}

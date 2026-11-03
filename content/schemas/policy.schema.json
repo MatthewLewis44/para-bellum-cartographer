@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:policy:1",
+  "title": "Para Bellum content: national policies",
+  "description": "The decisions a state sets, each a list of levels with their effects encoded. File: Content/<namespace>/policy.json. Policies and levels are DATA with namespaced ids, never an enum (AD-M36); the only engine-fixed list is what an effect may target (vocabulary.json policy_targets). Every level of a policy writes the same targets, so changing level never leaves a value behind. The contract is docs/design/CONTENT_MODEL.md in the game repository.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "policies", "start"],
+  "properties": {
+    "format": { "const": "pb-content/policy/1" },
+    "policies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "default_level", "levels"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "name": { "type": "string" },
+          "default_level": {
+            "description": "The level of a nation that start does not list. One of this policy's own levels.",
+            "$ref": "#/$defs/id"
+          },
+          "levels": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/level" }
+          }
+        }
+      }
+    },
+    "start": {
+      "description": "Levels at the start, per nation, where they differ from each policy's default_level.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["nation", "levels"],
+        "properties": {
+          "nation": { "type": "string", "pattern": "^[A-Z]{3}$" },
+          "levels": {
+            "description": "Policy id to level id.",
+            "type": "object",
+            "propertyNames": { "$ref": "#/$defs/id" },
+            "additionalProperties": { "$ref": "#/$defs/id" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "A namespaced id, <namespace>:<name>, lower case.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+:[a-z0-9_]+$"
+    },
+    "level": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "effects"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string" },
+        "effects": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["target", "value"],
+            "properties": {
+              "target": {
+                "description": "An engine policy target (vocabulary.json policy_targets).",
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "value": {
+                "description": "Per mille. For a target of form share: 0 to 1000, the share itself. For form modifier: at least -1000, a signed delta through the modifier stack's Policy layer.",
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

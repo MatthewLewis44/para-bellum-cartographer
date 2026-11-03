@@ -47,9 +47,10 @@ SCHEMA_DIR = ROOT / "content" / "schemas"
 TYPES = (("class", "classes"), ("model", "models"), ("variant", "variants"),
          ("trait", "traits"), ("template", "templates"),
          ("facility", "facilities"), ("settlement", "settlements"),
-         ("bureau", "bureaus"), ("vendor", "vendors"))
+         ("bureau", "bureaus"), ("vendor", "vendors"),
+         ("claim", "claims"), ("policy", "policies"))
 # Singleton rules files: flat objects, exactly ONE across every namespace (C907, C908).
-SINGLETONS = ("rates", "combat", "economy")
+SINGLETONS = ("rates", "combat", "economy", "population")
 # Types whose rows are keyed on an engine name (unit type, facility kind, settlement type), not an id.
 UNKEYED_TYPES = ("template", "facility", "settlement")
 # Sprint 13: the research database (research.json, ONE per content set: C907) and the GENERATED models
@@ -69,6 +70,8 @@ REGISTER = json.loads(RULE_CODES_FILE.read_text(encoding="utf-8"))["codes"]
 RULES = {c["code"]: c["rule"] for c in REGISTER}
 SHIPPED_NAMESPACE = "pb"   # project invariants (C8xx) hold OUR content to more than a mod's
 AUTHORED_BASE = ROOT / "data" / "facilities" / "facilities_1930.csv"   # the shipped 1930 starting base (C801)
+PROVINCE_DATA = ROOT / "data" / "boundaries" / "provinces_1930_metadata.json"   # the shipped province ids (C804)
+UNPRICED_POOLS = ("money", "manpower")   # what economy.json prices cannot name: they are not extracted
 
 
 @dataclass(frozen=True, order=True)
@@ -262,6 +265,7 @@ class ContentSet:
         self.extensions: list[tuple[str, str, int, dict]] = []   # class.json entries carrying "extends"
         self.namespaces: set[str] = set()
         self.research: list[tuple[str, str, dict]] = []   # (file, namespace, research.json document)
+        self.policy_starts: list[tuple[str, int, dict]] = []   # (file, index, policy.json start row)
         self._load()
         # Structure first. If ANY file fails the schema layer, its entries are
         # missing from the set, and every cross-file rule would cascade from that
@@ -351,6 +355,8 @@ class ContentSet:
                     continue
                 if stem == "facility":
                     self.facility_headers.append((rel, doc))
+                if stem == "policy":
+                    self.policy_starts += [(rel, i, s) for i, s in enumerate(doc["start"])]
                 for i, e in enumerate(doc[key]):
                     if stem == "model" and "production_template" in e:
                         self.problems.append(Problem(rel, "C105", _json_path(["models", i, "production_template"]),
@@ -593,6 +599,9 @@ class ContentSet:
                           f'no template for unit type "{ut}"')
         self._facilities_and_settlements(pools)
         self._research_graph(pools)
+        self._claims()
+        self._policies()
+        self._population()
 
     # -- the research database (Sprint 13), mirroring ContentReader.Research.cs -----------
 
@@ -907,6 +916,129 @@ class ContentSet:
                 if pool not in pools:
                     self._add(self.singletons["economy"][0][0], "C403", f"$.dispersed_yield_per_hex.{pool}",
                               f'"{pool}" is not a resource pool')
+            self._prices(economy, pools)
+
+    def _prices(self, economy, pools):
+        """economy.json prices: real resource pools only (C403), and every pool something produces (C914)."""
+        rel = self.singletons["economy"][0][0]
+        for pool in economy["prices"]:
+            if pool not in pools or pool in UNPRICED_POOLS:
+                self._add(rel, "C403", f"$.prices.{pool}", f'"{pool}" is not a priced resource pool: remove it from prices')
+        produced = {p for p, v in economy["dispersed_yield_per_hex"].items() if v > 0}
+        for *_, f in self.entries["facility"]:
+            produced |= {p for p, v in f["output"].items() if v > 0}
+        for pool in sorted((produced & pools) - set(economy["prices"])):
+            self._add(rel, "C914", f"$.prices.{pool}",
+                      f'"{pool}" is produced but has no price: add it to prices, or extraction values it at nothing')
+
+    def _claims(self):
+        """claim.json and class.json's claim: engine roles (C408), one civilian and one construction (C913),
+        and a class is built by a production claim (C306, C301)."""
+        roles = set(self.vocab.get("claim_roles", []))
+        count = {"civilian": [], "construction": []}
+        for rel, _, i, c in self.entries["claim"]:
+            if c["role"] not in roles:
+                self._add(rel, "C408", _json_path(["claims", i, "role"]),
+                          f'"{c["role"]}" is not an engine claim role: use one of {", ".join(sorted(roles))}')
+            elif c["role"] in count:
+                count[c["role"]].append(c["id"])
+        file = next((r for r, *_ in self.entries["claim"]), "claim.json")
+        for role, ids in count.items():
+            if len(ids) != 1:
+                self._add(file, "C913", "$.claims", f'{len(ids)} claims have role {role} ({", ".join(ids) or "none"}): '
+                                                    f"there must be exactly one")
+        for rel, _, i, c in self.entries["class"]:
+            id_ = c["claim"]
+            if id_ not in self.by_id["claim"]:
+                self._add(rel, "C301", _json_path(["classes", i, "claim"]), f'"{id_}" is not a defined claim')
+            elif self.by_id["claim"][id_]["role"] != "production":
+                self._add(rel, "C306", _json_path(["classes", i, "claim"]),
+                          f'"{id_}" has role {self.by_id["claim"][id_]["role"]}: a class is built by a production claim')
+
+    def _policies(self):
+        """policy.json: levels' ids and ownership (C202, C203, C305), targets (C407, C603, C910, C911), and who
+        writes each engine target (C912)."""
+        forms = {t["target"]: t["form"] for t in self.vocab.get("policy_targets", [])}
+        own: dict[str, str] = {}
+        writers: dict[str, list[str]] = {t: [] for t in forms}
+        for rel, ns, i, p in self.entries["policy"]:
+            ids = {lv["id"] for lv in p["levels"]}
+            if p["default_level"] not in ids:
+                self._add(rel, "C305", _json_path(["policies", i, "default_level"]),
+                          f'"{p["default_level"]}" is not a level of {p["id"]}: use one of {", ".join(sorted(ids))}')
+            shapes = []
+            for j, lv in enumerate(p["levels"]):
+                path = ["policies", i, "levels", j]
+                if _ns(lv["id"]) != ns:
+                    self._add(rel, "C202", _json_path([*path, "id"]),
+                              f'"{lv["id"]}" is defined in the {ns} folder, so its namespace must be {ns}')
+                if lv["id"] in own:
+                    self._add(rel, "C203", _json_path([*path, "id"]), f'level "{lv["id"]}" is already defined in {own[lv["id"]]}')
+                own.setdefault(lv["id"], p["id"])
+                seen = set()
+                for k, e in enumerate(lv["effects"]):
+                    t, v = e["target"], e["value"]
+                    where_ = _json_path([*path, "effects", k])
+                    if t in seen:
+                        self._add(rel, "C910", where_, f'level "{lv["id"]}" writes {t} twice: keep one')
+                    seen.add(t)
+                    if t not in forms:
+                        self._add(rel, "C407", where_, f'"{t}" is not an engine policy target: use one of {", ".join(sorted(forms))}')
+                    elif forms[t] == "share" and not 0 <= v <= 1000:
+                        self._add(rel, "C603", where_, f"{v} is outside 0 to 1000: {t} is a share, per mille")
+                    elif forms[t] == "modifier" and v < -1000:
+                        self._add(rel, "C603", where_, f"{v} is below -1000: {t} is a modifier, and would drive its term negative")
+                shapes.append(seen)
+            if any(s != shapes[0] for s in shapes):
+                self._add(rel, "C911", _json_path(["policies", i, "levels"]),
+                          f'the levels of {p["id"]} write different targets: give every level the same ones')
+            for t in set().union(*shapes) & set(forms):
+                writers[t].append(p["id"])
+        for t, who in writers.items():
+            if not who or (forms[t] == "share" and len(who) > 1):
+                file = next((r for r, *_ in self.entries["policy"]), "policy.json")
+                self._add(file, "C912", "$.policies",
+                          f'{t} has {len(who)} writers ({", ".join(who) or "none"}): '
+                          + ("a share has exactly one" if who else "add a policy that writes it"))
+        nations = self._population_nations()
+        seen_nations = set()
+        for rel, i, s in self.policy_starts:
+            path = ["start", i]
+            if nations is not None and s["nation"] not in nations:
+                self._add(rel, "C307", _json_path([*path, "nation"]),
+                          f'{s["nation"]} has no row in population.json nations: add one')
+            if s["nation"] in seen_nations:
+                self._add(rel, "C203", _json_path([*path, "nation"]), f'{s["nation"]} has two start rows')
+            seen_nations.add(s["nation"])
+            for pid, lid in s["levels"].items():
+                p = self.by_id["policy"].get(pid)
+                if p is None:
+                    self._add(rel, "C301", _json_path([*path, "levels", pid]), f'"{pid}" is not a defined policy')
+                elif lid not in {lv["id"] for lv in p["levels"]}:
+                    self._add(rel, "C305", _json_path([*path, "levels", pid]), f'"{lid}" is not a level of {pid}')
+
+    def _population_nations(self):
+        docs = self.singletons["population"]
+        return {n["nation"] for n in docs[0][1]["nations"]} if docs else None
+
+    def _population(self):
+        """population.json: one row per nation and province (C203), and a province's nation has a row (C307)."""
+        if not self.singletons["population"]:
+            return
+        rel, doc = self.singletons["population"][0]
+        nations: set[str] = set()
+        for i, n in enumerate(doc["nations"]):
+            if n["nation"] in nations:
+                self._add(rel, "C203", _json_path(["nations", i, "nation"]), f'{n["nation"]} has two rows')
+            nations.add(n["nation"])
+        seen: set[str] = set()
+        for i, p in enumerate(doc["provinces"]):
+            if p["province"] in seen:
+                self._add(rel, "C203", _json_path(["provinces", i, "province"]), f'{p["province"]} has two rows')
+            seen.add(p["province"])
+            if p["nation"] not in nations:
+                self._add(rel, "C307", _json_path(["provinces", i, "nation"]),
+                          f'{p["nation"]} has no row in nations: add one, with its growth')
 
     # -- project invariants (C8xx) ---------------------------------------------------------
 
@@ -917,6 +1049,8 @@ class ContentSet:
         if self.problems:
             return   # invariants are judged on a content set that is otherwise valid
         self._base_browns_out()
+        self._shipped_provinces()
+        self._domains_and_claims()
         coll = dict(TYPES)
         for stem, _ in TYPES:
             if stem in UNKEYED_TYPES:
@@ -925,6 +1059,60 @@ class ContentSet:
                 if ns == SHIPPED_NAMESPACE and not str(e.get("name", "")).strip():
                     self._add(rel, "C802", _json_path([coll[stem], i, "name"]),
                               f'shipped entry "{e["id"]}" has no name; mods may omit one, pb: content may not')
+
+    def _shipped_provinces(self):
+        """PB-C804: a shipped population row names a province the pipeline's province data defines. Coverage
+        the other way (every province on the MAP has a row) is the population converter's refusal: it reads
+        the artifact, and this gate does not."""
+        docs = [(r, d) for r, d in self.singletons["population"] if r.startswith(SHIPPED_NAMESPACE + "/")]
+        if not docs or not PROVINCE_DATA.exists():
+            return
+        known = {p["province_id"] for p in json.loads(PROVINCE_DATA.read_text(encoding="utf-8"))["provinces"]}
+        rel, doc = docs[0]
+        for i, p in enumerate(doc["provinces"]):
+            if p["province"] not in known:
+                self._add(rel, "C804", _json_path(["provinces", i, "province"]),
+                          f'"{p["province"]}" is not in {PROVINCE_DATA.name}: correct the id, or add the province there')
+
+    def _domains_and_claims(self):
+        """PB-C805 to C807: the research catalogue's design domains against the shipped claims. A claim is reached
+        two ways, class -> claim (what the game reads) and domain -> claim (what the catalogue says), and these
+        hold the two routes to one answer. Only the shipped set: a mod's research may name its own domains."""
+        by_domain: dict[str, str] = {}
+        for rel, ns, i, c in self.entries["claim"]:
+            if ns != SHIPPED_NAMESPACE:
+                continue
+            for j, dom in enumerate(c.get("domains", [])):
+                path = _json_path(["claims", i, "domains", j])
+                if c["role"] != "production":
+                    self._add(rel, "C806", path, f'"{dom}" is on a claim of role {c["role"]}: move it to a production claim')
+                elif dom in by_domain:
+                    self._add(rel, "C806", path, f'"{dom}" is also on {by_domain[dom]}: a domain has one claim')
+                by_domain.setdefault(dom, c["id"])
+        shipped = [(rel, doc) for rel, ns, doc in self.research if ns == SHIPPED_NAMESPACE]
+        if not shipped:
+            return
+        rel, doc = shipped[0]
+        domain_of = {}
+        for i, p in enumerate(doc["projects"]):
+            if p["kind"] != "design":
+                continue
+            domain_of[p["id"]] = p["domain"]
+            if p["domain"] not in by_domain:
+                self._add(rel, "C805", _json_path(["projects", i, "domain"]),
+                          f'design domain "{p["domain"]}" is on no claim: add it to a production claim\'s domains')
+        wanted: dict[str, set[str]] = {}
+        for _, ns, _, m in self.entries["model"]:
+            dom = domain_of.get(m.get("unlock"))
+            if ns == SHIPPED_NAMESPACE and dom in by_domain:
+                wanted.setdefault(m["class"], set()).add(by_domain[dom])
+        for crel, _, i, c in self.entries["class"]:   # one refusal per class, where the fix is
+            claim = c["claim"]
+            for want in sorted(wanted.get(c["id"], set())):
+                if claim != want:
+                    self._add(crel, "C807", _json_path(["classes", i, "claim"]),
+                              f"{c['id']} is built by {claim}, but its generated models' domains map to {want}: "
+                              f"correct the class's claim or the claim's domains")
 
     def _base_browns_out(self):
         """PB-C801: under THIS content set's facility.json, the authored 1930 starting

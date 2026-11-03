@@ -53,9 +53,13 @@
     "class": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "stats", "traits"],
+      "required": ["id", "claim", "stats", "traits"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
+        "claim": {
+          "description": "The Industrial Capacity claim that builds this class (claim.json). It must be a claim of role production.",
+          "$ref": "#/$defs/id"
+        },
         "name": {
           "description": "Display name. Optional: a missing or blank name displays the id.",
           "type": "string"

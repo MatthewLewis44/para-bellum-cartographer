@@ -1,0 +1,74 @@
+{
+  "format": "pb-content/template/1",
+  "templates": [
+    {
+      "unit_type": "Infantry",
+      "cost": {
+        "money": 25,
+        "manpower": 14000
+      },
+      "training_days": 90,
+      "speed_km_per_day": 20,
+      "equipment": [
+        {
+          "class": "pb:infantry_kit",
+          "count": 10
+        },
+        {
+          "class": "pb:artillery",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "unit_type": "Motorized",
+      "cost": {
+        "money": 60,
+        "manpower": 12000
+      },
+      "training_days": 120,
+      "speed_km_per_day": 50,
+      "equipment": [
+        {
+          "class": "pb:infantry_kit",
+          "count": 8
+        },
+        {
+          "class": "pb:artillery",
+          "count": 2
+        },
+        {
+          "class": "pb:trucks",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "unit_type": "Armored",
+      "cost": {
+        "money": 90,
+        "manpower": 10000
+      },
+      "training_days": 150,
+      "speed_km_per_day": 40,
+      "equipment": [
+        {
+          "class": "pb:infantry_kit",
+          "count": 4
+        },
+        {
+          "class": "pb:artillery",
+          "count": 2
+        },
+        {
+          "class": "pb:trucks",
+          "count": 4
+        },
+        {
+          "class": "pb:tank",
+          "count": 6
+        }
+      ]
+    }
+  ]
+}

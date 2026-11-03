@@ -1,0 +1,8 @@
+{
+  "code": "C305",
+  "rule": "level-not-of-policy",
+  "file": "pb/policy.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "pb:draft's default_level is a level of pb:state_take"
+}

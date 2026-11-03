@@ -3,7 +3,8 @@
   "tier": {
     "step_per_mille": 0,
     "cost_multiplier_per_mille": 1750,
-    "build_days": 180
+    "build_days": 180,
+    "build_work_ic_days": 100
   },
   "repair_per_mille": 400,
   "facilities": [
@@ -21,7 +22,10 @@
       ],
       "output": {
         "iron": 100
-      }
+      },
+      "staffing_per_tier": 1000,
+      "manning_priority": 0,
+      "ic_per_tier": 0
     },
     {
       "kind": "PowerPlant",
@@ -33,7 +37,10 @@
       "power_draw": 0,
       "power_supply_per_tier": 1,
       "deposits": [],
-      "output": {}
+      "output": {},
+      "staffing_per_tier": 1000,
+      "manning_priority": 0,
+      "ic_per_tier": 0
     },
     {
       "kind": "SteelMill",
@@ -48,7 +55,10 @@
       "deposits": [],
       "output": {
         "steel": 150
-      }
+      },
+      "staffing_per_tier": 1000,
+      "manning_priority": 0,
+      "ic_per_tier": 0
     },
     {
       "kind": "CivilianFactory",
@@ -60,7 +70,10 @@
       "power_draw": 1,
       "power_supply_per_tier": 0,
       "deposits": [],
-      "output": {}
+      "output": {},
+      "staffing_per_tier": 1000,
+      "manning_priority": 0,
+      "ic_per_tier": 0
     },
     {
       "kind": "MilitaryFactory",
@@ -72,7 +85,10 @@
       "power_draw": 2,
       "power_supply_per_tier": 0,
       "deposits": [],
-      "output": {}
+      "output": {},
+      "staffing_per_tier": 1000,
+      "manning_priority": 0,
+      "ic_per_tier": 1000
     },
     {
       "kind": "Refinery",
@@ -86,7 +102,10 @@
       "deposits": [],
       "output": {
         "oil": 120
-      }
+      },
+      "staffing_per_tier": 1000,
+      "manning_priority": 0,
+      "ic_per_tier": 0
     },
     {
       "kind": "RailYard",
@@ -98,7 +117,10 @@
       "power_draw": 1,
       "power_supply_per_tier": 0,
       "deposits": [],
-      "output": {}
+      "output": {},
+      "staffing_per_tier": 1000,
+      "manning_priority": 0,
+      "ic_per_tier": 0
     },
     {
       "kind": "ResearchInstitute",
@@ -110,7 +132,10 @@
       "power_draw": 1,
       "power_supply_per_tier": 0,
       "deposits": [],
-      "output": {}
+      "output": {},
+      "staffing_per_tier": 1000,
+      "manning_priority": 0,
+      "ic_per_tier": 0
     }
   ]
 }

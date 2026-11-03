@@ -1,0 +1,8 @@
+{
+  "code": "C805",
+  "rule": "design-domain-unclaimed",
+  "file": "pb/research.json",
+  "python": "refuse",
+  "csharp": "accept",
+  "seeded": "no claim lists Naval, though a design study has that domain"
+}

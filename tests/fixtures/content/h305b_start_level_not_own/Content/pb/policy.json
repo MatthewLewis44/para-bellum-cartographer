@@ -1,0 +1,110 @@
+{
+  "format": "pb-content/policy/1",
+  "policies": [
+    {
+      "id": "pb:draft",
+      "name": "Draft",
+      "default_level": "pb:draft_0",
+      "levels": [
+        {
+          "id": "pb:draft_0",
+          "name": "Draft 0",
+          "effects": [
+            {
+              "target": "military_share_per_mille",
+              "value": 5
+            },
+            {
+              "target": "manpower_draft_per_mille",
+              "value": 100
+            }
+          ]
+        },
+        {
+          "id": "pb:draft_1",
+          "name": "Draft 1",
+          "effects": [
+            {
+              "target": "military_share_per_mille",
+              "value": 50
+            },
+            {
+              "target": "manpower_draft_per_mille",
+              "value": 1000
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pb:mobilisation",
+      "name": "Mobilisation",
+      "default_level": "pb:mobilisation_0",
+      "levels": [
+        {
+          "id": "pb:mobilisation_0",
+          "name": "Mobilisation 0",
+          "effects": [
+            {
+              "target": "industry_term_per_mille",
+              "value": 0
+            },
+            {
+              "target": "commerce_term_per_mille",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "id": "pb:mobilisation_1",
+          "name": "Mobilisation 1",
+          "effects": [
+            {
+              "target": "industry_term_per_mille",
+              "value": 200
+            },
+            {
+              "target": "commerce_term_per_mille",
+              "value": -200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pb:state_take",
+      "name": "State take",
+      "default_level": "pb:state_take_0",
+      "levels": [
+        {
+          "id": "pb:state_take_0",
+          "name": "State take 0",
+          "effects": [
+            {
+              "target": "state_take_per_mille",
+              "value": 100
+            }
+          ]
+        },
+        {
+          "id": "pb:state_take_1",
+          "name": "State take 1",
+          "effects": [
+            {
+              "target": "state_take_per_mille",
+              "value": 200
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "start": [
+    {
+      "nation": "DEU",
+      "levels": {
+        "pb:draft": "pb:state_take_0"
+      }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "format": "pb-content/claim/1",
+  "claims": [
+    {
+      "id": "mymod:claim_space",
+      "role": "production"
+    }
+  ]
+}

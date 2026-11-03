@@ -1,0 +1,22 @@
+{
+  "format": "pb-content/vendor/1",
+  "vendors": [
+    {
+      "id": "pb:vendor_0001",
+      "name": "Testvendor AB",
+      "country": "Nowhere",
+      "fields": [
+        "pb:aaa",
+        "pb:bbb"
+      ]
+    },
+    {
+      "id": "pb:vendor_0002",
+      "name": "Oakfield-Marsh",
+      "country": "Elsewhere",
+      "fields": [
+        "pb:bbb"
+      ]
+    }
+  ]
+}

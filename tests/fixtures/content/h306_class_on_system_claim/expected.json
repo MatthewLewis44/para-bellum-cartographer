@@ -1,0 +1,8 @@
+{
+  "code": "C306",
+  "rule": "class-claim-not-production",
+  "file": "pb/class.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "pb:tank is built by the construction claim"
+}

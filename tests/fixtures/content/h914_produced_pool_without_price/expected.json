@@ -1,0 +1,8 @@
+{
+  "code": "C914",
+  "rule": "pool-without-price",
+  "file": "pb/economy.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "coal has a dispersed yield and no price"
+}

@@ -46,7 +46,9 @@ FILES = ("vocabulary.json", "pb/class.json", "pb/model.json", "pb/variant.json",
          "pb/rates.json", "pb/combat.json", "pb/economy.json",
          # Sprint 13: the research database and its generated models, written by the pipeline's converter
          # (tools/research_convert.py) from its SYNTHETIC case set, then hand-kept here as part of the control set.
-         "pb/research.json", "pb/bureau.json", "pb/vendor.json", "pb/design_model.json")
+         "pb/research.json", "pb/bureau.json", "pb/vendor.json", "pb/design_model.json",
+         # Sprint 14: the state.
+         "pb/claim.json", "pb/policy.json", "pb/population.json")
 
 
 def dump(doc) -> str:
@@ -104,6 +106,10 @@ V = "pb/variant.json"
 C = "pb/class.json"
 T = "pb/template.json"
 R = "pb/research.json"
+CL = "pb/claim.json"
+PO = "pb/policy.json"
+PP = "pb/population.json"
+EC = "pb/economy.json"
 
 MUTATIONS = [
     ("h108_invalid_json", "C108", M, "model.json is not JSON (truncated)", "RAW"),
@@ -212,7 +218,8 @@ MUTATIONS = [
      _del([M, "models", 0, "name"])),
     ("h405_unknown_facility_kind", "C405", FA, 'an extra facility row of kind "Shipyard", not an engine kind',
      _append([FA, "facilities"], {"kind": "Shipyard", "cost": {"money": 1}, "power_draw": 0,
-                                  "power_supply_per_tier": 0, "deposits": [], "output": {}})),
+                                  "power_supply_per_tier": 0, "staffing_per_tier": 1, "manning_priority": 0,
+                                  "ic_per_tier": 0, "deposits": [], "output": {}})),
     ("h406_unknown_settlement_type", "C406", ST, 'an extra settlement row of type "village", not one the map produces',
      _append([ST, "settlements"], {"type": "village", "income": 0, "manpower": 0, "facility_slots": 0,
                                    "training_slots": 0, "tier": 0})),
@@ -245,9 +252,78 @@ MUTATIONS = [
     ("h901_template_missing_unit_type", "C901", T, "no template for Armored",
      _del([T, "templates", 2])),
     ("h902_template_class_no_design", "C902", T, "a template requires pb:helicopter, a class no design belongs to",
-     _both(_append([C, "classes"], {"id": "pb:helicopter", "name": "Helicopter",
+     _both(_append([C, "classes"], {"id": "pb:helicopter", "claim": "pb:claim_air", "name": "Helicopter",
                                     "stats": {"ceiling_m": 0}, "traits": []}),
            _append([T, "templates", 0, "equipment"], {"class": "pb:helicopter", "count": 1}))),
+    # Sprint 14: the state. Staffing, manning order and IC are required rows: a silent default is what kept
+    # Facility.Staffing at 0 for three sprints.
+    ("h101c_facility_without_staffing", "C101", FA, "the Mine has no staffing_per_tier",
+     _del([FA, "facilities", 0, "staffing_per_tier"])),
+    ("h101d_facility_without_manning_priority", "C101", FA, "the Mine has no manning_priority",
+     _del([FA, "facilities", 0, "manning_priority"])),
+    ("h101e_class_without_claim", "C101", C, "pb:tank names no claim", _del([C, "classes", 2, "claim"])),
+    ("h104b_staffing_zero", "C104", FA, "the Mine's staffing_per_tier is 0: a facility that can never be unmanned",
+     _set([FA, "facilities", 0, "staffing_per_tier"], 0)),
+    ("h102b_urban_over_a_thousand", "C102", PP, "provinces[0].urban_per_mille is 1001",
+     _set([PP, "provinces", 0, "urban_per_mille"], 1001)),
+    ("h104c_province_without_people", "C104", PP, "provinces[0].start_population is 0: a missing census figure, not an empty province",
+     _set([PP, "provinces", 0, "start_population"], 0)),
+    ("h203b_province_twice", "C203", PP, "DEU_RHEINLAND has two rows",
+     lambda d: d[PP]["provinces"].append(copy.deepcopy(d[PP]["provinces"][0]))),
+    ("h203c_level_id_twice", "C203", PO, "pb:state_take's first level takes the id of a pb:draft level",
+     _both(_set([PO, "policies", 2, "levels", 0, "id"], "pb:draft_0"),
+           _set([PO, "policies", 2, "default_level"], "pb:draft_0"))),
+    ("h301c_class_claim_dangling", "C301", C, 'pb:tank\'s claim is "pb:claim_ary", which is not a claim',
+     _set([C, "classes", 2, "claim"], "pb:claim_ary")),
+    ("h305_default_level_not_own", "C305", PO, "pb:draft's default_level is a level of pb:state_take",
+     _set([PO, "policies", 0, "default_level"], "pb:state_take_0")),
+    ("h305b_start_level_not_own", "C305", PO, "DEU starts pb:draft at a level of pb:state_take",
+     _set([PO, "start", 0, "levels", "pb:draft"], "pb:state_take_0")),
+    ("h306_class_on_system_claim", "C306", C, "pb:tank is built by the construction claim",
+     _set([C, "classes", 2, "claim"], "pb:claim_construction")),
+    ("h307_province_nation_without_row", "C307", PP, "FRA_MOSELLE belongs to POL, which has no nations row",
+     _set([PP, "provinces", 1, "nation"], "POL")),
+    ("h307b_start_nation_without_row", "C307", PO, "a policy start row for POL, which has no nations row",
+     _set([PO, "start", 0, "nation"], "POL")),
+    ("h403b_money_priced", "C403", EC, "economy prices money, which is not extracted",
+     _set([EC, "prices", "money"], 1)),
+    ("h407_unknown_policy_target", "C407", PO, 'pb:state_take has one level, which also writes "morale_per_mille", not an engine target',
+     _both(_del([PO, "policies", 2, "levels", 1]),
+           _append([PO, "policies", 2, "levels", 0, "effects"], {"target": "morale_per_mille", "value": 1}))),
+    ("h408_unknown_claim_role", "C408", CL, 'pb:claim_navy has role "shipyard"',
+     _set([CL, "claims", 3, "role"], "shipyard")),
+    ("h603_share_over_a_thousand", "C603", PO, "pb:state_take's first level takes 1001 per mille",
+     _set([PO, "policies", 2, "levels", 0, "effects", 0, "value"], 1001)),
+    ("h603b_modifier_below_floor", "C603", PO, "pb:mobilisation's first level sets commerce to -1001",
+     _set([PO, "policies", 1, "levels", 0, "effects", 1, "value"], -1001)),
+    ("h804_province_not_in_map_data", "C804", PP, "provinces[0] is DEU_ATLANTIS: a PROJECT INVARIANT, loaded by the game",
+     _set([PP, "provinces", 0, "province"], "DEU_ATLANTIS")),
+    ("h805_design_domain_unclaimed", "C805", R, "no claim lists Naval, though a design study has that domain",
+     _set([CL, "claims", 3, "domains"], [])),
+    ("h806_domain_on_two_claims", "C806", CL, "Aircraft is on pb:claim_navy as well as pb:claim_air",
+     _set([CL, "claims", 3, "domains"], ["Naval", "Aircraft"])),
+    ("h806b_domain_on_system_claim", "C806", CL, "the civilian claim lists a domain",
+     _set([CL, "claims", 0, "domains"], ["Tractors"])),
+    ("h807_class_claim_disagrees_domain", "C807", C,
+     "pb:tank is built by pb:claim_navy, but its generated models' studies are Armour, which maps to pb:claim_army",
+     _set([C, "classes", 2, "claim"], "pb:claim_navy")),
+    ("h910_level_writes_target_twice", "C910", PO, "pb:state_take has one level, which writes state_take_per_mille twice",
+     _both(_del([PO, "policies", 2, "levels", 1]),
+           _append([PO, "policies", 2, "levels", 0, "effects"], {"target": "state_take_per_mille", "value": 300}))),
+    ("h911_levels_write_different_targets", "C911", PO, "pb:draft's second level no longer writes manpower_draft_per_mille",
+     _del([PO, "policies", 0, "levels", 1, "effects", 1])),
+    ("h912_share_two_writers", "C912", PO, "pb:mobilisation also writes state_take_per_mille at every level",
+     lambda d: [lv["effects"].append({"target": "state_take_per_mille", "value": 100})
+                for lv in d[PO]["policies"][1]["levels"]] and None),
+    ("h912b_target_no_writer", "C912", PO, "no policy writes industry_term_per_mille",
+     lambda d: [lv["effects"].pop(0) for lv in d[PO]["policies"][1]["levels"]] and None),
+    ("h913_two_civilian_claims", "C913", CL, "pb:claim_navy has role civilian: two civilian claims",
+     _both(_set([CL, "claims", 3, "role"], "civilian"), _del([CL, "claims", 3, "domains"]),
+           _set([CL, "claims", 4, "domains"], ["Aircraft", "Naval"]))),
+    ("h913b_no_construction_claim", "C913", CL, "no claim has role construction",
+     _del([CL, "claims", 1])),
+    ("h914_produced_pool_without_price", "C914", EC, "coal has a dispersed yield and no price",
+     _del([EC, "prices", "coal"])),
 ]
 
 # The two declared divergences (data, not prose).
@@ -315,6 +391,15 @@ ACCEPTED = [
      "only pb: content to a name",
      lambda d: d.__setitem__("mymod/trait.json", {"format": "pb-content/trait/1",
                                                   "traits": [{"id": "mymod:extra_fuel", "modifiers": []}]})),
+    ("a004_claim_with_no_producer", "pb:claim_navy and pb:claim_air are declared with no class pointing at them, and "
+     "a mod adds a claim of its own: a claim set is data, and a claim nobody builds for is legal, not a gap",
+     lambda d: d.__setitem__("mymod/claim.json", {"format": "pb-content/claim/1", "claims": [
+         {"id": "mymod:claim_space", "role": "production"}]})),
+    ("a005_modifier_writers_add", "a mod's own policy also writes industry_term_per_mille: a modifier may have many "
+     "writers, unlike a share",
+     lambda d: d.__setitem__("mymod/policy.json", {"format": "pb-content/policy/1", "start": [], "policies": [
+         {"id": "mymod:war_bonds", "default_level": "mymod:war_bonds_0", "levels": [
+             {"id": "mymod:war_bonds_0", "effects": [{"target": "industry_term_per_mille", "value": 50}]}]}]})),
 ]
 
 

@@ -1,0 +1,39 @@
+{
+  "format": "pb-content/claim/1",
+  "claims": [
+    {
+      "id": "pb:claim_civilian",
+      "name": "Civilian",
+      "role": "civilian"
+    },
+    {
+      "id": "pb:claim_construction",
+      "name": "Construction",
+      "role": "construction"
+    },
+    {
+      "id": "pb:claim_army",
+      "name": "Army",
+      "role": "production",
+      "domains": [
+        "Armour",
+        "Infantry",
+        "Artillery"
+      ]
+    },
+    {
+      "id": "pb:claim_navy",
+      "name": "Navy",
+      "role": "production",
+      "domains": []
+    },
+    {
+      "id": "pb:claim_air",
+      "name": "Air",
+      "role": "production",
+      "domains": [
+        "Aircraft"
+      ]
+    }
+  ]
+}

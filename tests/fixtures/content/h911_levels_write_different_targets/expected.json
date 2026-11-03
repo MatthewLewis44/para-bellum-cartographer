@@ -1,0 +1,8 @@
+{
+  "code": "C911",
+  "rule": "policy-levels-disagree",
+  "file": "pb/policy.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "pb:draft's second level no longer writes manpower_draft_per_mille"
+}

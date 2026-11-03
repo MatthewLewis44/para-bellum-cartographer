@@ -1,0 +1,21 @@
+{
+  "format": "pb-content/policy/1",
+  "start": [],
+  "policies": [
+    {
+      "id": "mymod:war_bonds",
+      "default_level": "mymod:war_bonds_0",
+      "levels": [
+        {
+          "id": "mymod:war_bonds_0",
+          "effects": [
+            {
+              "target": "industry_term_per_mille",
+              "value": 50
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

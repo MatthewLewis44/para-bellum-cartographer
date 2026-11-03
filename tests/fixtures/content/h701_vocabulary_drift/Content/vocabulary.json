@@ -49,5 +49,32 @@
     "town",
     "city",
     "metropolis"
+  ],
+  "policy_targets": [
+    {
+      "target": "military_share_per_mille",
+      "form": "share"
+    },
+    {
+      "target": "manpower_draft_per_mille",
+      "form": "share"
+    },
+    {
+      "target": "state_take_per_mille",
+      "form": "share"
+    },
+    {
+      "target": "industry_term_per_mille",
+      "form": "modifier"
+    },
+    {
+      "target": "commerce_term_per_mille",
+      "form": "modifier"
+    }
+  ],
+  "claim_roles": [
+    "civilian",
+    "construction",
+    "production"
   ]
 }

@@ -1,0 +1,8 @@
+{
+  "code": "C910",
+  "rule": "policy-target-repeated",
+  "file": "pb/policy.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "pb:state_take has one level, which writes state_take_per_mille twice"
+}
