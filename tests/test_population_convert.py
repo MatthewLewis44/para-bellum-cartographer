@@ -38,14 +38,15 @@ def valid():
     census = [{"province": "AAA_WHOLE", "population": "800000", "note": ""},
               {"province": "BBB_CUT", "population": "1000000", "note": ""}]
     growth = [{"nation": "AAA", "growth_per_10k_per_year": "66"}, {"nation": "BBB", "growth_per_10k_per_year": "24"}]
+    industry = [{"province": "AAA_WHOLE", "start_industry": "7"}, {"province": "BBB_CUT", "start_industry": "0"}]
     polygons = {"features": [
         {"properties": {"province_id": "AAA_WHOLE"}, "geometry": square(0.1, 40.1, 0.5, 40.5)},
         {"properties": {"province_id": "BBB_CUT"}, "geometry": square(0.5, 41.0, 1.5, 41.5)}]}
-    return artifact, census, growth, polygons
+    return artifact, census, growth, polygons, industry
 
 
 def run(s):
-    return pc.convert(s[0], s[1], s[2], s[3], 100)
+    return pc.convert(s[0], s[1], s[2], s[4], s[3], 100)
 
 
 def refuse_cases():
@@ -65,6 +66,8 @@ def refuse_cases():
         case("a growth rate with a decimal point", "X205", lambda s: s[2][0].update(growth_per_10k_per_year="6.6")),
         case("a nation with no growth row", "X206", lambda s: s[2].pop(1)),
         case("a province with no polygon", "X207", lambda s: s[3]["features"].pop(0)),
+        case("a map province with no industry row", "X209", lambda s: s[4].pop(1)),
+        case("an industry figure with a decimal point", "X205", lambda s: s[4][0].update(start_industry="7.5")),
         case("a province wholly outside the frame", "X208",
              lambda s: s[3]["features"][1].update(geometry=square(5.0, 41.0, 6.0, 41.5))),
     ]
@@ -85,14 +88,8 @@ def main() -> int:
           f"{rows['AAA_WHOLE']}")
     cut = rows["BBB_CUT"]["start_population"]
     check("a province the frame cuts in half keeps very nearly half: within 0.1% of 500,000", 499500 <= cut <= 500500, f"{cut}")
-    check("urban share counts town-or-larger only: 200,000 of 800,000 is 250, the 'none' settlement ignored",
-          rows["AAA_WHOLE"]["urban_per_mille"] == 250, f"{rows['AAA_WHOLE']}")
-    check("urban share is against the ON-MAP people: 100,000 of about 500,000 is about 200",
-          199 <= rows["BBB_CUT"]["urban_per_mille"] <= 201, f"{rows['BBB_CUT']}")
-    s = copy.deepcopy(valid())
-    s[0]["hexes"][0]["settlement"]["population"] = 5000000
-    check("urban share is held at 1000 when the modern tag exceeds the 1930 people",
-          {r["province"]: r for r in run(s)[0]["provinces"]}["AAA_WHOLE"]["urban_per_mille"] == 1000)
+    check("start_industry is the table's, unscaled by the crop", (rows["AAA_WHOLE"]["start_industry"], rows["BBB_CUT"]["start_industry"]) == (7, 0),
+          f"{rows}")
     s = copy.deepcopy(valid())
     s[0]["hexes"].append(hex_("", None))
     check("a hex with no province makes no row and no refusal", run(s)[0] == doc)

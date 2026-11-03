@@ -1,0 +1,36 @@
+{
+  "format": "pb-content/economy/1",
+  "upkeep_money_per_unit_per_month": 1,
+  "dispersed_yield_per_hex": {
+    "coal": 100,
+    "iron": 100,
+    "steel": 150,
+    "oil": 150,
+    "agriculture": 10
+  },
+  "seed_months": {
+    "money": 10,
+    "manpower": 10,
+    "resource": 6
+  },
+  "prices": {
+    "coal": 1,
+    "iron": 1,
+    "steel": 2,
+    "oil": 2,
+    "agriculture": 1
+  },
+  "commerce_money_per_thousand_people": 1,
+  "industry_money_per_ic": 1,
+  "modernisation_per_mille": 100,
+  "industry_point": {
+    "cost": {
+      "money": 1,
+      "steel": 1,
+      "gold": 1
+    },
+    "power_draw": 1,
+    "build_work_ic_days": 100,
+    "workers": 100
+  }
+}

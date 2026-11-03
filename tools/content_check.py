@@ -924,6 +924,9 @@ class ContentSet:
         for pool in economy["prices"]:
             if pool not in pools or pool in UNPRICED_POOLS:
                 self._add(rel, "C403", f"$.prices.{pool}", f'"{pool}" is not a priced resource pool: remove it from prices')
+        for pool in economy["industry_point"]["cost"]:
+            if pool not in pools:
+                self._add(rel, "C403", f"$.industry_point.cost.{pool}", f'"{pool}" is not a resource pool')
         produced = {p for p, v in economy["dispersed_yield_per_hex"].items() if v > 0}
         for *_, f in self.entries["facility"]:
             produced |= {p for p, v in f["output"].items() if v > 0}

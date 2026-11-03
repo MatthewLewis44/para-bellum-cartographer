@@ -24,8 +24,7 @@
         "iron": 100
       },
       "staffing_per_tier": 1000,
-      "manning_priority": 0,
-      "ic_per_tier": 0
+      "manning_priority": 0
     },
     {
       "kind": "PowerPlant",
@@ -39,8 +38,7 @@
       "deposits": [],
       "output": {},
       "staffing_per_tier": 1000,
-      "manning_priority": 0,
-      "ic_per_tier": 0
+      "manning_priority": 0
     },
     {
       "kind": "SteelMill",
@@ -57,38 +55,7 @@
         "steel": 150
       },
       "staffing_per_tier": 1000,
-      "manning_priority": 0,
-      "ic_per_tier": 0
-    },
-    {
-      "kind": "CivilianFactory",
-      "cost": {
-        "money": 100,
-        "manpower": 56000,
-        "steel": 40
-      },
-      "power_draw": 1,
-      "power_supply_per_tier": 0,
-      "deposits": [],
-      "output": {},
-      "staffing_per_tier": 1000,
-      "manning_priority": 0,
-      "ic_per_tier": 0
-    },
-    {
-      "kind": "MilitaryFactory",
-      "cost": {
-        "money": 200,
-        "manpower": 40000,
-        "steel": 90
-      },
-      "power_draw": 2,
-      "power_supply_per_tier": 0,
-      "deposits": [],
-      "output": {},
-      "staffing_per_tier": 1000,
-      "manning_priority": 0,
-      "ic_per_tier": 1000
+      "manning_priority": 0
     },
     {
       "kind": "Refinery",
@@ -104,8 +71,7 @@
         "oil": 120
       },
       "staffing_per_tier": 1000,
-      "manning_priority": 0,
-      "ic_per_tier": 0
+      "manning_priority": 0
     },
     {
       "kind": "RailYard",
@@ -119,8 +85,7 @@
       "deposits": [],
       "output": {},
       "staffing_per_tier": 1000,
-      "manning_priority": 0,
-      "ic_per_tier": 0
+      "manning_priority": 0
     },
     {
       "kind": "ResearchInstitute",
@@ -134,8 +99,7 @@
       "deposits": [],
       "output": {},
       "staffing_per_tier": 1000,
-      "manning_priority": 0,
-      "ic_per_tier": 0
+      "manning_priority": 0
     },
     {
       "kind": "Shipyard",
@@ -146,7 +110,6 @@
       "power_supply_per_tier": 0,
       "staffing_per_tier": 1,
       "manning_priority": 0,
-      "ic_per_tier": 0,
       "deposits": [],
       "output": {}
     }

@@ -21,6 +21,14 @@
   },
   "commerce_money_per_thousand_people": 1,
   "industry_money_per_ic": 1,
-  "dispersed_ic_milli_per_thousand_urban": 1,
-  "modernisation_per_mille": 100
+  "modernisation_per_mille": 100,
+  "industry_point": {
+    "cost": {
+      "money": 1,
+      "steel": 1
+    },
+    "power_draw": 1,
+    "build_work_ic_days": 100,
+    "workers": 100
+  }
 }

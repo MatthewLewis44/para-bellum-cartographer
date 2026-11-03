@@ -4,12 +4,10 @@
 
 Reads data/population/census_1930.tsv (one row per province: the WHOLE unit's census figure, with its
 year, source and note) and growth_1930.tsv (natural increase by nation, with its source), and the map
-artifact. The rules, each a judgement listed for review rather than a fact:
+artifact. One rule is a judgement listed for review rather than a fact:
 
   start_population = census x the share of the province's polygon inside the map frame. A province the
       map crops carries only its on-map share, which assumes its people are spread evenly across it.
-  urban_per_mille  = people in the province's on-map town-or-larger settlements / start_population, held
-      at 1000. settlement.population is a MODERN OpenStreetMap tag standing in for a 1930 figure.
 
 Refuses rather than guesses, with a code and the fix (content/population/convert_codes.json), and reports
 every problem at once. Writes nothing on a refusal.
@@ -29,9 +27,9 @@ from shapely.geometry import box, shape
 ROOT = Path(__file__).resolve().parents[1]
 CENSUS = ROOT / "data" / "population" / "census_1930.tsv"
 GROWTH = ROOT / "data" / "population" / "growth_1930.tsv"
+INDUSTRY = ROOT / "data" / "population" / "industry_1930.tsv"   # province -> starting points; absent until ruled
 POLYGONS = ROOT / "data" / "boundaries" / "provinces_1930.geojson"
 SHARE_SCALE = 100_000   # the on-map share is stored whole, so the arithmetic below stays integer
-URBAN_TYPES = ("town", "city", "metropolis", "suburb")
 GEOD = Geod(ellps="WGS84")
 
 
@@ -49,16 +47,13 @@ def read_tsv(path: Path) -> list[dict]:
 
 
 def read_map(artifact: dict) -> dict[str, dict]:
-    """Province id -> its owner and on-map urban people. A hex with no province (sea, unowned) is skipped."""
+    """Province id -> its owner. A hex with no province (sea, unowned) is skipped."""
     out: dict[str, dict] = {}
     for h in artifact["hexes"]:
         pr = h["political"].get("province_at_start")
         if not pr:
             continue
-        row = out.setdefault(pr, {"nation": h["political"].get("country_at_start"), "urban": 0})
-        s = h.get("settlement") or {}
-        if s.get("type") in URBAN_TYPES:
-            row["urban"] += s.get("population", 0) or 0
+        out.setdefault(pr, {"nation": h["political"].get("country_at_start")})
     return out
 
 
@@ -72,7 +67,7 @@ def frame_share(geom, bounds: dict) -> int:
     return min(SHARE_SCALE, round(area_km2(geom.intersection(frame)) / area_km2(geom) * SHARE_SCALE))
 
 
-def convert(artifact: dict, census: list[dict], growth: list[dict], polygons: dict,
+def convert(artifact: dict, census: list[dict], growth: list[dict], industry: list[dict], polygons: dict,
             people_per_agriculture: int) -> tuple[dict | None, list[tuple[str, str, str]]]:
     bad = Refusals()
     provinces = read_map(artifact)
@@ -112,6 +107,19 @@ def convert(artifact: dict, census: list[dict], growth: list[dict], polygons: di
     for n in sorted({p["nation"] for p in provinces.values()} - rated):
         bad.add("X206", n, "owns a province on the map and has no growth row: add its natural increase, with a source")
 
+    points: dict[str, int] = {}
+    for r in industry:
+        pid, v = r["province"], r["start_industry"].strip()
+        if pid in points:
+            bad.add("X203", pid, "has two industry rows: keep one")
+        elif not v.isdigit():
+            bad.add("X205", pid, f'"{v}" is not a whole number of points: write digits only')
+        else:
+            points[pid] = int(v)
+    known_industry = {r["province"] for r in industry}
+    for pid in sorted(set(provinces) - known_industry):
+        bad.add("X209", pid, "is on the map and has no industry row: add one, 0 if it has none")
+
     rows = []
     bounds = artifact["map_metadata"]["bounds"]
     for pid in sorted(provinces):
@@ -126,9 +134,8 @@ def convert(artifact: dict, census: list[dict], growth: list[dict], polygons: di
             bad.add("X208", pid, f"has {share} of {SHARE_SCALE} parts on the map, which leaves nobody: "
                                  f"correct the polygon, or take the province off the map")
             continue
-        urban = min(1000, provinces[pid]["urban"] * 1000 // people)
         rows.append({"province": pid, "nation": provinces[pid]["nation"], "start_population": people,
-                     "urban_per_mille": urban})
+                     "start_industry": points.get(pid, 0)})
     if bad.problems:
         return None, sorted(bad.problems)
     return {"format": "pb-content/population/1",
@@ -145,8 +152,10 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--census", type=Path, default=CENSUS)
     ap.add_argument("--growth", type=Path, default=GROWTH)
+    ap.add_argument("--industry", type=Path, default=INDUSTRY)
     a = ap.parse_args(argv[1:])
     doc, problems = convert(json.loads(a.artifact.read_text(encoding="utf-8")), read_tsv(a.census), read_tsv(a.growth),
+                            read_tsv(a.industry) if a.industry.exists() else [],
                             json.loads(POLYGONS.read_text(encoding="utf-8")), a.people_per_agriculture)
     for code, where, detail in problems:
         print(f"{code} {where}: {detail}")

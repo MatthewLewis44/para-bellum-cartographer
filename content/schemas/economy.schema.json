@@ -5,7 +5,7 @@
   "description": "The economy's standing figures. File: Content/<namespace>/economy.json, exactly ONE across every namespace: the game refuses a second copy and refuses a content set with none. A mod cannot override this file (a recorded limitation). Of AD-M24's four terms, trade balance has no figure here: it is a declared zero until a trade system exists to write it. Unit costs, training days and speeds are NOT here: they are properties of a unit and live on its template row. The contract is docs/design/CONTENT_MODEL.md in the game repository.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["format", "upkeep_money_per_unit_per_month", "dispersed_yield_per_hex", "seed_months", "prices", "commerce_money_per_thousand_people", "industry_money_per_ic", "dispersed_ic_milli_per_thousand_urban", "modernisation_per_mille"],
+  "required": ["format", "upkeep_money_per_unit_per_month", "dispersed_yield_per_hex", "seed_months", "prices", "commerce_money_per_thousand_people", "industry_money_per_ic", "modernisation_per_mille", "industry_point"],
   "properties": {
     "format": { "const": "pb-content/economy/1" },
     "upkeep_money_per_unit_per_month": {
@@ -26,13 +26,29 @@
       "description": "Monthly economic activity from one IC on the civilian claim, for the industry term.",
       "type": "integer", "minimum": 0
     },
-    "dispersed_ic_milli_per_thousand_urban": {
-      "description": "The dispersed half of the industry term (AD-M38): thousandths of an IC per thousand urban civilians.",
-      "type": "integer", "minimum": 0
-    },
     "modernisation_per_mille": {
       "description": "The standing claim off the top of every claim except construction, per mille.",
       "type": "integer", "minimum": 0, "maximum": 1000
+    },
+    "industry_point": {
+      "description": "One point of a province's industry: 1 IC by definition, built at province level with no hex, slot or tier.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cost", "power_draw", "build_work_ic_days", "workers"],
+      "properties": {
+        "cost": {
+          "description": "What building one point costs, keyed by pool.",
+          "type": "object",
+          "propertyNames": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "power_draw": { "description": "Power units one point draws.", "type": "integer", "minimum": 0 },
+        "build_work_ic_days": { "description": "The work in building one point, in IC-days.", "type": "integer", "minimum": 1 },
+        "workers": {
+          "description": "People one point needs. A point short of them is idle and adds nothing. At least 1, because 0 would make industry impossible to unman.",
+          "type": "integer", "minimum": 1
+        }
+      }
     },
     "dispersed_yield_per_hex": {
       "description": "Monthly yield of each resource-bearing hex, keyed by pool. The steel entry is unreachable since steel deposits retired into mills; it is kept rather than deleted, and deleting it is a separate decision.",

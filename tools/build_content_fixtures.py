@@ -219,7 +219,7 @@ MUTATIONS = [
     ("h405_unknown_facility_kind", "C405", FA, 'an extra facility row of kind "Shipyard", not an engine kind',
      _append([FA, "facilities"], {"kind": "Shipyard", "cost": {"money": 1}, "power_draw": 0,
                                   "power_supply_per_tier": 0, "staffing_per_tier": 1, "manning_priority": 0,
-                                  "ic_per_tier": 0, "deposits": [], "output": {}})),
+                                  "deposits": [], "output": {}})),
     ("h406_unknown_settlement_type", "C406", ST, 'an extra settlement row of type "village", not one the map produces',
      _append([ST, "settlements"], {"type": "village", "income": 0, "manpower": 0, "facility_slots": 0,
                                    "training_slots": 0, "tier": 0})),
@@ -264,8 +264,6 @@ MUTATIONS = [
     ("h101e_class_without_claim", "C101", C, "pb:tank names no claim", _del([C, "classes", 2, "claim"])),
     ("h104b_staffing_zero", "C104", FA, "the Mine's staffing_per_tier is 0: a facility that can never be unmanned",
      _set([FA, "facilities", 0, "staffing_per_tier"], 0)),
-    ("h102b_urban_over_a_thousand", "C102", PP, "provinces[0].urban_per_mille is 1001",
-     _set([PP, "provinces", 0, "urban_per_mille"], 1001)),
     ("h104c_province_without_people", "C104", PP, "provinces[0].start_population is 0: a missing census figure, not an empty province",
      _set([PP, "provinces", 0, "start_population"], 0)),
     ("h203b_province_twice", "C203", PP, "DEU_RHEINLAND has two rows",
@@ -324,6 +322,12 @@ MUTATIONS = [
      _del([CL, "claims", 1])),
     ("h914_produced_pool_without_price", "C914", EC, "coal has a dispersed yield and no price",
      _del([EC, "prices", "coal"])),
+    ("h403c_industry_cost_unknown_pool", "C403", EC, "one point of industry costs gold, not a resource pool",
+     _set([EC, "industry_point", "cost", "gold"], 1)),
+    ("h104d_industry_point_without_workers", "C104", EC, "one point of industry needs 0 workers: it could never be unmanned",
+     _set([EC, "industry_point", "workers"], 0)),
+    ("h101f_province_without_industry", "C101", PP, "provinces[0] has no start_industry",
+     _del([PP, "provinces", 0, "start_industry"])),
 ]
 
 # The two declared divergences (data, not prose).

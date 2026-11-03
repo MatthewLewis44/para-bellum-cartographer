@@ -86,7 +86,7 @@ MUTATIONS = (
      '"power_supply_per_tier", "staffing_per_tier", "manning_priority"', '"power_supply_per_tier", "manning_priority"',
      {"h101c_facility_without_staffing"}),
     ("M28 C101: manning_priority is optional", SCHEMAS / "facility.schema.json",
-     '"staffing_per_tier", "manning_priority", "ic_per_tier"', '"staffing_per_tier", "ic_per_tier"',
+     '"staffing_per_tier", "manning_priority", "deposits"', '"staffing_per_tier", "deposits"',
      {"h101d_facility_without_manning_priority"}),
     ("M29 C101: a class's claim is optional", SCHEMAS / "class.schema.json",
      '"required": ["id", "claim", "stats", "traits"]', '"required": ["id", "stats", "traits"]',
@@ -97,9 +97,14 @@ MUTATIONS = (
     ("M31 C104: a province may hold nobody", SCHEMAS / "population.schema.json",
      'not that nobody lives there.",\n            "type": "integer", "minimum": 1',
      'not that nobody lives there.",\n            "type": "integer", "minimum": 0', {"h104c_province_without_people"}),
-    ("M32 C102: urban share has no ceiling", SCHEMAS / "population.schema.json",
-     '"type": "integer", "minimum": 0, "maximum": 1000', '"type": "integer", "minimum": 0',
-     {"h102b_urban_over_a_thousand"}),
+    ("M33 C403: an industry point may cost an unknown pool", CC,
+     'if pool not in pools:\n                self._add(rel, "C403", f"$.industry_point.cost.{pool}"',
+     'if False:\n                self._add(rel, "C403", f"$.industry_point.cost.{pool}"', {"h403c_industry_cost_unknown_pool"}),
+    ("M34 C104: a point of industry may need nobody", SCHEMAS / "economy.schema.json",
+     'impossible to unman.",\n          "type": "integer", "minimum": 1', 'impossible to unman.",\n          "type": "integer", "minimum": 0',
+     {"h104d_industry_point_without_workers"}),
+    ("M35 C101: start_industry is optional", SCHEMAS / "population.schema.json",
+     '"start_population", "start_industry"]', '"start_population"]', {"h101f_province_without_industry"}),
 )
 
 

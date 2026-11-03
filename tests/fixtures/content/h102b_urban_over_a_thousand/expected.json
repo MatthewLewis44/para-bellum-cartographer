@@ -1,8 +1,0 @@
-{
-  "code": "C102",
-  "rule": "wrong-type",
-  "file": "pb/population.json",
-  "python": "refuse",
-  "csharp": "refuse",
-  "seeded": "provinces[0].urban_per_mille is 1001"
-}

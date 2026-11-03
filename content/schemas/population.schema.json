@@ -30,7 +30,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["province", "nation", "start_population", "urban_per_mille"],
+        "required": ["province", "nation", "start_population", "start_industry"],
         "properties": {
           "province": {
             "description": "The province id, as the map spells it (political.province_at_start).",
@@ -42,9 +42,9 @@
             "description": "People at the start, whole persons. At least 1: zero would mean a census figure is missing, not that nobody lives there.",
             "type": "integer", "minimum": 1
           },
-          "urban_per_mille": {
-            "description": "The share of those people living in towns and cities, per mille. Feeds the dispersed half of the industry term (AD-M38).",
-            "type": "integer", "minimum": 0, "maximum": 1000
+          "start_industry": {
+            "description": "Points of industry at the start. Each is 1 IC when manned.",
+            "type": "integer", "minimum": 0
           }
         }
       }

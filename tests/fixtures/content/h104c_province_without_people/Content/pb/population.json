@@ -15,13 +15,13 @@
       "province": "DEU_RHEINLAND",
       "nation": "DEU",
       "start_population": 0,
-      "urban_per_mille": 700
+      "start_industry": 10
     },
     {
       "province": "FRA_MOSELLE",
       "nation": "FRA",
       "start_population": 600000,
-      "urban_per_mille": 400
+      "start_industry": 10
     }
   ],
   "ceiling": {
