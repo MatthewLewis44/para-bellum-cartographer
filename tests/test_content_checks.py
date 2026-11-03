@@ -65,6 +65,8 @@ SNAPSHOT = FIXTURES / "h000_valid.resolved.txt"
 PENDING: dict[str, str] = {
     "C803": "it concerns a SAVE (a v9 production line on a design the nation does not hold), not a content "
             "file, so no content fixture can express it; the C# start-state test proves it",
+    "C808": "a report at the game's load, while population.json is optional there. This checker refuses such a set "
+            "with C908, so no content fixture can express it; the C# start-state test proves it",
 }
 
 
