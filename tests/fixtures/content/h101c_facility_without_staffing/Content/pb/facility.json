@@ -22,8 +22,7 @@
       ],
       "output": {
         "iron": 100
-      },
-      "manning_priority": 0
+      }
     },
     {
       "kind": "PowerPlant",
@@ -36,8 +35,7 @@
       "power_supply_per_tier": 1,
       "deposits": [],
       "output": {},
-      "staffing_per_tier": 1000,
-      "manning_priority": 0
+      "staffing_per_tier": 1000
     },
     {
       "kind": "SteelMill",
@@ -53,8 +51,7 @@
       "output": {
         "steel": 150
       },
-      "staffing_per_tier": 1000,
-      "manning_priority": 0
+      "staffing_per_tier": 1000
     },
     {
       "kind": "Refinery",
@@ -69,8 +66,7 @@
       "output": {
         "oil": 120
       },
-      "staffing_per_tier": 1000,
-      "manning_priority": 0
+      "staffing_per_tier": 1000
     },
     {
       "kind": "RailYard",
@@ -83,8 +79,7 @@
       "power_supply_per_tier": 0,
       "deposits": [],
       "output": {},
-      "staffing_per_tier": 1000,
-      "manning_priority": 0
+      "staffing_per_tier": 1000
     },
     {
       "kind": "ResearchInstitute",
@@ -97,8 +92,7 @@
       "power_supply_per_tier": 0,
       "deposits": [],
       "output": {},
-      "staffing_per_tier": 1000,
-      "manning_priority": 0
+      "staffing_per_tier": 1000
     }
   ]
 }

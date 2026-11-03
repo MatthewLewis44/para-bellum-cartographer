@@ -83,11 +83,8 @@ MUTATIONS = (
      'if lv["id"] in own:', "if False:", {"h203c_level_id_twice"}),
     # The constraints in the schemas.
     ("M27 C101: staffing_per_tier is optional", SCHEMAS / "facility.schema.json",
-     '"power_supply_per_tier", "staffing_per_tier", "manning_priority"', '"power_supply_per_tier", "manning_priority"',
+     '"power_supply_per_tier", "staffing_per_tier", "deposits"', '"power_supply_per_tier", "deposits"',
      {"h101c_facility_without_staffing"}),
-    ("M28 C101: manning_priority is optional", SCHEMAS / "facility.schema.json",
-     '"staffing_per_tier", "manning_priority", "deposits"', '"staffing_per_tier", "deposits"',
-     {"h101d_facility_without_manning_priority"}),
     ("M29 C101: a class's claim is optional", SCHEMAS / "class.schema.json",
      '"required": ["id", "claim", "stats", "traits"]', '"required": ["id", "stats", "traits"]',
      {"h101e_class_without_claim"}),

@@ -1,8 +1,0 @@
-{
-  "code": "C101",
-  "rule": "missing-key",
-  "file": "pb/facility.json",
-  "python": "refuse",
-  "csharp": "refuse",
-  "seeded": "the Mine has no manning_priority"
-}

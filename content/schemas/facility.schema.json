@@ -55,7 +55,7 @@
     "facility": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "cost", "power_draw", "power_supply_per_tier", "staffing_per_tier", "manning_priority", "deposits", "output"],
+      "required": ["kind", "cost", "power_draw", "power_supply_per_tier", "staffing_per_tier", "deposits", "output"],
       "properties": {
         "kind": {
           "description": "An engine facility kind, spelled exactly as the code names it (Mine, PowerPlant, SteelMill, ...). Listed in Content/vocabulary.json as facility_kinds.",
@@ -65,10 +65,6 @@
         "staffing_per_tier": {
           "description": "People needed to run this facility at full output, per tier: a tier t facility needs t x this. Manning is a constraint, not a multiplier: a facility short of its staffing runs at nothing. At least 1, because 0 would be a facility that can never be unmanned.",
           "type": "integer", "minimum": 1
-        },
-        "manning_priority": {
-          "description": "Who is manned first among sited facilities when the workforce falls short. Lower is first; ties go to the older facility (ascending facility id). Every row holding the same value is simply oldest-first. Sited facilities all man before province industry.",
-          "type": "integer", "minimum": 0
         },
         "cost": {
           "description": "The tier-1 build cost, keyed by pool. Higher tiers multiply it by tier.cost_multiplier_per_mille per tier.",

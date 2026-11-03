@@ -218,7 +218,7 @@ MUTATIONS = [
      _del([M, "models", 0, "name"])),
     ("h405_unknown_facility_kind", "C405", FA, 'an extra facility row of kind "Shipyard", not an engine kind',
      _append([FA, "facilities"], {"kind": "Shipyard", "cost": {"money": 1}, "power_draw": 0,
-                                  "power_supply_per_tier": 0, "staffing_per_tier": 1, "manning_priority": 0,
+                                  "power_supply_per_tier": 0, "staffing_per_tier": 1,
                                   "deposits": [], "output": {}})),
     ("h406_unknown_settlement_type", "C406", ST, 'an extra settlement row of type "village", not one the map produces',
      _append([ST, "settlements"], {"type": "village", "income": 0, "manpower": 0, "facility_slots": 0,
@@ -255,12 +255,10 @@ MUTATIONS = [
      _both(_append([C, "classes"], {"id": "pb:helicopter", "claim": "pb:claim_air", "name": "Helicopter",
                                     "stats": {"ceiling_m": 0}, "traits": []}),
            _append([T, "templates", 0, "equipment"], {"class": "pb:helicopter", "count": 1}))),
-    # Sprint 14: the state. Staffing, manning order and IC are required rows: a silent default is what kept
+    # Sprint 14: the state. Staffing and a class's claim are required: a silent default is what kept
     # Facility.Staffing at 0 for three sprints.
     ("h101c_facility_without_staffing", "C101", FA, "the Mine has no staffing_per_tier",
      _del([FA, "facilities", 0, "staffing_per_tier"])),
-    ("h101d_facility_without_manning_priority", "C101", FA, "the Mine has no manning_priority",
-     _del([FA, "facilities", 0, "manning_priority"])),
     ("h101e_class_without_claim", "C101", C, "pb:tank names no claim", _del([C, "classes", 2, "claim"])),
     ("h104b_staffing_zero", "C104", FA, "the Mine's staffing_per_tier is 0: a facility that can never be unmanned",
      _set([FA, "facilities", 0, "staffing_per_tier"], 0)),
