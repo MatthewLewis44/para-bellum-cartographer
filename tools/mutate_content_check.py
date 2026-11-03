@@ -62,7 +62,7 @@ MUTATIONS = (
     ("M17 C913: no construction claim accepted", CC,
      "if len(ids) != 1:", "if len(ids) > 1:", {"h913b_no_construction_claim"}),
     ("M18 C914: a produced pool needs no price", CC,
-     'for pool in sorted((produced & pools) - set(economy["prices"])):', "for pool in []:",
+     'for pool in sorted((produced & pools) - set(economy["prices_per_thousand"])):', "for pool in []:",
      {"h914_produced_pool_without_price"}),
     ("M19 C403: money may be priced", CC,
      "if pool not in pools or pool in UNPRICED_POOLS:", "if pool not in pools:", {"h403b_money_priced"}),

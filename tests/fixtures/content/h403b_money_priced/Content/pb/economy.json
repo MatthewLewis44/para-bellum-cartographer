@@ -13,15 +13,6 @@
     "manpower": 10,
     "resource": 6
   },
-  "prices": {
-    "coal": 1,
-    "iron": 1,
-    "steel": 2,
-    "oil": 2,
-    "agriculture": 1,
-    "money": 1
-  },
-  "commerce_money_per_thousand_people": 1,
   "industry_money_per_ic": 1,
   "modernisation_per_mille": 100,
   "industry_point": {
@@ -32,5 +23,14 @@
     "power_draw": 1,
     "build_work_ic_days": 100,
     "workers": 100
-  }
+  },
+  "prices_per_thousand": {
+    "coal": 1,
+    "iron": 1,
+    "steel": 2,
+    "oil": 2,
+    "agriculture": 1,
+    "money": 1
+  },
+  "commerce_money_per_million_people": 1
 }

@@ -5,25 +5,25 @@
   "description": "The economy's standing figures. File: Content/<namespace>/economy.json, exactly ONE across every namespace: the game refuses a second copy and refuses a content set with none. A mod cannot override this file (a recorded limitation). Of AD-M24's four terms, trade balance has no figure here: it is a declared zero until a trade system exists to write it. Unit costs, training days and speeds are NOT here: they are properties of a unit and live on its template row. The contract is docs/design/CONTENT_MODEL.md in the game repository.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["format", "upkeep_money_per_unit_per_month", "dispersed_yield_per_hex", "seed_months", "prices", "commerce_money_per_thousand_people", "industry_money_per_ic", "modernisation_per_mille", "industry_point"],
+  "required": ["format", "upkeep_money_per_unit_per_month", "dispersed_yield_per_hex", "seed_months", "prices_per_thousand", "commerce_money_per_million_people", "industry_money_per_ic", "modernisation_per_mille", "industry_point"],
   "properties": {
     "format": { "const": "pb-content/economy/1" },
     "upkeep_money_per_unit_per_month": {
       "description": "Money each unit costs per month to keep.",
       "type": "integer", "minimum": 0
     },
-    "prices": {
-      "description": "Money per unit of each resource pool, for the extraction term. Keyed by pool; money and manpower are not priced. Every pool something produces has a price.",
+    "prices_per_thousand": {
+      "description": "Money per THOUSAND units of each resource pool, for the extraction term, computed on the nation's monthly units with one truncation. Keyed by pool; money and manpower are not priced. Every pool something produces has a price.",
       "type": "object",
       "propertyNames": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
       "additionalProperties": { "type": "integer", "minimum": 0 }
     },
-    "commerce_money_per_thousand_people": {
-      "description": "Monthly economic activity per thousand civilians, for the commerce term.",
+    "commerce_money_per_million_people": {
+      "description": "Monthly economic activity per MILLION civilians, for the commerce term, computed on the nation's civilians with one truncation.",
       "type": "integer", "minimum": 0
     },
     "industry_money_per_ic": {
-      "description": "Monthly economic activity from one IC on the civilian claim, for the industry term.",
+      "description": "Monthly economic activity from one whole IC on the civilian claim, for the industry term, computed on thousandths of an IC with one truncation.",
       "type": "integer", "minimum": 0
     },
     "modernisation_per_mille": {

@@ -919,20 +919,20 @@ class ContentSet:
             self._prices(economy, pools)
 
     def _prices(self, economy, pools):
-        """economy.json prices: real resource pools only (C403), and every pool something produces (C914)."""
+        """economy.json prices_per_thousand: real resource pools only (C403), and every pool something produces (C914)."""
         rel = self.singletons["economy"][0][0]
-        for pool in economy["prices"]:
+        for pool in economy["prices_per_thousand"]:
             if pool not in pools or pool in UNPRICED_POOLS:
-                self._add(rel, "C403", f"$.prices.{pool}", f'"{pool}" is not a priced resource pool: remove it from prices')
+                self._add(rel, "C403", f"$.prices_per_thousand.{pool}", f'"{pool}" is not a priced resource pool: remove it from prices_per_thousand')
         for pool in economy["industry_point"]["cost"]:
             if pool not in pools:
                 self._add(rel, "C403", f"$.industry_point.cost.{pool}", f'"{pool}" is not a resource pool')
         produced = {p for p, v in economy["dispersed_yield_per_hex"].items() if v > 0}
         for *_, f in self.entries["facility"]:
             produced |= {p for p, v in f["output"].items() if v > 0}
-        for pool in sorted((produced & pools) - set(economy["prices"])):
-            self._add(rel, "C914", f"$.prices.{pool}",
-                      f'"{pool}" is produced but has no price: add it to prices, or extraction values it at nothing')
+        for pool in sorted((produced & pools) - set(economy["prices_per_thousand"])):
+            self._add(rel, "C914", f"$.prices_per_thousand.{pool}",
+                      f'"{pool}" is produced but has no price: add it to prices_per_thousand, or extraction values it at nothing')
 
     def _claims(self):
         """claim.json and class.json's claim: engine roles (C408), one civilian and one construction (C913),

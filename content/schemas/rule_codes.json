@@ -125,6 +125,6 @@
     { "code": "C913", "rule": "claim-role-count", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
       "summary": "The claim set does not have exactly one claim of role civilian and exactly one of role construction." },
     { "code": "C914", "rule": "pool-without-price", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
-      "summary": "A pool with a dispersed yield or a facility output has no entry in economy.json prices, so the extraction term would silently value it at nothing." }
+      "summary": "A pool with a dispersed yield or a facility output has no entry in economy.json prices_per_thousand, so the extraction term would silently value it at nothing." }
   ]
 }
