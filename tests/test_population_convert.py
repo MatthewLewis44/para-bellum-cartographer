@@ -38,15 +38,14 @@ def valid():
     census = [{"province": "AAA_WHOLE", "population": "800000", "note": ""},
               {"province": "BBB_CUT", "population": "1000000", "note": ""}]
     growth = [{"nation": "AAA", "growth_per_10k_per_year": "66"}, {"nation": "BBB", "growth_per_10k_per_year": "24"}]
-    industry = [{"province": "AAA_WHOLE", "start_industry": "7"}, {"province": "BBB_CUT", "start_industry": "0"}]
     polygons = {"features": [
         {"properties": {"province_id": "AAA_WHOLE"}, "geometry": square(0.1, 40.1, 0.5, 40.5)},
         {"properties": {"province_id": "BBB_CUT"}, "geometry": square(0.5, 41.0, 1.5, 41.5)}]}
-    return artifact, census, growth, polygons, industry
+    return artifact, census, growth, polygons
 
 
 def run(s):
-    return pc.convert(s[0], s[1], s[2], s[4], s[3], 100)
+    return pc.convert(s[0], s[1], s[2], s[3], 100, 10)
 
 
 def refuse_cases():
@@ -66,8 +65,6 @@ def refuse_cases():
         case("a growth rate with a decimal point", "X205", lambda s: s[2][0].update(growth_per_10k_per_year="6.6")),
         case("a nation with no growth row", "X206", lambda s: s[2].pop(1)),
         case("a province with no polygon", "X207", lambda s: s[3]["features"].pop(0)),
-        case("a map province with no industry row", "X209", lambda s: s[4].pop(1)),
-        case("an industry figure with a decimal point", "X205", lambda s: s[4][0].update(start_industry="7.5")),
         case("a province wholly outside the frame", "X208",
              lambda s: s[3]["features"][1].update(geometry=square(5.0, 41.0, 6.0, 41.5))),
     ]
@@ -88,8 +85,22 @@ def main() -> int:
           f"{rows['AAA_WHOLE']}")
     cut = rows["BBB_CUT"]["start_population"]
     check("a province the frame cuts in half keeps very nearly half: within 0.1% of 500,000", 499500 <= cut <= 500500, f"{cut}")
-    check("start_industry is the table's, unscaled by the crop", (rows["AAA_WHOLE"]["start_industry"], rows["BBB_CUT"]["start_industry"]) == (7, 0),
-          f"{rows}")
+    check("a nation with one province holds all of its starting points there",
+          (rows["AAA_WHOLE"]["start_industry"], rows["BBB_CUT"]["start_industry"]) == (10, 10), f"{rows}")
+    # Worked by hand. 6:3:1 is exact. 5:3:3 of 10 has quotas 4.55, 2.73, 2.73: floors 4, 2, 2, and the two larger
+    # remainders take the spare two. 1:1:1 has floors 3, 3, 3 and the one spare goes to the lowest id.
+    check("exact shares stay exact", pc.share_points({"a": 6000, "b": 3000, "c": 1000}, 10) == {"a": 6, "b": 3, "c": 1})
+    check("largest remainders take the spare points, and the total is exact",
+          pc.share_points({"a": 5, "b": 3, "c": 3}, 10) == {"a": 4, "b": 3, "c": 3})
+    check("a tie goes to the lower id, whatever order the provinces arrive in",
+          pc.share_points({"c": 1, "a": 1, "b": 1}, 10) == {"a": 4, "b": 3, "c": 3})
+    s = copy.deepcopy(valid())
+    for h in s[0]["hexes"]:
+        h["political"]["country_at_start"] = "AAA"
+    s[2].pop(1)
+    both = {r["province"]: r["start_industry"] for r in run(s)[0]["provinces"]}
+    # On the map: 800,000 and about 500,000, quotas 6.15 and 3.85, so 6 and 4. By whole census it would be 4 and 6.
+    check("the share follows the people ON THE MAP, not the whole census", both == {"AAA_WHOLE": 6, "BBB_CUT": 4}, f"{both}")
     s = copy.deepcopy(valid())
     s[0]["hexes"].append(hex_("", None))
     check("a hex with no province makes no row and no refusal", run(s)[0] == doc)

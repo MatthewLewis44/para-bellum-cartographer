@@ -9,7 +9,6 @@
     { "code": "X205", "rule": "source-figure-not-whole" },
     { "code": "X206", "rule": "nation-without-growth" },
     { "code": "X207", "rule": "province-without-polygon" },
-    { "code": "X208", "rule": "province-empty-after-crop" },
-    { "code": "X209", "rule": "map-province-without-industry-row" }
+    { "code": "X208", "rule": "province-empty-after-crop" }
   ]
 }
