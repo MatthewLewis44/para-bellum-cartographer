@@ -1,0 +1,14 @@
+{
+  "format": "pb-population-convert-codes/1",
+  "_comment": "What tools/population_convert.py refuses. Each has a case in tests/test_population_convert.py that turns only it.",
+  "codes": [
+    { "code": "X201", "rule": "map-province-without-census-row" },
+    { "code": "X202", "rule": "census-row-not-on-map" },
+    { "code": "X203", "rule": "source-row-twice" },
+    { "code": "X204", "rule": "census-figure-empty" },
+    { "code": "X205", "rule": "source-figure-not-whole" },
+    { "code": "X206", "rule": "nation-without-growth" },
+    { "code": "X207", "rule": "province-without-polygon" },
+    { "code": "X208", "rule": "province-empty-after-crop" }
+  ]
+}

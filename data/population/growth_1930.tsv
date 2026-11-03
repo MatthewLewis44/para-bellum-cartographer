@@ -1,0 +1,14 @@
+nation	growth_per_10k_per_year	births_per_1000	deaths_per_1000	year	source_url	note
+AUT	33	16.8	13.5	1930	https://en.wikipedia.org/wiki/Demographics_of_Austria
+BEL	58	18.6	12.8	1930	https://en.wikipedia.org/wiki/Demographics_of_Belgium
+CHE	46	17.1	12.5	1929	https://www.rstjournal.com/article/ccbca40c-7aaa-45ee-a83a-000ef09cdc9a/download/pdf	1929, not 1930: citing Buletinul demografic al Romaniei, Jan 1932
+CSK	69	22.4	15.5	1929	https://www.rstjournal.com/article/ccbca40c-7aaa-45ee-a83a-000ef09cdc9a/download/pdf	1929, not 1930: no 1930 row found
+DEU	66	17.6	11.0	1930	https://en.wikipedia.org/wiki/Demographics_of_Germany
+DNK	74	18.6	11.2	1929	https://www.rstjournal.com/article/ccbca40c-7aaa-45ee-a83a-000ef09cdc9a/download/pdf	1929, not 1930
+FRA	24	18.2	15.8	1930	https://en.wikipedia.org/wiki/Demographics_of_France	1929 was -3 per 10k: a single year's rate, and France's sat near zero
+HUN	73	25.0	17.7	1929	https://www.rstjournal.com/article/ccbca40c-7aaa-45ee-a83a-000ef09cdc9a/download/pdf	1929, not 1930
+ITA	90	25.1	16.1	1929	https://www.rstjournal.com/article/ccbca40c-7aaa-45ee-a83a-000ef09cdc9a/download/pdf	1929, not 1930
+LTU	115	27.3	15.8	1930	https://en.wikipedia.org/wiki/Demographics_of_Lithuania
+NLD	140	23.1	9.1	1930	https://en.wikipedia.org/wiki/Demographics_of_the_Netherlands
+POL	170	32.5	15.5	1930	https://en.wikipedia.org/wiki/Demographics_of_Poland
+ROU	127	34.1	21.4	1929	https://www.rstjournal.com/article/ccbca40c-7aaa-45ee-a83a-000ef09cdc9a/download/pdf	1929, not 1930
