@@ -3,7 +3,6 @@
   "tier": {
     "step_per_mille": 0,
     "cost_multiplier_per_mille": 1750,
-    "build_days": 180,
     "build_work_ic_days": 100
   },
   "repair_per_mille": 400,

@@ -13,14 +13,13 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["type", "income", "manpower", "facility_slots", "training_slots", "tier"],
+        "required": ["type", "manpower", "facility_slots", "training_slots", "tier"],
         "properties": {
           "type": {
             "description": "A settlement type the map produces: none, suburb, town, city or metropolis.",
             "type": "string",
             "pattern": "^[a-z][a-z0-9_]*$"
           },
-          "income": { "description": "Money per month from a seat of this type.", "type": "integer", "minimum": 0 },
           "manpower": { "description": "Manpower per month from a seat of this type.", "type": "integer", "minimum": 0 },
           "facility_slots": { "description": "Facility slots a province seat of this type provides.", "type": "integer", "minimum": 0 },
           "training_slots": { "description": "Concurrent training orders a seat of this type supports.", "type": "integer", "minimum": 0 },

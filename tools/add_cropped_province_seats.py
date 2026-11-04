@@ -44,7 +44,7 @@ PROV_META = ROOT / "data" / "boundaries" / "provinces_1930_metadata.json"
 DEFAULT_ARTIFACT = ROOT / "output" / "para_bellum_east_expansion_hex_terrain.json"
 
 # Settlement size tier — mirrors ProvinceIndex.SettlementTier, which is what
-# the sim uses for the capture-seat fallback and for income.
+# the sim uses for the capture-seat fallback and for manpower.
 TIER = {"metropolis": 4, "city": 3, "town": 2, "suburb": 1}
 
 

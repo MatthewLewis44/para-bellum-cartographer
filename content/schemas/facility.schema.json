@@ -12,7 +12,7 @@
       "description": "The rules that vary with a facility's tier.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["step_per_mille", "cost_multiplier_per_mille", "build_days", "build_work_ic_days"],
+      "required": ["step_per_mille", "cost_multiplier_per_mille", "build_work_ic_days"],
       "properties": {
         "step_per_mille": {
           "description": "The Facility-layer step per tier above 1, per mille: a tier t facility runs at (1000 + (t - 1) x step) / 1000 of its base.",
@@ -20,10 +20,6 @@
         },
         "cost_multiplier_per_mille": {
           "description": "How much more each tier costs than the one below, per mille (1750 = x1.75 per tier).",
-          "type": "integer", "minimum": 0
-        },
-        "build_days": {
-          "description": "Construction time per tier, in whole days.",
           "type": "integer", "minimum": 0
         },
         "build_work_ic_days": {

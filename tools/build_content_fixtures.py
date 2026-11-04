@@ -221,7 +221,7 @@ MUTATIONS = [
                                   "power_supply_per_tier": 0, "staffing_per_tier": 1,
                                   "deposits": [], "output": {}})),
     ("h406_unknown_settlement_type", "C406", ST, 'an extra settlement row of type "village", not one the map produces',
-     _append([ST, "settlements"], {"type": "village", "income": 0, "manpower": 0, "facility_slots": 0,
+     _append([ST, "settlements"], {"type": "village", "manpower": 0, "facility_slots": 0,
                                    "training_slots": 0, "tier": 0})),
     ("h801_linear_power", "C801", FA, "tier.step_per_mille is 0: a linear power stack. A PROJECT INVARIANT: the "
      "authored 1930 base then browns out eight nations, so our gate refuses. The C# content READER accepts it "

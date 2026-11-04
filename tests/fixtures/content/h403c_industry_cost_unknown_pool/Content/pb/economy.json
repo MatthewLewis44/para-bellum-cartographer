@@ -14,7 +14,6 @@
     "resource": 6
   },
   "industry_money_per_ic": 1,
-  "modernisation_per_mille": 100,
   "industry_point": {
     "cost": {
       "money": 1,
