@@ -36,6 +36,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CENSUS = ROOT / "data" / "population" / "census_1930.tsv"
 GROWTH = ROOT / "data" / "population" / "growth_1930.tsv"
 POLYGONS = ROOT / "data" / "boundaries" / "provinces_1930.geojson"
+RATE_YEAR = "1930"      # the column's year: a rate from any other year has to say so
 SHARE_SCALE = 100_000   # the on-map share is stored whole, so the arithmetic below stays integer
 GEOD = Geod(ellps="WGS84")
 
@@ -104,6 +105,9 @@ def growth_gap(r: dict, rate: int) -> str:
     if basis == "measured":
         if not (r["source_url"].strip() and r["year"].strip()):
             return "is measured with no source or year: add both, or declare a zero with its reason"
+        year = r["year"].strip()
+        if year != RATE_YEAR and year not in r["note"]:
+            return f"is from {year}, not {RATE_YEAR}, and its note does not say so: name the year in the note"
     elif basis == "declared_zero":
         if rate != 0:
             return f"declares a zero and its rate is {rate}: write 0, or mark it measured with a source"

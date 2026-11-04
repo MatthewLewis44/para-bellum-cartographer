@@ -75,6 +75,7 @@ def refuse_cases():
         case("a derived figure with no method in its note", "X209", lambda s: s[1][0].update(basis="derived")),
         case("a growth rate with no basis", "X210", lambda s: s[2][0].update(basis="")),
         case("a measured growth rate with no source", "X210", lambda s: s[2][0].update(source_url="")),
+        case("a rate from another year whose note does not say so", "X210", lambda s: s[2][0].update(year="1929")),
         case("a declared zero whose rate is not zero", "X210", lambda s: s[2][0].update(basis="declared_zero", note="why")),
         case("a declared zero with no reason", "X210", lambda s: s[2][0].update(basis="declared_zero", growth_per_10k_per_year="0")),
     ]
@@ -161,6 +162,8 @@ def main() -> int:
           int(by_id["SOV_PODOLIA"]["population"]) == int(1_773_809 * pc.area_km2(geoms["SOV_PODOLIA"]) / 20_645),
           by_id["SOV_PODOLIA"]["population"])
     rows = pc.read_tsv(pc.GROWTH)
+    check("every committed growth rate is from 1930, except the Ukrainian SSR's 1929 row, which says so",
+          {r["nation"]: r["year"] for r in rows if r["year"] != "1930"} == {"SOV": "1929"})
     check("every committed growth rate is its births less its deaths, per 10,000",
           all(int(r["growth_per_10k_per_year"]) == round((float(r["births_per_1000"]) - float(r["deaths_per_1000"])) * 10)
               for r in rows if r["basis"] == "measured"),

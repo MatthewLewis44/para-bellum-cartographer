@@ -72,6 +72,8 @@ MUTATIONS = (
      {"a growth rate with no basis: refused with exactly X210"}),
     ("M23 X210: a measured rate may lack a source", 'if not (r["source_url"].strip() and r["year"].strip()):', "if False:",
      {"a measured growth rate with no source: refused with exactly X210"}),
+    ("M27 X210: a rate from another year need not say so", 'if year != RATE_YEAR and year not in r["note"]:', "if False:",
+     {"a rate from another year whose note does not say so: refused with exactly X210"}),
     ("M24 X210: a declared zero may hold a number", "if rate != 0:", "if False:",
      {"a declared zero whose rate is not zero: refused with exactly X210"}),
     ("M25 X210: a declared zero may omit its reason", '''if not r["note"].strip():
