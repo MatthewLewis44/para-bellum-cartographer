@@ -18,6 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import population_convert as pc  # noqa: E402
+from shapely.geometry import shape  # noqa: E402
 
 REGISTER = json.loads((ROOT / "content" / "population" / "convert_codes.json").read_text(encoding="utf-8"))["codes"]
 
@@ -35,9 +36,10 @@ def valid():
                 "hexes": [hex_("AAA_WHOLE", "AAA", {"type": "city", "population": 200000}),
                           hex_("AAA_WHOLE", "AAA", {"type": "none", "population": 999999}),
                           hex_("BBB_CUT", "BBB", {"type": "town", "population": 100000})]}
-    census = [{"province": "AAA_WHOLE", "population": "800000", "note": ""},
-              {"province": "BBB_CUT", "population": "1000000", "note": ""}]
-    growth = [{"nation": "AAA", "growth_per_10k_per_year": "66"}, {"nation": "BBB", "growth_per_10k_per_year": "24"}]
+    census = [{"province": "AAA_WHOLE", "population": "800000", "census_year": "1930", "source_url": "http://x", "note": "", "basis": "census"},
+              {"province": "BBB_CUT", "population": "1000000", "census_year": "1930", "source_url": "http://x", "note": "", "basis": "census"}]
+    growth = [{"nation": "AAA", "growth_per_10k_per_year": "66", "year": "1930", "source_url": "http://x", "note": "", "basis": "measured"},
+              {"nation": "BBB", "growth_per_10k_per_year": "24", "year": "1930", "source_url": "http://x", "note": "", "basis": "measured"}]
     polygons = {"features": [
         {"properties": {"province_id": "AAA_WHOLE"}, "geometry": square(0.1, 40.1, 0.5, 40.5)},
         {"properties": {"province_id": "BBB_CUT"}, "geometry": square(0.5, 41.0, 1.5, 41.5)}]}
@@ -57,7 +59,8 @@ def refuse_cases():
     return [
         case("a map province with no census row", "X201", lambda s: s[1].pop(1)),
         case("a census row for a province not on the map", "X202",
-             lambda s: s[1].append({"province": "CCC_GONE", "population": "1", "note": ""})),
+             lambda s: s[1].append({"province": "CCC_GONE", "population": "1", "note": "", "basis": "census",
+                                    "source_url": "http://x", "census_year": "1930"})),
         case("a province with two census rows", "X203", lambda s: s[1].append(dict(s[1][0]))),
         case("a nation with two growth rows", "X203", lambda s: s[2].append(dict(s[2][0]))),
         case("an empty census figure", "X204", lambda s: s[1][0].update(population="", note="not found")),
@@ -67,6 +70,13 @@ def refuse_cases():
         case("a province with no polygon", "X207", lambda s: s[3]["features"].pop(0)),
         case("a province wholly outside the frame", "X208",
              lambda s: s[3]["features"][1].update(geometry=square(5.0, 41.0, 6.0, 41.5))),
+        case("a census figure with no basis", "X209", lambda s: s[1][0].update(basis="")),
+        case("a census figure with no source", "X209", lambda s: s[1][0].update(source_url="")),
+        case("a derived figure with no method in its note", "X209", lambda s: s[1][0].update(basis="derived")),
+        case("a growth rate with no basis", "X210", lambda s: s[2][0].update(basis="")),
+        case("a measured growth rate with no source", "X210", lambda s: s[2][0].update(source_url="")),
+        case("a declared zero whose rate is not zero", "X210", lambda s: s[2][0].update(basis="declared_zero", note="why")),
+        case("a declared zero with no reason", "X210", lambda s: s[2][0].update(basis="declared_zero", growth_per_10k_per_year="0")),
     ]
 
 
@@ -108,6 +118,12 @@ def main() -> int:
           doc["nations"] == [{"nation": "AAA", "growth_per_10k_per_year": 66}, {"nation": "BBB", "growth_per_10k_per_year": 24}],
           f"{doc['nations']}")
     check("the output passes the content schema", not list(pc_schema().iter_errors(doc)))
+    s = copy.deepcopy(valid())
+    s[2][0].update(basis="declared_zero", growth_per_10k_per_year="0", source_url="", year="", note="no figure found")
+    s[1][0].update(basis="derived", note="split by area")
+    d, got = run(s)
+    check("a declared zero with its reason, and a derived figure with its method, both convert",
+          d is not None and not got and d["nations"][0]["growth_per_10k_per_year"] == 0, f"{got}")
 
     cases = refuse_cases()
     for name, code, s in cases:
@@ -132,6 +148,23 @@ def main() -> int:
     # A THIRD SOURCE, not this table: Statistisches Jahrbuch 1934, Berufszaehlungen, 65,218 thousand.
     check("Germany's 29 province rows sum to the national census total within rounding (65,218 thousand)",
           abs(total - 65_218_000) < 1000, f"{total}")
+
+    # The derivations, recomputed from the committed polygons rather than read back from the table.
+    by_id = {r["province"]: r for r in census}
+    geoms = {f["properties"]["province_id"]: shape(f["geometry"])
+             for f in json.loads(pc.POLYGONS.read_text(encoding="utf-8"))["features"]}
+    four = ["LTU_AUKSTAITIJA", "LTU_DZUKIJA", "LTU_SUVALKIJA", "LTU_ZEMAITIJA"]
+    want = pc.share_points({p: round(pc.area_km2(geoms[p]) * 1000) for p in four}, 2_028_971)
+    check("the four Lithuanian rows are the 1923 total of 2,028,971, split by polygon area, summing exactly",
+          all(int(by_id[p]["population"]) == want[p] for p in four) and sum(want.values()) == 2_028_971, f"{want}")
+    check("SOV_PODOLIA is the three okruhas' density x its polygon's area",
+          int(by_id["SOV_PODOLIA"]["population"]) == int(1_773_809 * pc.area_km2(geoms["SOV_PODOLIA"]) / 20_645),
+          by_id["SOV_PODOLIA"]["population"])
+    rows = pc.read_tsv(pc.GROWTH)
+    check("every committed growth rate is its births less its deaths, per 10,000",
+          all(int(r["growth_per_10k_per_year"]) == round((float(r["births_per_1000"]) - float(r["deaths_per_1000"])) * 10)
+              for r in rows if r["basis"] == "measured"),
+          f"{[r['nation'] for r in rows if r['basis'] == 'measured' and int(r['growth_per_10k_per_year']) != round((float(r['births_per_1000']) - float(r['deaths_per_1000'])) * 10)]}")
 
     print(f"population_convert: {'FAILED ' + str(len(failures)) if failures else 'all passed'}; "
           f"{len(cases)} refuse cases over {len(covered)} codes")

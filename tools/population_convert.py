@@ -2,9 +2,13 @@
 
     uv run python tools/population_convert.py --artifact <hex_terrain.json> --people-per-agriculture N --start-ic-per-nation N --out population.json
 
-Reads data/population/census_1930.tsv (one row per province: the WHOLE unit's census figure, with its
-year, source and note) and growth_1930.tsv (natural increase by nation, with its source), and the map
-artifact. Two rules are judgements listed for review rather than facts:
+Reads data/population/census_1930.tsv (one row per province: the WHOLE unit's figure, with its year, source,
+note and basis) and growth_1930.tsv (natural increase by nation, with its source and basis), and the map
+artifact. A figure's basis is required, so a figure can't pass for what it isn't: census or derived for a
+province, measured or declared_zero for a growth rate. The basis stays in these tables, and a successful run
+prints every derived figure and declared zero; population.json itself carries numbers only.
+
+Two rules are judgements listed for review rather than facts:
 
   start_population = census x the share of the province's polygon inside the map frame. A province the
       map crops carries only its on-map share, which assumes its people are spread evenly across it.
@@ -81,6 +85,35 @@ def share_points(people: dict[str, int], total: int) -> dict[str, int]:
     return points
 
 
+def census_gap(r: dict) -> str:
+    """Why a province figure's provenance falls short, or empty if it doesn't."""
+    basis = r["basis"].strip()
+    if basis not in ("census", "derived"):
+        return f'has basis "{basis}": write census, or derived with the method in the note'
+    if not (r["source_url"].strip() and r["census_year"].strip()):
+        return "has a figure with no source or year: add both"
+    if basis == "derived" and not r["note"].strip():
+        return "is derived and its note is empty: state the method and its weakness"
+    return ""
+
+
+def growth_gap(r: dict, rate: int) -> str:
+    """Why a growth rate's provenance falls short, or empty if it doesn't. A declared zero says no growth is
+    modelled; it is not a measurement, so it needs its reason rather than a source."""
+    basis = r["basis"].strip()
+    if basis == "measured":
+        if not (r["source_url"].strip() and r["year"].strip()):
+            return "is measured with no source or year: add both, or declare a zero with its reason"
+    elif basis == "declared_zero":
+        if rate != 0:
+            return f"declares a zero and its rate is {rate}: write 0, or mark it measured with a source"
+        if not r["note"].strip():
+            return "declares a zero and its note is empty: say why no figure is modelled"
+    else:
+        return f'has basis "{basis}": write measured or declared_zero'
+    return ""
+
+
 def convert(artifact: dict, census: list[dict], growth: list[dict], polygons: dict,
             people_per_agriculture: int, start_ic_per_nation: int) -> tuple[dict | None, list[tuple[str, str, str]]]:
     bad = Refusals()
@@ -104,6 +137,9 @@ def convert(artifact: dict, census: list[dict], growth: list[dict], polygons: di
             bad.add("X205", pid, f'"{fig}" is not a whole number of people: write digits only')
         else:
             figures[pid] = int(fig)
+            gap = census_gap(r)
+            if gap:
+                bad.add("X209", pid, gap)
     for pid in sorted(set(provinces) - seen):
         bad.add("X201", pid, "is on the map and has no census row: add one, empty if no figure is known, with why")
 
@@ -117,6 +153,9 @@ def convert(artifact: dict, census: list[dict], growth: list[dict], polygons: di
             bad.add("X205", n, f'"{v}" is not a whole, non-negative rate per 10,000: write digits only')
         else:
             rates[n] = int(v)
+            gap = growth_gap(r, rates[n])
+            if gap:
+                bad.add("X210", n, gap)
         rated.add(n)
     for n in sorted({p["nation"] for p in provinces.values()} - rated):
         bad.add("X206", n, "owns a province on the map and has no growth row: add its natural increase, with a source")
@@ -161,7 +200,8 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--census", type=Path, default=CENSUS)
     ap.add_argument("--growth", type=Path, default=GROWTH)
     a = ap.parse_args(argv[1:])
-    doc, problems = convert(json.loads(a.artifact.read_text(encoding="utf-8")), read_tsv(a.census), read_tsv(a.growth),
+    census, growth = read_tsv(a.census), read_tsv(a.growth)
+    doc, problems = convert(json.loads(a.artifact.read_text(encoding="utf-8")), census, growth,
                             json.loads(POLYGONS.read_text(encoding="utf-8")), a.people_per_agriculture,
                             a.start_ic_per_nation)
     for code, where, detail in problems:
@@ -169,6 +209,12 @@ def main(argv: list[str]) -> int:
     if doc is None:
         print(f"REFUSED: {len(problems)} problem(s); nothing written")
         return 1
+    for r in census:
+        if r["basis"].strip() == "derived":
+            print(f'DERIVED {r["province"]}: {r["population"].strip()}')
+    for r in growth:
+        if r["basis"].strip() == "declared_zero":
+            print(f'DECLARED ZERO {r["nation"]}: {r["note"].strip()}')
     a.out.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"wrote {a.out}: {len(doc['provinces'])} provinces, {len(doc['nations'])} nations, "
           f"{sum(p['start_population'] for p in doc['provinces'])} people")
