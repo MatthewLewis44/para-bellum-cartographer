@@ -192,6 +192,11 @@ def main() -> int:
     check("every code the checker emitted is in the register", emitted <= set(codes),
           f"{sorted(emitted - set(codes))}")
 
+    # Retired codes are never reused, and nothing still emits one.
+    retired = {c["code"] for c in json.loads(cc.RULE_CODES_FILE.read_text(encoding="utf-8"))["retired"]}
+    check("no retired code is back in the register", not retired & set(codes), f"{sorted(retired & set(codes))}")
+    check("the checker cannot emit a retired code", not any(f'"{c}"' in Path(cc.__file__).read_text(encoding="utf-8") for c in retired))
+
     # 2. Register coverage.
     uncovered = sorted(set(cc.RULES) - covered - set(PENDING))
     check("every rule-register code has a fixture (or is declared pending)", not uncovered, f"{uncovered}")

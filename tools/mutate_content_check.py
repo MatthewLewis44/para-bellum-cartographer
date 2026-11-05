@@ -1,4 +1,4 @@
-"""Mutation proofs for the content contract's Sprint 14 rules: the state, one to one.
+"""Mutation proofs for the content contract's Sprint 14 and 15 rules, one to one.
 
     uv run python tools/mutate_content_check.py
 
@@ -57,6 +57,10 @@ MUTATIONS = (
     ("M15 C912: a MODIFIER limited to one writer too (the control a005 catches over-refusal)", CC,
      'if not who or (forms[t] == "share" and len(who) > 1):', "if not who or len(who) > 1:",
      {"a005_modifier_writers_add"}),
+    ("M36 C915: a set with no templates accepted", CC,
+     'if not self.entries["template"]:', "if False:", {"h915_no_templates"}),
+    ("M37 C409: any counter symbol accepted", CC,
+     'if t["symbol"] not in symbols:', "if False:", {"h409_unknown_counter_symbol"}),
     ("M16 C913: two civilian claims accepted", CC,
      "if len(ids) != 1:", "if len(ids) < 1:", {"h913_two_civilian_claims"}),
     ("M17 C913: no construction claim accepted", CC,

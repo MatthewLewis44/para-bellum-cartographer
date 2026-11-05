@@ -1,0 +1,8 @@
+{
+  "code": "C105",
+  "rule": "unknown-key",
+  "file": "pb/template.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "templates[0] also carries unit_type, the key identity moved off: refused, never read as a second identity"
+}

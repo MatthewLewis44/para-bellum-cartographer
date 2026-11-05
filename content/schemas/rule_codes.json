@@ -2,6 +2,10 @@
   "format": "pb-content/rule-codes/1",
   "_comment": "The rule-code register: the AUTHORITATIVE list of every refusal code the content readers emit. It is an interface between two implementations, the game's C# reader and the pipeline's Python checker, and both test that the codes they emit are exactly these. Neither side renumbers a code; a new rule takes the next free number in its family, and codes are never reused. The table in CONTENT_MODEL.md section 5 is the human-readable index and cites this file as authoritative. FIELDS: `python` and `csharp` say what each CONTENT READER does with a file breaking the rule (refuse, report, accept, n/a); the shared hostile fixtures exercise exactly those readers. `csharp_elsewhere`, where present, records a check that ANOTHER C# layer performs (its layer, what it does, and its status). That is a layer difference inside one implementation, which is not the same as a behavioural difference between implementations (a fixture's declared_divergence).",
   "error_format": "<file>: PB-<CODE> <rule>: <json-path>: <detail>",
+  "retired": [
+    { "code": "C404", "rule": "unknown-unit-type", "why": "A template's identity is a content id, so there is no engine list for it to be missing from." },
+    { "code": "C901", "rule": "template-missing-unit-type", "why": "Templates are no longer one row per engine type, so no row can be owed; C915 is what is left of it." }
+  ],
   "codes": [
     { "code": "C101", "rule": "missing-key", "layer": "schema", "python": "refuse", "csharp": "refuse",
       "summary": "A required key is absent." },
@@ -49,12 +53,12 @@
       "summary": "A stat key is not in the engine vocabulary." },
     { "code": "C403", "rule": "unknown-pool", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
       "summary": "A cost names a resource pool not in the engine vocabulary." },
-    { "code": "C404", "rule": "unknown-unit-type", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
-      "summary": "A template names a unit type not in the engine vocabulary." },
     { "code": "C405", "rule": "unknown-facility-kind", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
       "summary": "A facility row's kind is not an engine facility kind (vocabulary.json facility_kinds)." },
     { "code": "C406", "rule": "unknown-settlement-type", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
       "summary": "A settlement row's type is not one the map produces (vocabulary.json settlement_types)." },
+    { "code": "C409", "rule": "unknown-counter-symbol", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
+      "summary": "A template's symbol is not one the game can draw (vocabulary.json counter_symbols)." },
     { "code": "C501", "rule": "illegal-trait-on-class", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
       "summary": "A model or variant carries a trait its class does not list." },
     { "code": "C502", "rule": "trait-targets-absent-stat", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
@@ -75,8 +79,6 @@
     { "code": "C803", "rule": "line-design-not-held", "layer": "engine", "python": "n/a", "csharp": "accept",
       "csharp_elsewhere": { "layer": "start_state", "does": "report", "status": "specified (D19), wired by PB-SIM13 with the vendoring round: GameState.StartStateReports, file pb/research.json, path $" },
       "summary": "A v9 save loads a production line whose design the nation does not hold (research holdings load empty from v9). The load REPORTS it and never refuses: the save stays playable. It concerns a save, not a content file, so no content fixture can express it and the Python checker cannot see it." },
-    { "code": "C901", "rule": "template-missing-unit-type", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
-      "summary": "An engine unit type has no template row." },
     { "code": "C902", "rule": "template-class-has-no-design", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
       "summary": "A template requires a class that no model belongs to." },
     { "code": "C903", "rule": "facility-missing-kind", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
@@ -125,6 +127,8 @@
     { "code": "C913", "rule": "claim-role-count", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
       "summary": "The claim set does not have exactly one claim of role civilian and exactly one of role construction." },
     { "code": "C914", "rule": "pool-without-price", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
-      "summary": "A pool with a dispersed yield or a facility output has no entry in economy.json prices_per_thousand, so the extraction term would silently value it at nothing." }
+      "summary": "A pool with a dispersed yield or a facility output has no entry in economy.json prices_per_thousand, so the extraction term would silently value it at nothing." },
+    { "code": "C915", "rule": "no-templates", "layer": "cross-file", "python": "refuse", "csharp": "refuse",
+      "summary": "No namespace defines a division template, so nothing can ever be trained." }
   ]
 }

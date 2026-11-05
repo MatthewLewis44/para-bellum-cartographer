@@ -193,10 +193,6 @@ MUTATIONS = [
      _set([M, "models", 2, "stats", "warp_factor"], 9)),
     ("h403_unknown_pool", "C403", M, "models[0] costs gold, not a resource pool",
      _set([M, "models", 0, "cost", "gold"], 1)),
-    ("h404_unknown_unit_type", "C404", T, 'a template for unit type "Cavalry"',
-     _append([T, "templates"], {"unit_type": "Cavalry", "cost": {"money": 1}, "training_days": 1,
-                                "speed_km_per_day": 1,
-                                "equipment": [{"class": "pb:infantry_kit", "count": 1}]})),
     ("h501_illegal_trait", "C501", M, "the trucks carry pb:sloped_armour, not legal on pb:trucks",
      _set([M, "models", 4, "traits"], ["pb:sloped_armour"])),
     ("h502_trait_absent_stat", "C502", C, "pb:trucks lists pb:sloped_armour as legal, but has no armour_front_mm",
@@ -249,8 +245,28 @@ MUTATIONS = [
                 d.__setitem__("zmod/combat.json", copy.deepcopy(d["amod/combat.json"])), None)[-1]),
     ("h908_rules_file_missing", "C908", "combat.json", "no namespace defines combat.json",
      lambda d: d.pop("pb/combat.json") and None),
-    ("h901_template_missing_unit_type", "C901", T, "no template for Armored",
-     _del([T, "templates", 2])),
+    # Sprint 15: a formation's identity is a content id.
+    ("h915_no_templates", "C915", "template.json", "no namespace defines a division template",
+     _set([T, "templates"], [])),
+    ("h107b_template_old_format", "C107", T, 'template.json still declares "pb-content/template/1"',
+     _set([T, "format"], "pb-content/template/1")),
+    ("h105c_template_keyed_on_unit_type", "C105", T,
+     'templates[0] also carries unit_type, the key identity moved off: refused, never read as a second identity',
+     _set([T, "templates", 0, "unit_type"], "Infantry")),
+    ("h101g_template_without_id", "C101", T, "templates[0] has no id", _del([T, "templates", 0, "id"])),
+    ("h106b_template_bad_id", "C106", T, 'templates[0].id is "Infantry", the old enum spelling',
+     _set([T, "templates", 0, "id"], "Infantry")),
+    ("h202b_template_outside_namespace", "C202", T, 'templates[0].id is "mymod:infantry_division" in the pb folder',
+     _set([T, "templates", 0, "id"], "mymod:infantry_division")),
+    ("h203d_template_twice", "C203", T, "templates[1] takes templates[0]'s id",
+     _set([T, "templates", 1, "id"], "pb:infantry_division")),
+    ("h204b_template_reserved_namespace", "C204", T, 'templates[0].id is "player:infantry_division": player templates live in the save',
+     _set([T, "templates", 0, "id"], "player:infantry_division")),
+    ("h101h_template_without_symbol", "C101", T, "templates[0] has no symbol", _del([T, "templates", 0, "symbol"])),
+    ("h409_unknown_counter_symbol", "C409", T, 'templates[0].symbol is "cavalry", which the game cannot draw',
+     _set([T, "templates", 0, "symbol"], "cavalry")),
+    ("h802c_template_unnamed", "C802", T, "templates[0] (pb:infantry_division) has no name: a PROJECT INVARIANT",
+     _del([T, "templates", 0, "name"])),
     ("h902_template_class_no_design", "C902", T, "a template requires pb:helicopter, a class no design belongs to",
      _both(_append([C, "classes"], {"id": "pb:helicopter", "claim": "pb:claim_air", "name": "Helicopter",
                                     "stats": {"ceiling_m": 0}, "traits": []}),
@@ -380,6 +396,11 @@ def _class_extension(d):
 
 
 ACCEPTED = [
+    ("a006_mod_adds_template", "a mod adds a division of its own beside the shipped three. Identity is a content id, "
+     "so nothing is keyed on a closed engine list any more",
+     lambda d: d.__setitem__("mymod/template.json", {"format": "pb-content/template/2", "templates": [
+         {"id": "mymod:cavalry_division", "name": "Cavalry division", "symbol": "infantry", "cost": {"money": 1}, "training_days": 1,
+          "speed_km_per_day": 1, "equipment": [{"class": "pb:infantry_kit", "count": 1}]}]})),
     ("a002_coal_mine", "the Mine extracts iron OR coal: deposits [iron, coal], output {iron: 100, coal: 100}. "
      "Each deposit names what it produces, so C904 holds", _coal_mine),
     ("a003_class_extension", "a mod makes its own trait legal on the shipped pb:tank with { extends, traits } "

@@ -51,8 +51,8 @@ TYPES = (("class", "classes"), ("model", "models"), ("variant", "variants"),
          ("claim", "claims"), ("policy", "policies"))
 # Singleton rules files: flat objects, exactly ONE across every namespace (C907, C908).
 SINGLETONS = ("rates", "combat", "economy", "population")
-# Types whose rows are keyed on an engine name (unit type, facility kind, settlement type), not an id.
-UNKEYED_TYPES = ("template", "facility", "settlement")
+# Types whose rows are keyed on an engine name (facility kind, settlement type), not an id.
+UNKEYED_TYPES = ("facility", "settlement")
 # Sprint 13: the research database (research.json, ONE per content set: C907) and the GENERATED models
 # (design_model.json, D28: model rows written by the pipeline, kept apart from the hand-authored model.json).
 RESEARCH_FILE, DESIGN_MODEL_FILE = "research.json", "design_model.json"
@@ -398,7 +398,6 @@ class ContentSet:
     def _cross_file(self):
         stat_keys = set(self.vocab.get("stat_keys", []))
         pools = set(self.vocab.get("pools", []))
-        unit_types = list(self.vocab.get("unit_types", []))
         coll = dict(TYPES)
 
         def where(stem, i, *rest):
@@ -571,20 +570,13 @@ class ContentSet:
                     if r < 0:
                         self._add(rel, "C602", where("variant", i, "production", k), f"production {k} resolves to {r}")
 
-        # Templates: one row per engine unit type; every class has a design.
-        seen_ut: dict[str, tuple[str, int]] = {}
+        # Templates: at least one exists, and every class one requires has a design. Identity (namespace,
+        # reserved namespace, duplicates) is the generic id check above.
         design_classes = {m["class"] for m in models.values()}
-        any_template_file = None
+        symbols = set(self.vocab.get("counter_symbols", []))
         for rel, _, i, t in self.entries["template"]:
-            any_template_file = any_template_file or rel
-            ut = t["unit_type"]
-            if ut not in unit_types:
-                self._add(rel, "C404", where("template", i, "unit_type"), f'"{ut}" is not an engine unit type')
-            elif ut in seen_ut:
-                self._add(rel, "C203", where("template", i, "unit_type"),
-                          f'unit type "{ut}" already has a template at {seen_ut[ut][0]} templates[{seen_ut[ut][1]}]')
-            else:
-                seen_ut[ut] = (rel, i)
+            if t["symbol"] not in symbols:
+                self._add(rel, "C409", where("template", i, "symbol"), f'"{t["symbol"]}" is not a counter symbol the game can draw')
             for p in t["cost"]:
                 if p not in pools:
                     self._add(rel, "C403", where("template", i, "cost", p), f'"{p}" is not a resource pool')
@@ -593,10 +585,8 @@ class ContentSet:
                         and e["class"] not in design_classes:
                     self._add(rel, "C902", where("template", i, "equipment", j, "class"),
                               f'no model or variant belongs to class "{e["class"]}"')
-        for ut in unit_types:
-            if ut not in seen_ut:
-                self._add(any_template_file or "template.json", "C901", "$.templates",
-                          f'no template for unit type "{ut}"')
+        if not self.entries["template"]:
+            self._add("template.json", "C915", "$.templates", "no namespace defines a division template")
         self._facilities_and_settlements(pools)
         self._research_graph(pools)
         self._claims()

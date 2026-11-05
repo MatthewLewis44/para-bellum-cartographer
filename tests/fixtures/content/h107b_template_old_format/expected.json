@@ -1,0 +1,8 @@
+{
+  "code": "C107",
+  "rule": "bad-format",
+  "file": "pb/template.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "template.json still declares \"pb-content/template/1\""
+}

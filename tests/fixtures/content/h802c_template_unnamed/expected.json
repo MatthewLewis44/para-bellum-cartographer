@@ -1,0 +1,8 @@
+{
+  "code": "C802",
+  "rule": "shipped-content-unnamed",
+  "file": "pb/template.json",
+  "python": "refuse",
+  "csharp": "report",
+  "seeded": "templates[0] (pb:infantry_division) has no name: a PROJECT INVARIANT"
+}

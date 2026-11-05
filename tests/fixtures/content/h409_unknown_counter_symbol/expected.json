@@ -1,0 +1,8 @@
+{
+  "code": "C409",
+  "rule": "unknown-counter-symbol",
+  "file": "pb/template.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "templates[0].symbol is \"cavalry\", which the game cannot draw"
+}

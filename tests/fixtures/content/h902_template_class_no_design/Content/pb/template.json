@@ -1,8 +1,10 @@
 {
-  "format": "pb-content/template/1",
+  "format": "pb-content/template/2",
   "templates": [
     {
-      "unit_type": "Infantry",
+      "id": "pb:infantry_division",
+      "name": "Infantry division",
+      "symbol": "infantry",
       "cost": {
         "money": 25,
         "manpower": 14000
@@ -25,7 +27,9 @@
       ]
     },
     {
-      "unit_type": "Motorized",
+      "id": "pb:motorized_division",
+      "name": "Motorized division",
+      "symbol": "motorized",
       "cost": {
         "money": 60,
         "manpower": 12000
@@ -48,7 +52,9 @@
       ]
     },
     {
-      "unit_type": "Armored",
+      "id": "pb:armored_division",
+      "name": "Armored division",
+      "symbol": "armored",
       "cost": {
         "money": 90,
         "manpower": 10000

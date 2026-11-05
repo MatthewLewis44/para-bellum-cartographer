@@ -1,0 +1,21 @@
+{
+  "format": "pb-content/template/2",
+  "templates": [
+    {
+      "id": "mymod:cavalry_division",
+      "name": "Cavalry division",
+      "symbol": "infantry",
+      "cost": {
+        "money": 1
+      },
+      "training_days": 1,
+      "speed_km_per_day": 1,
+      "equipment": [
+        {
+          "class": "pb:infantry_kit",
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

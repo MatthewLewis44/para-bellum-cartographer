@@ -1,6 +1,6 @@
 {
   "format": "pb-content/vocabulary/1",
-  "_comment": "Describes the engine's code. The game NEVER reads this file to decide behaviour: stat keys, pools and unit types are fixed in C#, and a test fails (C701) if this list and the code ever disagree. It exists so the JSON Schemas and the pipeline's Python cross-check can see the engine's vocabulary. See docs/design/CONTENT_MODEL.md section 2.",
+  "_comment": "Describes the engine's code. The game NEVER reads this file to decide behaviour: stat keys and pools are fixed in C#, and a test fails (C701) if this list and the code ever disagree. It exists so the JSON Schemas and the pipeline's Python cross-check can see the engine's vocabulary. See docs/design/CONTENT_MODEL.md section 2.",
   "stat_keys": [
     "weight_kg",
     "crew",
@@ -28,10 +28,10 @@
     "oil",
     "agriculture"
   ],
-  "unit_types": [
-    "Infantry",
-    "Motorized",
-    "Armored"
+  "counter_symbols": [
+    "infantry",
+    "motorized",
+    "armored"
   ],
   "facility_kinds": [
     "Mine",

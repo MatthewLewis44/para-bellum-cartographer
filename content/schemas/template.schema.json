@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:pb-content:template:1",
+  "$id": "urn:pb-content:template:2",
   "title": "Para Bellum content: division templates",
-  "description": "One row per engine unit type: what a division of that type costs to train, how long it takes, how fast it moves, and what it draws from the stockpile. File: Content/<namespace>/template.json. There is exactly one row per engine unit type. A requirement names a CLASS, and it is filled by designs of that class newest-first (along supersedes, then by year), models and variants alike. The contract is docs/design/CONTENT_MODEL.md section 4 in the game repository.\n\nRecorded limitation: a requirement cannot ask for one specific model (for example, a light tank for reconnaissance).",
+  "description": "One row per division template: what a division raised from it costs to train, how long it takes, how fast it moves, and what it draws from the stockpile. File: Content/<namespace>/template.json, in any namespace: a formation's identity is a content id, so a mod adds a division the way it adds a model, and a player's own live in the save under player:. A requirement names a CLASS, and it is filled by designs of that class newest-first (along supersedes, then by year), models and variants alike. The contract is docs/design/CONTENT_MODEL.md section 4 in the game repository.\n\nRecorded limitation: a requirement cannot ask for one specific model (for example, a light tank for reconnaissance).",
   "type": "object",
   "additionalProperties": false,
   "required": ["format", "templates"],
   "properties": {
-    "format": { "const": "pb-content/template/1" },
+    "format": { "const": "pb-content/template/2" },
     "templates": {
       "type": "array",
       "items": { "$ref": "#/$defs/template" }
@@ -22,12 +22,20 @@
     "template": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["unit_type", "cost", "training_days", "speed_km_per_day", "equipment"],
+      "required": ["id", "symbol", "cost", "training_days", "speed_km_per_day", "equipment"],
       "properties": {
-        "unit_type": {
-          "description": "An engine unit type (for example Infantry, Motorized, Armored), listed in Content/vocabulary.json. Unit types are fixed by the game's code.",
+        "id": {
+          "description": "This template's identity, which a formation and a save refer to. The folder's namespace, and unique among templates.",
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "description": "What the player reads. Optional for a mod, required of shipped content (C802); a missing or blank name displays the id.",
+          "type": "string"
+        },
+        "symbol": {
+          "description": "Which counter symbol the map draws for a division of this template, listed in Content/vocabulary.json counter_symbols. The drawing is the game's code; which one a template uses is data.",
           "type": "string",
-          "pattern": "^[A-Z][A-Za-z0-9]*$"
+          "pattern": "^[a-z][a-z0-9_]*$"
         },
         "cost": {
           "description": "What training one division costs, keyed by pool. Any engine pool may appear; an omitted pool costs none.",

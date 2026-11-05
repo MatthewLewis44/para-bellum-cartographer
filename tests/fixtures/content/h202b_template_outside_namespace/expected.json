@@ -1,0 +1,8 @@
+{
+  "code": "C202",
+  "rule": "id-outside-namespace",
+  "file": "pb/template.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "templates[0].id is \"mymod:infantry_division\" in the pb folder"
+}

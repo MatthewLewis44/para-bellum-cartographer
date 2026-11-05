@@ -1,0 +1,8 @@
+{
+  "code": "C915",
+  "rule": "no-templates",
+  "file": "template.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "no namespace defines a division template"
+}
