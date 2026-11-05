@@ -1,0 +1,8 @@
+{
+  "code": "C920",
+  "rule": "bundle-sealed",
+  "file": "mymod/bundle.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "a mod's bundle extends the sealed specimen: blamed on the mod"
+}

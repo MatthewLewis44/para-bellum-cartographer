@@ -48,7 +48,9 @@ FILES = ("vocabulary.json", "pb/class.json", "pb/model.json", "pb/variant.json",
          # (tools/research_convert.py) from its SYNTHETIC case set, then hand-kept here as part of the control set.
          "pb/research.json", "pb/bureau.json", "pb/vendor.json", "pb/design_model.json",
          # Sprint 14: the state.
-         "pb/claim.json", "pb/policy.json", "pb/population.json")
+         "pb/claim.json", "pb/policy.json", "pb/population.json",
+         # Sprint 15: the formation hierarchy and its rules.
+         "pb/squad.json", "pb/company.json", "pb/category.json", "pb/bundle.json", "pb/aggregation.json")
 
 
 def dump(doc) -> str:
@@ -110,6 +112,12 @@ CL = "pb/claim.json"
 PO = "pb/policy.json"
 PP = "pb/population.json"
 EC = "pb/economy.json"
+SQ = "pb/squad.json"
+CO = "pb/company.json"
+CA = "pb/category.json"
+BU = "pb/bundle.json"
+AG = "pb/aggregation.json"
+CB = "pb/combat.json"
 
 MUTATIONS = [
     ("h108_invalid_json", "C108", M, "model.json is not JSON (truncated)", "RAW"),
@@ -265,6 +273,80 @@ MUTATIONS = [
     ("h101h_template_without_symbol", "C101", T, "templates[0] has no symbol", _del([T, "templates", 0, "symbol"])),
     ("h409_unknown_counter_symbol", "C409", T, 'templates[0].symbol is "cavalry", which the game cannot draw',
      _set([T, "templates", 0, "symbol"], "cavalry")),
+    # Sprint 15: the levels. Four and no fifth: the h105 cases each try to put one level inside the wrong parent.
+    ("h105d_platoon_in_an_element", "C105", CO, "an element also holds a platoon: the floor holds nothing",
+     _set([CO, "companies", 0, "platoons", 0, "elements", 0, "platoon"], {"name": "x", "count": 1, "elements": []})),
+    ("h105e_company_in_a_platoon", "C105", CO, "a platoon slot names a company: a battalion by another route",
+     _set([CO, "companies", 0, "platoons", 0, "company"], "pb:tank_company")),
+    ("h105f_division_holds_a_bundle", "C105", T, "a division slot also names a bundle: nothing in the hierarchy can hold one",
+     _set([T, "templates", 0, "companies", 0, "bundle"], "pb:rifle_battalion")),
+    ("h105g_bundle_contains_platoons", "C105", BU, "a bundle slot carries platoons: a bundle names companies, it does not contain them",
+     _set([BU, "bundles", 0, "companies", 0, "platoons"], [])),
+    ("h105h_company_stores_multiplier", "C105", CO, 'a company stores its own "count": the count belongs to the slot (AD-M45)',
+     _set([CO, "companies", 0, "count"], 3)),
+    ("h101i_slot_without_count", "C101", T, "a division slot has no count: 1 is the designer's offer, not a reader default",
+     _del([T, "templates", 0, "companies", 0, "count"])),
+    ("h101j_platoon_without_name", "C101", CO, "an inline platoon has no name", _del([CO, "companies", 0, "platoons", 0, "name"])),
+    ("h101k_element_without_count", "C101", CO, "an element has no count",
+     _del([CO, "companies", 0, "platoons", 0, "elements", 0, "count"])),
+    ("h101l_combat_without_late", "C101", CB, "combat.json has no late_contribution_per_mille",
+     _del([CB, "late_contribution_per_mille"])),
+    ("h102c_element_both_kinds", "C102", CO, "an element names both a squad and a vehicle",
+     _set([CO, "companies", 0, "platoons", 0, "elements", 0, "vehicle"], "pb:trucks")),
+    ("h102d_late_over_a_thousand", "C102", CB, "late_contribution_per_mille is 1001", _set([CB, "late_contribution_per_mille"], 1001)),
+    ("h102e_company_without_platoons", "C102", CO, "a company has an empty platoons list", _set([CO, "companies", 0, "platoons"], [])),
+    ("h104e_slot_count_zero", "C104", T, "a division slot's count is 0", _set([T, "templates", 0, "companies", 0, "count"], 0)),
+    ("h104f_terrain_negative", "C104", CO, "a terrain value is -1: 1000 is the baseline and nothing goes below 0",
+     _set([CO, "companies", 0, "terrain", "marsh"], -1)),
+    ("h104g_late_negative", "C104", CB, "late_contribution_per_mille is -1", _set([CB, "late_contribution_per_mille"], -1)),
+    ("h203e_aggregation_row_twice", "C203", AG, "organisation has two rows",
+     _append([AG, "rules"], {"stat": "organisation", "rule": "sum", "subset": "all"})),
+    ("h301d_slot_names_no_company", "C301", T, 'a division slot names "pb:rifle_compny"',
+     _set([T, "templates", 0, "companies", 0, "company"], "pb:rifle_compny")),
+    ("h301e_element_names_no_squad", "C301", CO, 'an element names "pb:rifle_sqaud"',
+     _set([CO, "companies", 0, "platoons", 0, "elements", 0, "squad"], "pb:rifle_sqaud")),
+    ("h301f_vehicle_names_no_design", "C301", CO, 'a vehicle element names "pb:light_tnak"',
+     _set([CO, "companies", 1, "platoons", 0, "elements", 0, "vehicle"], "pb:light_tnak")),
+    ("h301g_company_names_no_category", "C301", CO, 'a company\'s category is "pb:infantri"', _set([CO, "companies", 0, "category"], "pb:infantri")),
+    ("h301h_requires_no_category", "C301", CA, 'armour requires "pb:infantri"',
+     _set([CA, "categories", 1, "requires", 0, "category"], "pb:infantri")),
+    ("h301i_bundle_names_a_bundle", "C301", BU, "a bundle slot names a bundle: there is no level for that",
+     _set([BU, "bundles", 0, "companies", 0, "company"], "pb:rifle_battalion")),
+    ("h308_vehicle_with_no_seats", "C308", CO, "a vehicle element names pb:infantry_kit, whose class has no crew and no passengers",
+     _set([CO, "companies", 1, "platoons", 0, "elements", 0, "vehicle"], "pb:infantry_kit")),
+    ("h309_category_requires_itself", "C309", CA, "armour requires armour",
+     _set([CA, "categories", 1, "requires", 0, "category"], "pb:armour")),
+    ("h410_rule_names_no_stat", "C410", AG, 'an extra row for "warp_factor", not a division stat',
+     _append([AG, "rules"], {"stat": "warp_factor", "rule": "sum", "subset": "all"})),
+    ("h410b_company_stat_unknown", "C410", CO, 'a company sets "warp_factor"', _set([CO, "companies", 0, "stats", "warp_factor"], 1)),
+    ("h411_company_missing_stat", "C411", CO, "a company has no organisation", _del([CO, "companies", 0, "stats", "organisation"])),
+    ("h412_unknown_rule", "C412", AG, 'organisation\'s rule is "median"', _set([AG, "rules", 0, "rule"], "median")),
+    ("h413_unknown_column", "C413", T, 'a slot\'s column is "reserve"', _set([T, "templates", 0, "companies", 0, "column"], "reserve")),
+    ("h414_unknown_biome", "C414", CO, 'a terrain table names "moon"', _set([CO, "companies", 0, "terrain", "moon"], 900)),
+    ("h415_company_stores_men", "C415", CO, "a company sets men: a second figure that could disagree with the walk",
+     _set([CO, "companies", 0, "stats", "men"], 100)),
+    ("h415b_company_stores_terrain", "C415", CO, "a company sets terrain in stats, not in its table",
+     _set([CO, "companies", 0, "stats", "terrain"], 1000)),
+    ("h604_returns_rise", "C604", CA, "armour's returns go 1000, 1200: a curve that rewards stacking",
+     _set([CA, "categories", 1, "returns_per_mille"], [1000, 1200])),
+    ("h606_officers_exceed_men", "C606", SQ, "a squad of 5 has 6 officers", _set([SQ, "squads", 1, "officers"], 6)),
+    ("h916_aggregation_missing_stat", "C916", AG, "no row for recce",
+     lambda d: d[AG].__setitem__("rules", [r for r in d[AG]["rules"] if r["stat"] != "recce"])),
+    ("h917_subset_misspelt", "C917", AG, 'hardness reads subset "lines", which selects nothing', _set([AG, "rules", 7, "subset"], "lines")),
+    ("h917c_subset_is_hq", "C917", AG, "hardness reads hq: hidden companies are not a subset of their own; all includes them",
+     _set([AG, "rules", 7, "subset"], "hq")),
+    ("h917b_subset_no_template_uses", "C917", AG, "complexity reads support, and no template has a support company",
+     _both(_set([AG, "rules", 11, "subset"], "support"),
+           lambda d: [t.__setitem__("companies", [s for s in t["companies"] if s["column"] != "support"]) for t in d[T]["templates"]] and None)),
+    ("h918_rule_reads_one_column", "C918", AG, "terrain's two-column rule is limited to line", _set([AG, "rules", 16, "subset"], "line")),
+    ("h919_blend_without_weight", "C919", AG, "armour's blend has no weight", _del([AG, "rules", 5, "max_weight_per_mille"])),
+    ("h919b_blend_weight_over", "C919", AG, "armour's blend weight is 1001", _set([AG, "rules", 5, "max_weight_per_mille"], 1001)),
+    ("h919c_stray_weight", "C919", AG, "organisation's average carries a weight it would ignore", _set([AG, "rules", 0, "max_weight_per_mille"], 300)),
+    ("h920_bundle_extends", "C920", "mymod/bundle.json", "a mod's bundle extends the sealed specimen: blamed on the mod",
+     lambda d: d.__setitem__("mymod/bundle.json", {"format": "pb-content/bundle/1", "bundles": [
+         {"id": "mymod:my_battalion", "extends": "pb:rifle_battalion", "companies": [{"company": "pb:rifle_company", "count": 2}]}]})),
+    ("h203f_bundle_redefined", "C203", BU, "a second row takes the sealed specimen's id",
+     _append([BU, "bundles"], {"id": "pb:rifle_battalion", "name": "Edited", "companies": [{"company": "pb:rifle_company", "count": 2}]})),
     ("h802c_template_unnamed", "C802", T, "templates[0] (pb:infantry_division) has no name: a PROJECT INVARIANT",
      _del([T, "templates", 0, "name"])),
     ("h902_template_class_no_design", "C902", T, "a template requires pb:helicopter, a class no design belongs to",
@@ -396,10 +478,23 @@ def _class_extension(d):
 
 
 ACCEPTED = [
+    ("a007_mod_lists_own_bundle", "a mod writes a NEW bundle naming shipped companies: the control for h920. "
+     "Sealed means no edit of a bundle, not that bundles are closed",
+     lambda d: d.__setitem__("mymod/bundle.json", {"format": "pb-content/bundle/1", "bundles": [
+         {"id": "mymod:my_battalion", "name": "My battalion", "companies": [{"company": "pb:rifle_company", "count": 2}]}]})),
+    ("a008_subset_some_division_lacks", "complexity reads support; pb:motorized_division has no support company and is "
+     "legal. The control for h917b: a subset must select something in the set, not in every division",
+     _set([AG, "rules", 11, "subset"], "support")),
+    ("a010_truck_is_a_vehicle", "a vehicle element names pb:trucks, whose class has passengers and no crew: a vehicle "
+     "needs one or the other. The control for h308, and the walk counts no passengers as men",
+     _set([CO, "companies", 1, "platoons", 1, "elements", 0, "vehicle"], "pb:trucks")),
+    ("a009_vehicle_is_a_variant", "a vehicle element names a variant: a design is a model or a variant",
+     _set([CO, "companies", 1, "platoons", 0, "elements", 0, "vehicle"], "pb:medium_tank_late")),
     ("a006_mod_adds_template", "a mod adds a division of its own beside the shipped three. Identity is a content id, "
      "so nothing is keyed on a closed engine list any more",
      lambda d: d.__setitem__("mymod/template.json", {"format": "pb-content/template/2", "templates": [
-         {"id": "mymod:cavalry_division", "name": "Cavalry division", "symbol": "infantry", "cost": {"money": 1}, "training_days": 1,
+         {"id": "mymod:cavalry_division", "name": "Cavalry division", "symbol": "infantry",
+          "companies": [{"company": "pb:rifle_company", "count": 1, "column": "line"}], "cost": {"money": 1}, "training_days": 1,
           "speed_km_per_day": 1, "equipment": [{"class": "pb:infantry_kit", "count": 1}]}]})),
     ("a002_coal_mine", "the Mine extracts iron OR coal: deposits [iron, coal], output {iron: 100, coal: 100}. "
      "Each deposit names what it produces, so C904 holds", _coal_mine),

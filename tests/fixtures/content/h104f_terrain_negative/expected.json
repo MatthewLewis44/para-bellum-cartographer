@@ -1,0 +1,8 @@
+{
+  "code": "C104",
+  "rule": "negative-value",
+  "file": "pb/company.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "a terrain value is -1: 1000 is the baseline and nothing goes below 0"
+}

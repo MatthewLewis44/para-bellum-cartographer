@@ -22,7 +22,7 @@
     "template": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "symbol", "cost", "training_days", "speed_km_per_day", "equipment"],
+      "required": ["id", "symbol", "companies", "cost", "training_days", "speed_km_per_day", "equipment"],
       "properties": {
         "id": {
           "description": "This template's identity, which a formation and a save refer to. The folder's namespace, and unique among templates.",
@@ -36,6 +36,21 @@
           "description": "Which counter symbol the map draws for a division of this template, listed in Content/vocabulary.json counter_symbols. The drawing is the game's code; which one a template uses is data.",
           "type": "string",
           "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "companies": {
+          "description": "What the division is made of, for every derived figure and for force selection. The count is on the slot, so one company design serves several divisions at different counts. A brigade is a grouping on a screen, with no stats and no row here.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["company", "count", "column"],
+            "properties": {
+              "company": { "description": "A company, by id.", "$ref": "#/$defs/id" },
+              "count": { "description": "How many of that company. Required in a file; a designer offers 1 for a new slot.", "type": "integer", "minimum": 1 },
+              "column": { "description": "Which column of the division sheet, listed in Content/vocabulary.json division_columns (C413): line, support or hq. An hq company is hidden and cannot be committed.", "type": "string" }
+            }
+          }
         },
         "cost": {
           "description": "What training one division costs, keyed by pool. Any engine pool may appear; an omitted pool costs none.",

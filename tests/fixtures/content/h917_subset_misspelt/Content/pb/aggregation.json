@@ -1,0 +1,92 @@
+{
+  "format": "pb-content/aggregation/1",
+  "rules": [
+    {
+      "stat": "organisation",
+      "rule": "average",
+      "subset": "all"
+    },
+    {
+      "stat": "soft_attack",
+      "rule": "sum",
+      "subset": "all"
+    },
+    {
+      "stat": "hard_attack",
+      "rule": "sum",
+      "subset": "all"
+    },
+    {
+      "stat": "defence",
+      "rule": "sum",
+      "subset": "all"
+    },
+    {
+      "stat": "breakthrough",
+      "rule": "sum",
+      "subset": "all"
+    },
+    {
+      "stat": "armour",
+      "rule": "max_mean_blend",
+      "subset": "all",
+      "max_weight_per_mille": 100
+    },
+    {
+      "stat": "piercing",
+      "rule": "max_mean_blend",
+      "subset": "all",
+      "max_weight_per_mille": 400
+    },
+    {
+      "stat": "hardness",
+      "rule": "average",
+      "subset": "lines"
+    },
+    {
+      "stat": "speed_km_per_day",
+      "rule": "min",
+      "subset": "all"
+    },
+    {
+      "stat": "training_days",
+      "rule": "max",
+      "subset": "all"
+    },
+    {
+      "stat": "deployment_points",
+      "rule": "sum",
+      "subset": "all"
+    },
+    {
+      "stat": "complexity",
+      "rule": "sum",
+      "subset": "all"
+    },
+    {
+      "stat": "money",
+      "rule": "sum",
+      "subset": "all"
+    },
+    {
+      "stat": "recce",
+      "rule": "max",
+      "subset": "all"
+    },
+    {
+      "stat": "men",
+      "rule": "sum",
+      "subset": "all"
+    },
+    {
+      "stat": "officers",
+      "rule": "sum",
+      "subset": "all"
+    },
+    {
+      "stat": "terrain",
+      "rule": "average_lines_sum_support",
+      "subset": "all"
+    }
+  ]
+}

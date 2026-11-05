@@ -5,7 +5,7 @@
   "description": "File: Content/vocabulary.json. Lists the engine-level names content files may use: stat keys, resource pools, facility kinds and settlement types. THE GAME NEVER READS THIS FILE TO DECIDE BEHAVIOUR. It describes the code; it does not extend it. A test in the game asserts that it equals the code exactly, so editing it cannot add a stat or a pool. Adding one is a code change, by design.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["format", "_comment", "stat_keys", "pools", "counter_symbols", "facility_kinds", "settlement_types", "policy_targets", "claim_roles"],
+  "required": ["format", "_comment", "stat_keys", "pools", "division_stats", "aggregation_rules", "division_columns", "biomes", "counter_symbols", "facility_kinds", "settlement_types", "policy_targets", "claim_roles"],
   "properties": {
     "format": { "const": "pb-content/vocabulary/1" },
     "_comment": {
@@ -19,6 +19,37 @@
       "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
     },
     "pools": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+    },
+    "division_stats": {
+      "description": "The division stats the engine computes, each with where a company's value comes from: authored in company.json stats, walked from squads and vehicle crew, or a per-biome table.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["stat", "source"],
+        "properties": {
+          "stat": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "source": { "enum": ["authored", "walked", "table"] }
+        }
+      }
+    },
+    "aggregation_rules": {
+      "description": "The rules the engine implements, which aggregation.json names.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+    },
+    "division_columns": {
+      "description": "The columns of a division sheet.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+    },
+    "biomes": {
+      "description": "The biome names a hex can carry, which a company's terrain table keys on.",
       "type": "array",
       "uniqueItems": true,
       "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }

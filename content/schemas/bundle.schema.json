@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:bundle:1",
+  "title": "Para Bellum content: premade bundles",
+  "description": "A bundle is a ROW THAT NAMES companies with counts. It is NOT a level, and it does not contain them: there are four levels and no fifth, and nothing in the hierarchy can hold a bundle (AD-M45). It is SEALED: taken whole or not at all, and nothing can extend or edit it (C920). Deviating is what the designer is for. How a bundle behaves in play is not settled by this file. File: Content/<namespace>/bundle.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "bundles"
+  ],
+  "properties": {
+    "format": {
+      "const": "pb-content/bundle/1"
+    },
+    "bundles": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/bundle"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "A namespaced id, <namespace>:<name>, lower case.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+:[a-z0-9_]+$"
+    },
+    "bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "companies"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "description": "What the player reads. Optional for a mod, required of shipped content (C802).",
+          "type": "string"
+        },
+        "extends": {
+          "description": "NEVER LEGAL. Declared only so an attempt to edit a sealed bundle is refused by name (C920) rather than as a mere unknown key."
+        },
+        "companies": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "company",
+              "count"
+            ],
+            "properties": {
+              "company": {
+                "$ref": "#/$defs/id"
+              },
+              "count": {
+                "description": "How many. Required in a file (the reader has no defaults, C101); a designer offers 1 for a new slot. It belongs to this slot, never to the thing named, so one design serves several parents at different counts.",
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

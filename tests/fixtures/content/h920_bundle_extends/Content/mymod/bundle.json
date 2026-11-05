@@ -1,0 +1,15 @@
+{
+  "format": "pb-content/bundle/1",
+  "bundles": [
+    {
+      "id": "mymod:my_battalion",
+      "extends": "pb:rifle_battalion",
+      "companies": [
+        {
+          "company": "pb:rifle_company",
+          "count": 2
+        }
+      ]
+    }
+  ]
+}

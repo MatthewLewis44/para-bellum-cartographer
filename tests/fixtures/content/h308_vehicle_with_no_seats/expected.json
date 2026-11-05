@@ -1,0 +1,8 @@
+{
+  "code": "C308",
+  "rule": "vehicle-with-no-seats",
+  "file": "pb/company.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "a vehicle element names pb:infantry_kit, whose class has no crew and no passengers"
+}

@@ -6,7 +6,9 @@
   "type": "object",
   "additionalProperties": false,
   "required": ["format", "defense_weight_per_level_per_mille", "river_assault_penalty_per_mille", "luck_spread_per_mille",
-               "base_casualty_per_mille", "min_casualty_per_mille", "max_casualty_per_mille", "destroy_floor_strength"],
+               "base_casualty_per_mille", "min_casualty_per_mille", "max_casualty_per_mille", "destroy_floor_strength",
+               "late_contribution_per_mille", "unpierced_attack_per_mille", "recce_narrow_per_level_per_mille",
+               "refit_strength_floor", "reach_days", "engagement_budget_points"],
   "properties": {
     "format": { "const": "pb-content/combat/1" },
     "defense_weight_per_level_per_mille": {
@@ -27,6 +29,30 @@
     "destroy_floor_strength": {
       "description": "A unit at or below this strength is destroyed, in strength points.",
       "type": "integer", "minimum": 0
+    },
+    "late_contribution_per_mille": {
+      "description": "What a company committed late contributes, per mille. It costs its full points.",
+      "type": "integer", "minimum": 0, "maximum": 1000
+    },
+    "unpierced_attack_per_mille": {
+      "description": "THE THRESHOLD: what an attack is worth, per mille, against a target whose armour exceeds the attacker's piercing. It is a step, not a gradient.",
+      "type": "integer", "minimum": 0, "maximum": 1000
+    },
+    "recce_narrow_per_level_per_mille": {
+      "description": "How much of the enemy-strength band each level of committed recce removes, per mille.",
+      "type": "integer", "minimum": 0, "maximum": 1000
+    },
+    "refit_strength_floor": {
+      "description": "A company below this strength is refitting and cannot be committed, in strength points.",
+      "type": "integer", "minimum": 0
+    },
+    "reach_days": {
+      "description": "How many days of travel away a formation can still join an engagement.",
+      "type": "integer", "minimum": 0
+    },
+    "engagement_budget_points": {
+      "description": "Each side's budget in an engagement, in the same deployment points a company costs.",
+      "type": "integer", "minimum": 1
     }
   }
 }

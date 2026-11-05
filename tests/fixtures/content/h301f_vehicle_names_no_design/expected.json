@@ -1,0 +1,8 @@
+{
+  "code": "C301",
+  "rule": "dangling-reference",
+  "file": "pb/company.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "a vehicle element names \"pb:light_tnak\""
+}

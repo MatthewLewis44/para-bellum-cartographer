@@ -9,6 +9,7 @@ two independent readers agreeing is the strongest cheap evidence available.
     uv run python tools/content_check.py <Content-dir>            # validate
     uv run python tools/content_check.py <Content-dir> --resolve  # derived values (terms)
     uv run python tools/content_check.py <Content-dir> --applied  # applied values (layers)
+    uv run python tools/content_check.py <Content-dir> --division # derived division stats
 
 The contract is docs/design/CONTENT_MODEL.md in the game repository. When this
 file and that document disagree, the document wins. The schemas this tool
@@ -48,9 +49,10 @@ TYPES = (("class", "classes"), ("model", "models"), ("variant", "variants"),
          ("trait", "traits"), ("template", "templates"),
          ("facility", "facilities"), ("settlement", "settlements"),
          ("bureau", "bureaus"), ("vendor", "vendors"),
-         ("claim", "claims"), ("policy", "policies"))
+         ("claim", "claims"), ("policy", "policies"),
+         ("squad", "squads"), ("company", "companies"), ("category", "categories"), ("bundle", "bundles"))
 # Singleton rules files: flat objects, exactly ONE across every namespace (C907, C908).
-SINGLETONS = ("rates", "combat", "economy", "population")
+SINGLETONS = ("rates", "combat", "economy", "population", "aggregation")
 # Types whose rows are keyed on an engine name (facility kind, settlement type), not an id.
 UNKEYED_TYPES = ("facility", "settlement")
 # Sprint 13: the research database (research.json, ONE per content set: C907) and the GENERATED models
@@ -592,8 +594,140 @@ class ContentSet:
         self._claims()
         self._policies()
         self._population()
+        self._formations(ref, where)
 
     # -- the research database (Sprint 13), mirroring ContentReader.Research.cs -----------
+
+    def _formations(self, ref, where) -> None:
+        """Four levels and no fifth: division > company > platoon (inline) > squad or vehicle (AD-M45)."""
+        vocab_stats = {s["stat"]: s["source"] for s in self.vocab.get("division_stats", [])}
+        authored = [s for s, src in vocab_stats.items() if src == "authored"]
+        biomes = set(self.vocab.get("biomes", []))
+        columns = set(self.vocab.get("division_columns", []))
+        rules = set(self.vocab.get("aggregation_rules", []))
+        classes = self.by_id["class"]
+        designs = {**self.by_id["model"], **self.by_id["variant"]}
+
+        def vehicle_class(id_):
+            d = designs[id_]
+            return classes[(self.by_id["model"][d["model"]] if "model" in d else d)["class"]]
+
+        for rel, _, i, s in self.entries["squad"]:
+            if s["officers"] > s["men"]:
+                self._add(rel, "C606", where("squad", i, "officers"), f'{s["officers"]} officers in a squad of {s["men"]} men')
+        for rel, _, i, c in self.entries["category"]:
+            r = c["returns_per_mille"]
+            if any(b > a for a, b in zip(r, r[1:])):
+                self._add(rel, "C604", where("category", i, "returns_per_mille"), f"{r} rises: each further company must add no more than the last")
+            for j, q in enumerate(c["requires"]):
+                if ref(rel, where("category", i, "requires", j, "category"), q["category"], "category") and q["category"] == c["id"]:
+                    self._add(rel, "C309", where("category", i, "requires", j, "category"), f'{c["id"]} requires itself, which is always met')
+        for rel, _, i, c in self.entries["company"]:
+            ref(rel, where("company", i, "category"), c["category"], "category")
+            for key in ("platoons", "support_sections"):
+                for j, p in enumerate(c[key]):
+                    for k, e in enumerate(p["elements"]):
+                        if "squad" in e:
+                            ref(rel, where("company", i, key, j, "elements", k, "squad"), e["squad"], "squad")
+                        elif e["vehicle"] in designs:
+                            surface = vehicle_class(e["vehicle"])["stats"]
+                            if "crew" not in surface and "transport_passengers" not in surface:
+                                self._add(rel, "C308", where("company", i, key, j, "elements", k, "vehicle"),
+                                          f'"{e["vehicle"]}" has no crew and no passengers, so it is not a vehicle')
+                        else:
+                            ref(rel, where("company", i, key, j, "elements", k, "vehicle"), e["vehicle"], "model")
+            for k in c["stats"]:
+                if k not in vocab_stats:
+                    self._add(rel, "C410", where("company", i, "stats", k), f'"{k}" is not a division stat')
+                elif vocab_stats[k] != "authored":
+                    self._add(rel, "C415", where("company", i, "stats", k), f'"{k}" is {vocab_stats[k]}, not authored, so a company cannot set it')
+            for k in authored:
+                if k not in c["stats"]:
+                    self._add(rel, "C411", where("company", i, "stats", k), f'no value for the authored stat "{k}"')
+            for b in c["terrain"]:
+                if b not in biomes:
+                    self._add(rel, "C414", where("company", i, "terrain", b), f'"{b}" is not a biome')
+        used_columns = set()
+        for rel, _, i, t in self.entries["template"]:
+            for j, s in enumerate(t["companies"]):
+                ref(rel, where("template", i, "companies", j, "company"), s["company"], "company")
+                used_columns.add(s["column"])
+                if s["column"] not in columns:
+                    self._add(rel, "C413", where("template", i, "companies", j, "column"), f'"{s["column"]}" is not a column of a division sheet')
+        for rel, _, i, b in self.entries["bundle"]:
+            if "extends" in b:
+                self._add(rel, "C920", where("bundle", i, "extends"),
+                          f'{b["id"]} tries to extend "{b["extends"]}": a bundle is sealed; list the companies yourself, or use the designer')
+            for j, s in enumerate(b["companies"]):
+                ref(rel, where("bundle", i, "companies", j, "company"), s["company"], "company")
+        for rel, doc in self.singletons["aggregation"][:1]:
+            seen = set()
+            for i, r in enumerate(doc["rules"]):
+                path = lambda *rest, i=i: _json_path(["rules", i, *rest])
+                if r["stat"] not in vocab_stats:
+                    self._add(rel, "C410", path("stat"), f'"{r["stat"]}" is not a division stat')
+                elif r["stat"] in seen:
+                    self._add(rel, "C203", path("stat"), f'"{r["stat"]}" already has a row')
+                seen.add(r["stat"])
+                if r["rule"] not in rules:
+                    self._add(rel, "C412", path("rule"), f'"{r["rule"]}" is not an aggregation rule')
+                if r["subset"] != "all" and (r["subset"] not in ("line", "support") or
+                                             (self.entries["template"] and r["subset"] not in used_columns)):
+                    self._add(rel, "C917", path("subset"), f'"{r["subset"]}" selects no company in any template')
+                if r["rule"] == "average_lines_sum_support" and r["subset"] != "all":
+                    self._add(rel, "C918", path("subset"), "this rule reads line and support, so its subset must be all")
+                w = r.get("max_weight_per_mille")
+                if r["rule"] == "max_mean_blend":
+                    if w is None or w > 1000:
+                        self._add(rel, "C919", path("max_weight_per_mille"), f"a blend needs a weight from 0 to 1000, not {w}")
+                elif w is not None:
+                    self._add(rel, "C919", path("max_weight_per_mille"), f'{r["rule"]} ignores a blend weight')
+            for s in vocab_stats:
+                if s not in seen:
+                    self._add(rel, "C916", "$.rules", f'no row says how "{s}" is derived')
+
+    # -- the division arithmetic: the second implementation of what the game computes --------
+
+    def walk_company(self, company: dict, crew) -> dict[str, int]:
+        """Men and officers by walking every platoon and support section to its squads and vehicle crew. A
+        vehicle's passengers are seats, not men: whoever rides is counted as their own squad."""
+        men = officers = 0
+        for p in company["platoons"] + company["support_sections"]:
+            for e in p["elements"]:
+                n = p["count"] * e["count"]
+                if "squad" in e:
+                    s = self.by_id["squad"][e["squad"]]
+                    men += n * s["men"]
+                    officers += n * s["officers"]
+                else:
+                    men += n * crew(e["vehicle"])
+        return {"men": men, "officers": officers}
+
+    def division_figures(self) -> dict[str, dict]:
+        """Every template's derived stats, by CONTENT_MODEL's exact arithmetic. All integer, with ONE truncating
+        division per figure and none of its inputs already rounded: a blend is not computed from a rounded mean."""
+        resolved = self.resolve()
+
+        def crew(id_):
+            s = resolved[id_]["stats"].get("crew")
+            return s["value"] if s else 0
+
+        rows = {r["stat"]: r for r in self.singletons["aggregation"][0][1]["rules"]}
+        out = {}
+        for t in sorted(self.by_id["template"].values(), key=lambda x: x["id"]):
+            slots = [(self.by_id["company"][s["company"]], s["count"], s["column"]) for s in t["companies"]]
+            walked = {id(c): self.walk_company(c, crew) for c, _, _ in slots}
+            figures: dict = {}
+            for st in self.vocab["division_stats"]:
+                stat, source, rule = st["stat"], st["source"], rows[st["stat"]]
+                if source == "table":
+                    named = sorted({b for c, _, _ in slots for b in c["terrain"]})
+                    figures[stat] = {b: _aggregate(rule, [(c["terrain"].get(b, 1000), n, col) for c, n, col in slots], 1000) for b in named}
+                else:
+                    value = (lambda c: walked[id(c)][stat]) if source == "walked" else (lambda c: c["stats"][stat])
+                    figures[stat] = _aggregate(rule, [(value(c), n, col) for c, n, col in slots], 0)
+            out[t["id"]] = figures
+        return out
 
     def _research_identity(self) -> dict[str, dict]:
         """research.json's own ids (categories, projects, flags, treaties): well formed (schema, C106), in
@@ -1178,6 +1312,45 @@ class ContentSet:
         return dict(sorted(out.items()))
 
 
+def _aggregate(row: dict, pairs: list[tuple[int, int, str]], baseline: int) -> int:
+    """One stat over a division's slots, each (value, count, column). A slot counts once per company it holds."""
+    rule = row["rule"]
+    if rule == "average_lines_sum_support":
+        line = [(v, n) for v, n, col in pairs if col == "line"]
+        lines = sum(n for _, n in line)
+        mean = sum(v * n for v, n in line) // lines if lines else baseline
+        # Support moves the result away from its baseline, so a blank row adds nothing. The subtraction is the one
+        # signed step, it divides nothing, and the result is held at 0 (CONTENT_MODEL section 3 point 6).
+        return max(0, mean + sum((v - baseline) * n for v, n, col in pairs if col == "support"))
+    chosen = [(v, n) for v, n, col in pairs if row["subset"] == "all" or col == row["subset"]]
+    if not chosen:
+        return baseline
+    total, count = sum(v * n for v, n in chosen), sum(n for _, n in chosen)
+    if rule == "sum":
+        return total
+    if rule == "average":
+        return total // count
+    if rule == "min":
+        return min(v for v, _ in chosen)
+    if rule == "max":
+        return max(v for v, _ in chosen)
+    w = row["max_weight_per_mille"]   # max_mean_blend, in one division
+    return (max(v for v, _ in chosen) * w * count + total * (1000 - w)) // (1000 * count)
+
+
+def division_snapshot(figures: dict[str, dict]) -> str:
+    """One line per template-stat, sorted by template and in vocabulary order. A table stat has one line per
+    biome any of its companies names. C# must write the same text."""
+    lines = []
+    for tid, stats in figures.items():
+        for stat, v in stats.items():
+            if isinstance(v, dict):
+                lines += [f"{tid}.{stat}.{b} = {n}" for b, n in v.items()]
+            else:
+                lines.append(f"{tid}.{stat} = {v}")
+    return "\n".join(lines) + "\n"
+
+
 def snapshot(resolved: dict[str, dict]) -> str:
     """The canonical text form of resolve(): one line per design-stat, sorted. It is
     meant to be diffed against the same snapshot written by the C# reader."""
@@ -1219,7 +1392,9 @@ def main(argv: list[str]) -> int:
     if cs.problems:
         print(f"REFUSED: {len(cs.problems)} problem(s) in {cs.root}")
         return 1
-    if "--applied" in argv:
+    if "--division" in argv:
+        sys.stdout.write(division_snapshot(cs.division_figures()))
+    elif "--applied" in argv:
         sys.stdout.write(applied_snapshot(cs.resolve()))
     elif "--resolve" in argv:
         sys.stdout.write(snapshot(cs.resolve()))

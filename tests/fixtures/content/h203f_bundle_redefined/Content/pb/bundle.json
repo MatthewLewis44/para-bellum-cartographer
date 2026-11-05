@@ -1,0 +1,25 @@
+{
+  "format": "pb-content/bundle/1",
+  "bundles": [
+    {
+      "id": "pb:rifle_battalion",
+      "name": "Rifle battalion",
+      "companies": [
+        {
+          "company": "pb:rifle_company",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "id": "pb:rifle_battalion",
+      "name": "Edited",
+      "companies": [
+        {
+          "company": "pb:rifle_company",
+          "count": 2
+        }
+      ]
+    }
+  ]
+}

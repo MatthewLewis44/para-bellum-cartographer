@@ -211,7 +211,7 @@ def main() -> int:
                  for p in built_root.rglob("*") if p.is_file()}
         committed = {p.relative_to(FIXTURES).as_posix(): _lf(p.read_bytes())
                      for p in FIXTURES.rglob("*") if p.is_file()
-                     and not p.name.endswith((".resolved.txt", ".applied.txt"))}
+                     and not p.name.endswith((".resolved.txt", ".applied.txt", ".division.txt"))}
         diff = sorted(k for k in fresh.keys() | committed.keys() if fresh.get(k) != committed.get(k))
         check("committed fixtures are exactly what the generator builds", not diff, f"{diff[:5]}")
 
@@ -250,6 +250,33 @@ def main() -> int:
               path.exists() and _lf(path.read_bytes()).decode("utf-8") == got,
               f"regenerate with: uv run python tools/content_check.py tests/fixtures/content/{name}/Content "
               f"--applied")
+    # 5c. The division arithmetic: the committed figures, and proof the control set tells each rule from its near miss.
+    control = cc.ContentSet(content)
+    path = FIXTURES / "h000_valid.division.txt"
+    check("h000_valid division figures match the committed snapshot (C# must reproduce)",
+          path.exists() and _lf(path.read_bytes()).decode("utf-8") == cc.division_snapshot(control.division_figures()),
+          "regenerate with: uv run python tools/content_check.py tests/fixtures/content/h000_valid/Content --division")
+    figs = control.division_figures()["pb:armored_division"]
+    slots = [(control.by_id["company"][s["company"]], s["count"], s["column"])
+             for s in control.by_id["template"]["pb:armored_division"]["companies"]]
+    orgs = [c["stats"]["organisation"] for c, _, _ in slots]
+    check("average weighs by count: a division is not the mean of its distinct company rows",
+          figs["organisation"] != sum(orgs) // len(orgs), f'{figs["organisation"]}')
+    arm = [(c["stats"]["armour"], n) for c, n, _ in slots]
+    tot, cnt = sum(v * n for v, n in arm), sum(n for _, n in arm)
+    rounded_mean = tot // cnt
+    check("a blend is ONE division: blending a rounded mean gives a different armour",
+          figs["armour"] != (5 * 100 + rounded_mean * 900) // 1000, f'{figs["armour"]}')
+    check("speed takes the slowest company", figs["speed_km_per_day"] == 20, f'{figs["speed_km_per_day"]}')
+    check("a blank terrain row is the baseline: forest moves only by the rows that name it, marsh by the line average",
+          figs["terrain"] == {"forest": (1000 * 2 + 600) // 3 + 2 * 100, "marsh": (800 * 2 + 500) // 3}, f'{figs["terrain"]}')
+    hq_only_men = control.walk_company(control.by_id["company"]["pb:hq_company"], lambda _: 0)
+    check("the walk reaches squads through counts", hq_only_men == {"men": 20, "officers": 4}, f"{hq_only_men}")
+    tank = control.walk_company(control.by_id["company"]["pb:tank_company"], lambda v: 4)
+    check("the walk counts crew", tank == {"men": 66, "officers": 0}, f"{tank}")
+    truck_set = cc.ContentSet(FIXTURES / "a010_truck_is_a_vehicle" / "Content")
+    carried = truck_set.walk_company(truck_set.by_id["company"]["pb:tank_company"], lambda v: 4 if v == "pb:light_tank" else 0)
+    check("a truck's passengers are not men: only its crew would be", carried == {"men": 58, "officers": 0}, f"{carried}")
     a001 = cc.ContentSet(FIXTURES / "a001_layer_arithmetic" / "Content").resolve()["pb:light_tank"]["stats"]
     arm, rel = a001["armour_front_mm"], a001["reliability_per_mille"]
     check("traits SUM within a layer: armour 13 with +150 +150 resolves to 16", arm["value"] == 16, f"{arm['value']}")

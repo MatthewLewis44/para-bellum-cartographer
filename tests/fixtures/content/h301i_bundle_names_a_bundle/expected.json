@@ -1,0 +1,8 @@
+{
+  "code": "C301",
+  "rule": "dangling-reference",
+  "file": "pb/bundle.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "a bundle slot names a bundle: there is no level for that"
+}

@@ -1,0 +1,8 @@
+{
+  "code": "C919",
+  "rule": "blend-weight-mismatch",
+  "file": "pb/aggregation.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "armour's blend weight is 1001"
+}

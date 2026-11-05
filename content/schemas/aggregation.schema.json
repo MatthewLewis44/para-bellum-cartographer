@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:aggregation:1",
+  "title": "Para Bellum content: the aggregation rules",
+  "description": "How each division stat is derived from its companies, one row per stat. File: Content/<namespace>/aggregation.json, exactly ONE across every namespace. Which collisions exist is the point of this file: a wrong rule is invisible in the numbers and obvious here, so an unknown rule, an unknown stat, a missing stat and a subset selecting nothing are all refused. The arithmetic is exact: docs/design/CONTENT_MODEL.md in the game repository.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "rules"
+  ],
+  "properties": {
+    "format": {
+      "const": "pb-content/aggregation/1"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stat",
+          "rule",
+          "subset"
+        ],
+        "properties": {
+          "stat": {
+            "description": "A division stat in Content/vocabulary.json (C410). One row each (C203, C916).",
+            "type": "string"
+          },
+          "rule": {
+            "description": "A rule in Content/vocabulary.json aggregation_rules (C412).",
+            "type": "string"
+          },
+          "subset": {
+            "description": "Which of a division's companies it reads: line, support or all. all includes the hq column. Something else, or a column no template uses, selects nothing (C917).",
+            "type": "string"
+          },
+          "max_weight_per_mille": {
+            "description": "Required on max_mean_blend, and only there (C919): the weight of the maximum, 0 to 1000; the mean takes the rest.",
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

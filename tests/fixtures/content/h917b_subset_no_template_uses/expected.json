@@ -1,0 +1,8 @@
+{
+  "code": "C917",
+  "rule": "subset-selects-nothing",
+  "file": "pb/aggregation.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "complexity reads support, and no template has a support company"
+}

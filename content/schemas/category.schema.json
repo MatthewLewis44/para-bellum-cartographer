@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:category:1",
+  "title": "Para Bellum content: company categories",
+  "description": "What kind of force a company is. File: Content/<namespace>/category.json, so a mod adds one with no code. A category carries what makes combined arms a decision: each further company of a kind adds less, and a kind may need another beside it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "categories"
+  ],
+  "properties": {
+    "format": {
+      "const": "pb-content/category/1"
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/category"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "A namespaced id, <namespace>:<name>, lower case.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+:[a-z0-9_]+$"
+    },
+    "category": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "returns_per_mille",
+        "requires"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "description": "What the player reads. Optional for a mod, required of shipped content (C802).",
+          "type": "string"
+        },
+        "returns_per_mille": {
+          "description": "What the first, second, third... company of this category contributes, per mille. The last value holds for every further company. It may never rise (C604).",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "requires": {
+          "description": "Other categories this one wants present. May be empty.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "category",
+              "penalty_per_mille"
+            ],
+            "properties": {
+              "category": {
+                "$ref": "#/$defs/id"
+              },
+              "penalty_per_mille": {
+                "description": "The cohesion lost when that category is absent, per mille.",
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

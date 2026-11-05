@@ -1,0 +1,8 @@
+{
+  "code": "C414",
+  "rule": "unknown-biome",
+  "file": "pb/company.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "a terrain table names \"moon\""
+}

@@ -1,0 +1,214 @@
+{
+  "format": "pb-content/company/1",
+  "companies": [
+    {
+      "id": "pb:rifle_company",
+      "name": "Rifle company",
+      "category": "pb:infantry",
+      "platoons": [
+        {
+          "name": "No 1",
+          "count": 1,
+          "elements": [
+            {
+              "squad": "pb:platoon_hq",
+              "count": 1,
+              "platoon": {
+                "name": "x",
+                "count": 1,
+                "elements": []
+              }
+            },
+            {
+              "squad": "pb:rifle_squad",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "name": "No 2",
+          "count": 1,
+          "elements": [
+            {
+              "squad": "pb:platoon_hq",
+              "count": 1
+            },
+            {
+              "squad": "pb:rifle_squad",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "name": "No 3",
+          "count": 1,
+          "elements": [
+            {
+              "squad": "pb:platoon_hq",
+              "count": 1
+            },
+            {
+              "squad": "pb:rifle_squad",
+              "count": 3
+            }
+          ]
+        }
+      ],
+      "support_sections": [
+        {
+          "name": "Mortars",
+          "count": 1,
+          "elements": [
+            {
+              "squad": "pb:mortar_squad",
+              "count": 2
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "organisation": 60,
+        "soft_attack": 6,
+        "hard_attack": 1,
+        "defence": 20,
+        "breakthrough": 5,
+        "armour": 0,
+        "piercing": 2,
+        "hardness": 0,
+        "speed_km_per_day": 20,
+        "training_days": 90,
+        "deployment_points": 40,
+        "complexity": 10,
+        "money": 8,
+        "recce": 0
+      },
+      "terrain": {
+        "marsh": 800
+      }
+    },
+    {
+      "id": "pb:tank_company",
+      "name": "Tank company",
+      "category": "pb:armour",
+      "platoons": [
+        {
+          "name": "No 1",
+          "count": 3,
+          "elements": [
+            {
+              "vehicle": "pb:light_tank",
+              "count": 4
+            }
+          ]
+        },
+        {
+          "name": "Scout",
+          "count": 1,
+          "elements": [
+            {
+              "vehicle": "pb:light_tank",
+              "count": 2
+            },
+            {
+              "squad": "pb:rifle_squad",
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "support_sections": [],
+      "stats": {
+        "organisation": 31,
+        "soft_attack": 5,
+        "hard_attack": 8,
+        "defence": 6,
+        "breakthrough": 20,
+        "armour": 5,
+        "piercing": 6,
+        "hardness": 800,
+        "speed_km_per_day": 40,
+        "training_days": 150,
+        "deployment_points": 90,
+        "complexity": 40,
+        "money": 30,
+        "recce": 1
+      },
+      "terrain": {
+        "forest": 600,
+        "marsh": 500
+      }
+    },
+    {
+      "id": "pb:mortar_company",
+      "name": "Mortar company",
+      "category": "pb:support",
+      "platoons": [
+        {
+          "name": "No 1",
+          "count": 2,
+          "elements": [
+            {
+              "squad": "pb:mortar_squad",
+              "count": 4
+            }
+          ]
+        }
+      ],
+      "support_sections": [],
+      "stats": {
+        "organisation": 40,
+        "soft_attack": 9,
+        "hard_attack": 0,
+        "defence": 5,
+        "breakthrough": 3,
+        "armour": 0,
+        "piercing": 0,
+        "hardness": 0,
+        "speed_km_per_day": 20,
+        "training_days": 100,
+        "deployment_points": 30,
+        "complexity": 15,
+        "money": 12,
+        "recce": 0
+      },
+      "terrain": {
+        "forest": 1100
+      }
+    },
+    {
+      "id": "pb:hq_company",
+      "name": "Headquarters company",
+      "category": "pb:headquarters",
+      "platoons": [
+        {
+          "name": "Staff",
+          "count": 1,
+          "elements": [
+            {
+              "squad": "pb:platoon_hq",
+              "count": 4
+            }
+          ]
+        }
+      ],
+      "support_sections": [],
+      "stats": {
+        "organisation": 80,
+        "soft_attack": 0,
+        "hard_attack": 0,
+        "defence": 2,
+        "breakthrough": 0,
+        "armour": 0,
+        "piercing": 0,
+        "hardness": 0,
+        "speed_km_per_day": 30,
+        "training_days": 60,
+        "deployment_points": 0,
+        "complexity": 20,
+        "money": 5,
+        "recce": 0
+      },
+      "terrain": {}
+    }
+  ]
+}

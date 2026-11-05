@@ -5,6 +5,13 @@
       "id": "mymod:cavalry_division",
       "name": "Cavalry division",
       "symbol": "infantry",
+      "companies": [
+        {
+          "company": "pb:rifle_company",
+          "count": 1,
+          "column": "line"
+        }
+      ],
       "cost": {
         "money": 1
       },

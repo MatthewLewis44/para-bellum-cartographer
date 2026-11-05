@@ -1,0 +1,8 @@
+{
+  "code": "C413",
+  "rule": "unknown-division-column",
+  "file": "pb/template.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "a slot's column is \"reserve\""
+}

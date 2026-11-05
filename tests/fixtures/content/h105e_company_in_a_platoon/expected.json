@@ -1,0 +1,8 @@
+{
+  "code": "C105",
+  "rule": "unknown-key",
+  "file": "pb/company.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "a platoon slot names a company: a battalion by another route"
+}

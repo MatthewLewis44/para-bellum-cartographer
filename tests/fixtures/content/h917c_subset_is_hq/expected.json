@@ -1,0 +1,8 @@
+{
+  "code": "C917",
+  "rule": "subset-selects-nothing",
+  "file": "pb/aggregation.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "hardness reads hq: hidden companies are not a subset of their own; all includes them"
+}

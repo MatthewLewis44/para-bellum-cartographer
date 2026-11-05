@@ -1,0 +1,8 @@
+{
+  "code": "C606",
+  "rule": "officers-exceed-men",
+  "file": "pb/squad.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "a squad of 5 has 6 officers"
+}

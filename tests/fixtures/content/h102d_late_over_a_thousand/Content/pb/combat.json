@@ -1,0 +1,16 @@
+{
+  "format": "pb-content/combat/1",
+  "defense_weight_per_level_per_mille": 250,
+  "river_assault_penalty_per_mille": 700,
+  "luck_spread_per_mille": 150,
+  "base_casualty_per_mille": 300,
+  "min_casualty_per_mille": 50,
+  "max_casualty_per_mille": 600,
+  "destroy_floor_strength": 1,
+  "late_contribution_per_mille": 1001,
+  "unpierced_attack_per_mille": 500,
+  "recce_narrow_per_level_per_mille": 250,
+  "refit_strength_floor": 20,
+  "reach_days": 3,
+  "engagement_budget_points": 300
+}

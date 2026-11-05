@@ -27,6 +27,115 @@
     "oil",
     "agriculture"
   ],
+  "division_stats": [
+    {
+      "stat": "organisation",
+      "source": "authored"
+    },
+    {
+      "stat": "soft_attack",
+      "source": "authored"
+    },
+    {
+      "stat": "hard_attack",
+      "source": "authored"
+    },
+    {
+      "stat": "defence",
+      "source": "authored"
+    },
+    {
+      "stat": "breakthrough",
+      "source": "authored"
+    },
+    {
+      "stat": "armour",
+      "source": "authored"
+    },
+    {
+      "stat": "piercing",
+      "source": "authored"
+    },
+    {
+      "stat": "hardness",
+      "source": "authored"
+    },
+    {
+      "stat": "speed_km_per_day",
+      "source": "authored"
+    },
+    {
+      "stat": "training_days",
+      "source": "authored"
+    },
+    {
+      "stat": "deployment_points",
+      "source": "authored"
+    },
+    {
+      "stat": "complexity",
+      "source": "authored"
+    },
+    {
+      "stat": "money",
+      "source": "authored"
+    },
+    {
+      "stat": "recce",
+      "source": "authored"
+    },
+    {
+      "stat": "men",
+      "source": "walked"
+    },
+    {
+      "stat": "officers",
+      "source": "walked"
+    },
+    {
+      "stat": "terrain",
+      "source": "table"
+    }
+  ],
+  "aggregation_rules": [
+    "sum",
+    "average",
+    "min",
+    "max",
+    "max_mean_blend",
+    "average_lines_sum_support"
+  ],
+  "division_columns": [
+    "line",
+    "support",
+    "hq"
+  ],
+  "biomes": [
+    "plains",
+    "steppe",
+    "forest",
+    "jungle",
+    "rainforest",
+    "desert",
+    "badlands",
+    "savanna",
+    "hill",
+    "mountain",
+    "highland_plateau",
+    "glacier",
+    "tundra",
+    "taiga",
+    "marsh",
+    "swamp",
+    "mangrove",
+    "beach",
+    "atoll",
+    "volcanic_island",
+    "water",
+    "coastal_water",
+    "lake",
+    "urban"
+  ],
   "counter_symbols": [
     "infantry",
     "motorized",

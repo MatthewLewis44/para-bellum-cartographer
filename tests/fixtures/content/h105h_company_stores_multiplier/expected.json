@@ -1,0 +1,8 @@
+{
+  "code": "C105",
+  "rule": "unknown-key",
+  "file": "pb/company.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "a company stores its own \"count\": the count belongs to the slot (AD-M45)"
+}

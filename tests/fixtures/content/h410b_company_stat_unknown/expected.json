@@ -1,0 +1,8 @@
+{
+  "code": "C410",
+  "rule": "unknown-division-stat",
+  "file": "pb/company.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "a company sets \"warp_factor\""
+}

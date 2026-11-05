@@ -1,0 +1,47 @@
+{
+  "format": "pb-content/category/1",
+  "categories": [
+    {
+      "id": "pb:infantry",
+      "name": "Infantry",
+      "returns_per_mille": [
+        1000,
+        1000,
+        900,
+        800
+      ],
+      "requires": []
+    },
+    {
+      "id": "pb:armour",
+      "name": "Armour",
+      "returns_per_mille": [
+        1000,
+        1200
+      ],
+      "requires": [
+        {
+          "category": "pb:infantry",
+          "penalty_per_mille": 200
+        }
+      ]
+    },
+    {
+      "id": "pb:support",
+      "name": "Support",
+      "returns_per_mille": [
+        1000,
+        500
+      ],
+      "requires": []
+    },
+    {
+      "id": "pb:headquarters",
+      "name": "Headquarters",
+      "returns_per_mille": [
+        1000
+      ],
+      "requires": []
+    }
+  ]
+}

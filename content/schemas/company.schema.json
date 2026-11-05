@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:company:1",
+  "title": "Para Bellum content: companies",
+  "description": "The commitment unit (AD-M46): a division is made of companies, and a battle's force is chosen in companies. File: Content/<namespace>/company.json. Platoons are written inline and support sections use the same shape, so one walk covers both. A company stores neither men nor officers: both are derived by walking to its squads and vehicle crew. The contract is docs/design/CONTENT_MODEL.md in the game repository.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "companies"
+  ],
+  "properties": {
+    "format": {
+      "const": "pb-content/company/1"
+    },
+    "companies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/company"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "A namespaced id, <namespace>:<name>, lower case.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+:[a-z0-9_]+$"
+    },
+    "platoon": {
+      "description": "One platoon, written inline in its company: a player's company is ONE document, and nothing else ever refers to a platoon. So a platoon has a name and no id, and this is where the company stops holding things by reference.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "count",
+        "elements"
+      ],
+      "properties": {
+        "name": {
+          "description": "What this platoon is called in this company, for example No 1 or Scout.",
+          "type": "string"
+        },
+        "count": {
+          "description": "How many. Required in a file (the reader has no defaults, C101); a designer offers 1 for a new slot. It belongs to this slot, never to the thing named, so one design serves several parents at different counts.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "elements": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/element"
+          }
+        }
+      }
+    },
+    "element": {
+      "description": "One squad type or one vehicle design, and how many. Exactly one of squad and vehicle. This is the floor: nothing goes below it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "squad"
+          ]
+        },
+        {
+          "required": [
+            "vehicle"
+          ]
+        }
+      ],
+      "properties": {
+        "squad": {
+          "description": "A squad, by id.",
+          "$ref": "#/$defs/id"
+        },
+        "vehicle": {
+          "description": "A design (a model or a variant), by id. Its class must declare crew or transport_passengers (C308). This records what is in the platoon, not what it costs: nothing here draws from the stockpile (AD-M47).",
+          "$ref": "#/$defs/id"
+        },
+        "count": {
+          "description": "How many. Required in a file (the reader has no defaults, C101); a designer offers 1 for a new slot. It belongs to this slot, never to the thing named, so one design serves several parents at different counts.",
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "company": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "category",
+        "platoons",
+        "support_sections",
+        "stats",
+        "terrain"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "description": "What the player reads. Optional for a mod, required of shipped content (C802).",
+          "type": "string"
+        },
+        "category": {
+          "description": "What kind of force this is, by id: diminishing returns and support requirements key on it.",
+          "$ref": "#/$defs/id"
+        },
+        "platoons": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/platoon"
+          }
+        },
+        "support_sections": {
+          "description": "The company's own HQ, mortar, anti-tank, spotter and scout sections. They commit with the company and are not separately priced. May be empty.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/platoon"
+          }
+        },
+        "stats": {
+          "description": "One value per AUTHORED division stat in Content/vocabulary.json, all of them (C411). A walked or table stat cannot be set here (C415).",
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "terrain": {
+          "description": "Combat effectiveness per biome, per mille, where 1000 is the baseline. An absent biome is the baseline, so plain infantry's table is empty. May be empty.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pb-content:squad:1",
+  "title": "Para Bellum content: squads",
+  "description": "The floor of the formation hierarchy, beside a vehicle: DIVISION > COMPANY > PLATOON > SQUAD or VEHICLE, four levels and no fifth (AD-M45). A vehicle needs no row here: a platoon names an existing design, whose crew and transport_passengers already say what it carries. File: Content/<namespace>/squad.json. Men and officers here are the only authored personnel figures in the hierarchy: a company's and a division's are derived by walking down to these rows and to vehicle crew, and are never stored, so they cannot disagree with the walk.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "squads"
+  ],
+  "properties": {
+    "format": {
+      "const": "pb-content/squad/1"
+    },
+    "squads": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/squad"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "A namespaced id, <namespace>:<name>, lower case.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+:[a-z0-9_]+$"
+    },
+    "squad": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "men",
+        "officers"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "description": "What the player reads. Optional for a mod, required of shipped content (C802).",
+          "type": "string"
+        },
+        "men": {
+          "description": "Everyone in the squad, its officers included.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "officers": {
+          "description": "How many of those men are officers. No more than men (C606).",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

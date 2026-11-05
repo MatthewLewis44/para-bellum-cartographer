@@ -5,6 +5,23 @@
       "id": "pb:infantry_division",
       "name": "Infantry division",
       "symbol": "infantry",
+      "companies": [
+        {
+          "company": "pb:rifle_company",
+          "count": 3,
+          "column": "line"
+        },
+        {
+          "company": "pb:mortar_company",
+          "count": 1,
+          "column": "support"
+        },
+        {
+          "company": "pb:hq_company",
+          "count": 1,
+          "column": "hq"
+        }
+      ],
       "cost": {
         "money": 25,
         "manpower": 14000
@@ -30,6 +47,13 @@
       "id": "pb:motorized_division",
       "name": "Motorized division",
       "symbol": "motorized",
+      "companies": [
+        {
+          "company": "pb:rifle_company",
+          "count": 2,
+          "column": "line"
+        }
+      ],
       "cost": {
         "money": 60,
         "manpower": 12000
@@ -55,6 +79,28 @@
       "id": "pb:armored_division",
       "name": "Armored division",
       "symbol": "armored",
+      "companies": [
+        {
+          "company": "pb:rifle_company",
+          "count": 2,
+          "column": "line"
+        },
+        {
+          "company": "pb:tank_company",
+          "count": 1,
+          "column": "line"
+        },
+        {
+          "company": "pb:mortar_company",
+          "count": 2,
+          "column": "support"
+        },
+        {
+          "company": "pb:hq_company",
+          "count": 1,
+          "column": "hq"
+        }
+      ],
       "cost": {
         "money": 90,
         "manpower": 10000
