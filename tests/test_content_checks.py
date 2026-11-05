@@ -51,6 +51,10 @@ import sys
 import tempfile
 from pathlib import Path
 
+# Plain `git status` WRITES the index when it refreshes stat data, and this test runs it against the game repo, which
+# another seat may be holding. Every git process this file starts inherits this (proved below, mutant and control).
+os.environ["GIT_OPTIONAL_LOCKS"] = "0"
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import build_content_fixtures as bcf  # noqa: E402
@@ -392,6 +396,32 @@ def main() -> int:
     check("content/SHA256SUMS matches the schemas and fixtures",
           PIN.exists() and _lf(PIN.read_bytes()).decode("utf-8") == pin_text(),
           "re-pin with: uv run python tests/test_content_checks.py --repin")
+
+    # 6b. This test cannot write the game repo's index. A fresh repo with a stale stat: the plain command rewrites its
+    #     index (the control, so the probe can see a write), and this file's own helper does not.
+    with tempfile.TemporaryDirectory() as t:
+        repo = Path(t)
+
+        def raw(*a, **env):
+            clean = {k: v for k, v in os.environ.items() if k != "GIT_OPTIONAL_LOCKS"}
+            return subprocess.run(["git", "-C", str(repo), *a], capture_output=True, env={**clean, **env}, check=True)
+
+        raw("init", "-q")
+        (repo / "f.txt").write_text("x", encoding="utf-8")
+        raw("add", "f.txt")
+
+        def stale_index_bytes():
+            st = (repo / "f.txt").stat()
+            os.utime(repo / "f.txt", (st.st_atime + 100, st.st_mtime + 100))
+            return (repo / ".git" / "index").read_bytes()
+
+        before = stale_index_bytes()
+        _is_clean(repo, "f.txt")
+        check("this test's git status leaves a stale index untouched", (repo / ".git" / "index").read_bytes() == before)
+        before = stale_index_bytes()
+        raw("status", "--porcelain")
+        check("CONTROL: a plain git status does rewrite a stale index, so the check above can see a write",
+              (repo / ".git" / "index").read_bytes() != before)
 
     # 7. Drift against the game's copy. Both trees are printed (D24).
     unity = Path(os.environ.get("PB_UNITY_REPO", "C:/UnityProjects/ParaBellum"))
