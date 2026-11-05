@@ -61,6 +61,7 @@ pb:medium_tank_late class=pb:tank model=pb:medium_tank traits=pb:sloped_armour c
   pb:medium_tank_late.speed_road_kph = 40 [model=40]
   pb:medium_tank_late.weight_kg = 0 [class=0]
 pb:trucks class=pb:trucks model=pb:trucks traits=- cost=oil:1,steel:2 production=units_per_factory_per_month:4
+  pb:trucks.crew = 1 [model=1]
   pb:trucks.speed_road_kph = 0 [class=0]
   pb:trucks.transport_passengers = 12 [model=12]
   pb:trucks.weight_kg = 0 [class=0]

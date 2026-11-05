@@ -605,12 +605,11 @@ class ContentSet:
         biomes = set(self.vocab.get("biomes", []))
         columns = set(self.vocab.get("division_columns", []))
         rules = set(self.vocab.get("aggregation_rules", []))
-        classes = self.by_id["class"]
         designs = {**self.by_id["model"], **self.by_id["variant"]}
 
-        def vehicle_class(id_):
+        def vehicle_model(id_):
             d = designs[id_]
-            return classes[(self.by_id["model"][d["model"]] if "model" in d else d)["class"]]
+            return self.by_id["model"][d["model"]] if "model" in d else d
 
         for rel, _, i, s in self.entries["squad"]:
             if s["officers"] > s["men"]:
@@ -630,10 +629,9 @@ class ContentSet:
                         if "squad" in e:
                             ref(rel, where("company", i, key, j, "elements", k, "squad"), e["squad"], "squad")
                         elif e["vehicle"] in designs:
-                            surface = vehicle_class(e["vehicle"])["stats"]
-                            if "crew" not in surface and "transport_passengers" not in surface:
+                            if "crew" not in designs[e["vehicle"]]["stats"] and "crew" not in vehicle_model(e["vehicle"])["stats"]:
                                 self._add(rel, "C308", where("company", i, key, j, "elements", k, "vehicle"),
-                                          f'"{e["vehicle"]}" has no crew and no passengers, so it is not a vehicle')
+                                          f'"{e["vehicle"]}" authors no crew: write its crew on the model, 0 if it carries none')
                         else:
                             ref(rel, where("company", i, key, j, "elements", k, "vehicle"), e["vehicle"], "model")
             for k in c["stats"]:
@@ -709,8 +707,7 @@ class ContentSet:
         resolved = self.resolve()
 
         def crew(id_):
-            s = resolved[id_]["stats"].get("crew")
-            return s["value"] if s else 0
+            return resolved[id_]["stats"]["crew"]["value"]   # C308 refused any vehicle with no authored crew
 
         rows = {r["stat"]: r for r in self.singletons["aggregation"][0][1]["rules"]}
         out = {}

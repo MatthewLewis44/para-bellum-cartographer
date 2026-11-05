@@ -52,6 +52,7 @@ pb:medium_tank_late.reliability_per_mille = 900 base=900 layers[Base=1000 Facili
 pb:medium_tank_late.speed_offroad_kph = 0 base=0 layers[Base=1000 Facility=1000 Research=1000 Doctrine=1000 Policy=1000 CaptureState=1000]
 pb:medium_tank_late.speed_road_kph = 40 base=40 layers[Base=1000 Facility=1000 Research=1000 Doctrine=1000 Policy=1000 CaptureState=1000]
 pb:medium_tank_late.weight_kg = 0 base=0 layers[Base=1000 Facility=1000 Research=1000 Doctrine=1000 Policy=1000 CaptureState=1000]
+pb:trucks.crew = 1 base=1 layers[Base=1000 Facility=1000 Research=1000 Doctrine=1000 Policy=1000 CaptureState=1000]
 pb:trucks.speed_road_kph = 0 base=0 layers[Base=1000 Facility=1000 Research=1000 Doctrine=1000 Policy=1000 CaptureState=1000]
 pb:trucks.transport_passengers = 12 base=12 layers[Base=1000 Facility=1000 Research=1000 Doctrine=1000 Policy=1000 CaptureState=1000]
 pb:trucks.weight_kg = 0 base=0 layers[Base=1000 Facility=1000 Research=1000 Doctrine=1000 Policy=1000 CaptureState=1000]

@@ -79,7 +79,7 @@
           "$ref": "#/$defs/id"
         },
         "vehicle": {
-          "description": "A design (a model or a variant), by id. Its class must declare crew or transport_passengers (C308). This records what is in the platoon, not what it costs: nothing here draws from the stockpile (AD-M47).",
+          "description": "A design (a model or a variant), by id. Its model must author crew, where 0 is a real answer (C308). This records what is in the platoon, not what it costs: nothing here draws from the stockpile (AD-M47).",
           "$ref": "#/$defs/id"
         },
         "count": {

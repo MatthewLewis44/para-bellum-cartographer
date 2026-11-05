@@ -92,6 +92,7 @@
       "unlock": null,
       "supersedes": null,
       "stats": {
+        "crew": 1,
         "transport_passengers": 12,
         "armour_front_mm": 5
       },

@@ -1,0 +1,8 @@
+{
+  "code": "C308",
+  "rule": "vehicle-crew-not-authored",
+  "file": "pb/company.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "the medium tank, used at one site, authors no crew: not 0, no answer, so the walk has no total to give"
+}

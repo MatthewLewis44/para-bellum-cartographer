@@ -274,9 +274,15 @@ def main() -> int:
     check("the walk reaches squads through counts", hq_only_men == {"men": 20, "officers": 4}, f"{hq_only_men}")
     tank = control.walk_company(control.by_id["company"]["pb:tank_company"], lambda v: 4)
     check("the walk counts crew", tank == {"men": 66, "officers": 0}, f"{tank}")
-    truck_set = cc.ContentSet(FIXTURES / "a010_truck_is_a_vehicle" / "Content")
+    truck_set = cc.ContentSet(FIXTURES / "a010_crew_zero_is_an_answer" / "Content")
     carried = truck_set.walk_company(truck_set.by_id["company"]["pb:tank_company"], lambda v: 4 if v == "pb:light_tank" else 0)
-    check("a truck's passengers are not men: only its crew would be", carried == {"men": 58, "officers": 0}, f"{carried}")
+    check("a truck's passengers are not men, and crew 0 adds nobody", carried == {"men": 58, "officers": 0}, f"{carried}")
+    # An accept fixture proves acceptance, not use (D86): a reader that dropped the row would pass it just as well.
+    modded = cc.ContentSet(FIXTURES / "a006_mod_adds_template" / "Content").division_figures()
+    check("a006's added division reaches the arithmetic, not only the reader", "mymod:cavalry_division" in modded, f"{sorted(modded)}")
+    with_variant = cc.ContentSet(FIXTURES / "a009_vehicle_is_a_variant" / "Content")
+    check("a009's variant reaches the walk through its resolved crew",
+          with_variant.division_figures()["pb:armored_division"]["men"] != figs["men"], f'{figs["men"]}')
     a001 = cc.ContentSet(FIXTURES / "a001_layer_arithmetic" / "Content").resolve()["pb:light_tank"]["stats"]
     arm, rel = a001["armour_front_mm"], a001["reliability_per_mille"]
     check("traits SUM within a layer: armour 13 with +150 +150 resolves to 16", arm["value"] == 16, f"{arm['value']}")

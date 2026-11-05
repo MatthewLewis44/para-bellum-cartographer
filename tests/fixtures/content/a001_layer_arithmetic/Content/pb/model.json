@@ -96,6 +96,7 @@
       "unlock": null,
       "supersedes": null,
       "stats": {
+        "crew": 1,
         "transport_passengers": 12
       },
       "traits": [],

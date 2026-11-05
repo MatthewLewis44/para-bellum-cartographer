@@ -312,7 +312,10 @@ MUTATIONS = [
      _set([CA, "categories", 1, "requires", 0, "category"], "pb:infantri")),
     ("h301i_bundle_names_a_bundle", "C301", BU, "a bundle slot names a bundle: there is no level for that",
      _set([BU, "bundles", 0, "companies", 0, "company"], "pb:rifle_battalion")),
-    ("h308_vehicle_with_no_seats", "C308", CO, "a vehicle element names pb:infantry_kit, whose class has no crew and no passengers",
+    ("h308b_vehicle_crew_absent", "C308", CO, "the medium tank, used at one site, authors no crew: not 0, no answer, so the walk has no total to give",
+     _both(_set([CO, "companies", 1, "platoons", 1, "elements", 0, "vehicle"], "pb:medium_tank"),
+           _del([M, "models", 3, "stats", "crew"]))),
+    ("h308_vehicle_with_no_crew", "C308", CO, "a vehicle element names pb:infantry_kit, whose model authors no crew",
      _set([CO, "companies", 1, "platoons", 0, "elements", 0, "vehicle"], "pb:infantry_kit")),
     ("h309_category_requires_itself", "C309", CA, "armour requires armour",
      _set([CA, "categories", 1, "requires", 0, "category"], "pb:armour")),
@@ -485,9 +488,10 @@ ACCEPTED = [
     ("a008_subset_some_division_lacks", "complexity reads support; pb:motorized_division has no support company and is "
      "legal. The control for h917b: a subset must select something in the set, not in every division",
      _set([AG, "rules", 11, "subset"], "support")),
-    ("a010_truck_is_a_vehicle", "a vehicle element names pb:trucks, whose class has passengers and no crew: a vehicle "
-     "needs one or the other. The control for h308, and the walk counts no passengers as men",
-     _set([CO, "companies", 1, "platoons", 1, "elements", 0, "vehicle"], "pb:trucks")),
+    ("a010_crew_zero_is_an_answer", "a vehicle whose model authors crew 0 is accepted: the control for h308b. 0 means it "
+     "carries none, and the walk counts its passengers as nobody",
+     _both(_set([CO, "companies", 1, "platoons", 1, "elements", 0, "vehicle"], "pb:trucks"),
+           _set([M, "models", 4, "stats", "crew"], 0))),
     ("a009_vehicle_is_a_variant", "a vehicle element names a variant: a design is a model or a variant",
      _set([CO, "companies", 1, "platoons", 0, "elements", 0, "vehicle"], "pb:medium_tank_late")),
     ("a006_mod_adds_template", "a mod adds a division of its own beside the shipped three. Identity is a content id, "

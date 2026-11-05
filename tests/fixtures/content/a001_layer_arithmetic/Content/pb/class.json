@@ -51,6 +51,7 @@
       "name": "Trucks",
       "stats": {
         "weight_kg": 0,
+        "crew": 0,
         "speed_road_kph": 0,
         "transport_passengers": 0
       },
