@@ -1,0 +1,4 @@
+#!/bin/sh
+# Installed by: git config core.hooksPath tools/hooks
+# This repository is public. See tools/prepush_guard.py, including what it does NOT do.
+exec uv run --project "$(git rev-parse --show-toplevel)" python "$(git rev-parse --show-toplevel)/tools/prepush_guard.py"
