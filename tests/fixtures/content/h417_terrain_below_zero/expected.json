@@ -1,0 +1,8 @@
+{
+  "code": "C417",
+  "rule": "terrain-below-zero",
+  "file": "pb/template.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "the mortar company reads 50 in forest: pb:armored_division's line mean 866 shifted by 50 - 1000 is below 0. pb:infantry_division's line mean 1000 shifted the same way stays at 50"
+}

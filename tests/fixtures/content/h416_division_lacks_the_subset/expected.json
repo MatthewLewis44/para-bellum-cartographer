@@ -1,0 +1,8 @@
+{
+  "code": "C416",
+  "rule": "division-selects-nothing",
+  "file": "pb/template.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "complexity reads support; pb:motorized_division has no support company, so its complexity would be a baseline 0 that reads like a judgement"
+}

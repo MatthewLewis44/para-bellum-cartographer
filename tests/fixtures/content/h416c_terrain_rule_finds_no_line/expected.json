@@ -1,0 +1,8 @@
+{
+  "code": "C416",
+  "rule": "division-selects-nothing",
+  "file": "pb/template.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "pb:motorized_division's only company sits in support, and hardness reads all, so the one rule left with nothing to read is terrain's: the line sets its figure"
+}

@@ -272,8 +272,16 @@ def main() -> int:
     check("a blend is ONE division: blending a rounded mean gives a different armour",
           figs["armour"] != (5 * 100 + rounded_mean * 900) // 1000, f'{figs["armour"]}')
     check("speed takes the slowest company", figs["speed_km_per_day"] == 20, f'{figs["speed_km_per_day"]}')
-    check("a blank terrain row is the baseline: forest moves only by the rows that name it, marsh by the line average",
-          figs["terrain"] == {"forest": (1000 * 2 + 600) // 3 + 2 * 100, "marsh": (800 * 2 + 500) // 3}, f'{figs["terrain"]}')
+    # AD-M49, rule B: the line's mean shifted ONCE by the support's mean distance from 1000, as one exact fraction.
+    terr = figs["terrain"]
+    check("terrain is the line mean shifted once by the support mean: forest (2600/3 + 2200/2 - 1000) in one division",
+          terr["forest"] == (2600 * 2 + (2200 - 2000) * 3) // 6 == 966, f'{terr["forest"]}')
+    check("B DISCRIMINATES from the count-scaled defect (866 + 2 x 100) and from a plain weighted mean (4800 / 5)",
+          terr["forest"] not in ((1000 * 2 + 600) // 3 + 2 * 100, (2600 + 2200) // 5), f'{terr["forest"]}')
+    check("a blank terrain row is the baseline: marsh moves only by the line average", terr["marsh"] == (800 * 2 + 500) // 3,
+          f'{terr["marsh"]}')
+    check("every vocabulary biome is printed, in vocabulary order, and one no company names reads 1000 (the shared default)",
+          list(terr) == control.vocab["biomes"] and terr["plains"] == 1000, f"{list(terr)[:4]}")
     hq_only_men = control.walk_company(control.by_id["company"]["pb:hq_company"], lambda _: 0)
     check("the walk reaches squads through counts", hq_only_men == {"men": 20, "officers": 4}, f"{hq_only_men}")
     tank = control.walk_company(control.by_id["company"]["pb:tank_company"], lambda v: 4)

@@ -645,11 +645,9 @@ class ContentSet:
             for b in c["terrain"]:
                 if b not in biomes:
                     self._add(rel, "C414", where("company", i, "terrain", b), f'"{b}" is not a biome')
-        used_columns = set()
         for rel, _, i, t in self.entries["template"]:
             for j, s in enumerate(t["companies"]):
                 ref(rel, where("template", i, "companies", j, "company"), s["company"], "company")
-                used_columns.add(s["column"])
                 if s["column"] not in columns:
                     self._add(rel, "C413", where("template", i, "companies", j, "column"), f'"{s["column"]}" is not a column of a division sheet')
         for rel, _, i, b in self.entries["bundle"]:
@@ -669,9 +667,8 @@ class ContentSet:
                 seen.add(r["stat"])
                 if r["rule"] not in rules:
                     self._add(rel, "C412", path("rule"), f'"{r["rule"]}" is not an aggregation rule')
-                if r["subset"] != "all" and (r["subset"] not in ("line", "support") or
-                                             (self.entries["template"] and r["subset"] not in used_columns)):
-                    self._add(rel, "C917", path("subset"), f'"{r["subset"]}" selects no company in any template')
+                if r["subset"] not in ("all", "line", "support"):
+                    self._add(rel, "C917", path("subset"), f'"{r["subset"]}" is not a subset a rule can read: all, line or support')
                 if r["rule"] == "average_lines_sum_support" and r["subset"] != "all":
                     self._add(rel, "C918", path("subset"), "this rule reads line and support, so its subset must be all")
                 w = r.get("max_weight_per_mille")
@@ -683,6 +680,42 @@ class ContentSet:
             for s in vocab_stats:
                 if s not in seen:
                     self._add(rel, "C916", "$.rules", f'no row says how "{s}" is derived')
+        # AD-M49: a division is refused, not printed, when a rule reads nothing in IT (C416) or the terrain rule goes
+        # below 0 in a biome (C417). Content only: a player's design clamps and shows it, in the sim.
+        agg_rows = self.singletons["aggregation"][0][1]["rules"] if self.singletons["aggregation"] else []
+        companies = self.by_id["company"]
+        for rel, _, i, t in self.entries["template"]:
+            if any(s["column"] not in columns for s in t["companies"]):
+                continue   # C413 reported it: an unknown column is not a missing one
+            present = {s["column"] for s in t["companies"]}
+            empty = []
+            for r in agg_rows:
+                if r["rule"] == "average_lines_sum_support":
+                    need = "line"
+                elif r["subset"] in ("line", "support"):
+                    need = r["subset"]
+                else:
+                    continue
+                if need not in present:
+                    empty.append(f'{r["stat"]} reads {need}')
+            if empty:
+                self._add(rel, "C416", where("template", i, "companies"),
+                          f'{t["id"]} has no company for a rule to read: {"; ".join(empty)}')
+                continue
+            if any(s["company"] not in companies for s in t["companies"]):
+                continue   # C301 reported it
+            below = []
+            for r in agg_rows:
+                if r["rule"] != "average_lines_sum_support" or vocab_stats.get(r["stat"]) != "table":
+                    continue
+                for b in self.vocab.get("biomes", []):
+                    shift = _line_shift([(companies[s["company"]]["terrain"].get(b, 1000), s["count"], s["column"])
+                                         for s in t["companies"]], 1000)
+                    if shift is not None and shift[0] < 0:
+                        below.append(f'{r["stat"]}.{b} {-(-shift[0] // shift[1])}')   # truncated toward 0, as C# prints it
+            if below:
+                self._add(rel, "C417", where("template", i, "companies"),
+                          f'{t["id"]} goes below 0, the line mean plus the support shift: {", ".join(below)}')
 
     # -- the division arithmetic: the second implementation of what the game computes --------
 
@@ -718,8 +751,10 @@ class ContentSet:
             for st in self.vocab["division_stats"]:
                 stat, source, rule = st["stat"], st["source"], rows[st["stat"]]
                 if source == "table":
-                    named = sorted({b for c, _, _ in slots for b in c["terrain"]})
-                    figures[stat] = {b: _aggregate(rule, [(c["terrain"].get(b, 1000), n, col) for c, n, col in slots], 1000) for b in named}
+                    # Every vocabulary biome, in vocabulary order: a biome no company names prints 1000, so the
+                    # default is in the shared snapshot and not an assumption each reader makes alone (AD-M49).
+                    figures[stat] = {b: _aggregate(rule, [(c["terrain"].get(b, 1000), n, col) for c, n, col in slots], 1000)
+                                     for b in self.vocab["biomes"]}
                 else:
                     value = (lambda c: walked[id(c)][stat]) if source == "walked" else (lambda c: c["stats"][stat])
                     figures[stat] = _aggregate(rule, [(value(c), n, col) for c, n, col in slots], 0)
@@ -1313,12 +1348,8 @@ def _aggregate(row: dict, pairs: list[tuple[int, int, str]], baseline: int) -> i
     """One stat over a division's slots, each (value, count, column). A slot counts once per company it holds."""
     rule = row["rule"]
     if rule == "average_lines_sum_support":
-        line = [(v, n) for v, n, col in pairs if col == "line"]
-        lines = sum(n for _, n in line)
-        mean = sum(v * n for v, n in line) // lines if lines else baseline
-        # Support moves the result away from its baseline, so a blank row adds nothing. The subtraction is the one
-        # signed step, it divides nothing, and the result is held at 0 (CONTENT_MODEL section 3 point 6).
-        return max(0, mean + sum((v - baseline) * n for v, n, col in pairs if col == "support"))
+        num, den = _line_shift(pairs, baseline)   # C416 refused a division with no line, C417 a negative figure
+        return num // den
     chosen = [(v, n) for v, n, col in pairs if row["subset"] == "all" or col == row["subset"]]
     if not chosen:
         return baseline
@@ -1335,9 +1366,27 @@ def _aggregate(row: dict, pairs: list[tuple[int, int, str]], baseline: int) -> i
     return (max(v for v, _ in chosen) * w * count + total * (1000 - w)) // (1000 * count)
 
 
+def _line_shift(pairs: list[tuple[int, int, str]], baseline: int) -> tuple[int, int] | None:
+    """AD-M49's rule B as one exact fraction: the line's weighted mean, SHIFTED by the support's weighted mean's
+    distance from the baseline, once, however many support companies there are. None with no line company.
+
+    num / den = line_total / line_n + support_total / support_n - baseline, so the figure is ONE truncating
+    division and no input is already rounded. Scaling the shift by the support count was the Sprint 15 defect:
+    nineteen support companies at -200 drove two shipped divisions to 0 in six biomes."""
+    ln = sum(n for _, n, col in pairs if col == "line")
+    if not ln:
+        return None
+    lt = sum(v * n for v, n, col in pairs if col == "line")
+    sn = sum(n for _, n, col in pairs if col == "support")
+    if not sn:
+        return lt, ln
+    st = sum(v * n for v, n, col in pairs if col == "support")
+    return lt * sn + (st - baseline * sn) * ln, ln * sn
+
+
 def division_snapshot(figures: dict[str, dict]) -> str:
     """One line per template-stat, sorted by template and in vocabulary order. A table stat has one line per
-    biome any of its companies names. C# must write the same text."""
+    vocabulary biome, in vocabulary order, a biome no company names reading 1000. C# must write the same text."""
     lines = []
     for tid, stats in figures.items():
         for stat, v in stats.items():

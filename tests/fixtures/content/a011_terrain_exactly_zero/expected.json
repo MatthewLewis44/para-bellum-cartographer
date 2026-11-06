@@ -1,0 +1,6 @@
+{
+  "code": null,
+  "python": "accept",
+  "csharp": "accept",
+  "seeded": "the control for h417: a tank company reading 1000 in forest and mortars reading 0 put both divisions at exactly 0, which is a figure and loads. Scaling the shift by the support count would make pb:armored_division's two mortars -1000 and refuse it"
+}

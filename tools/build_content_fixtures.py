@@ -338,9 +338,21 @@ MUTATIONS = [
     ("h917_subset_misspelt", "C917", AG, 'hardness reads subset "lines", which selects nothing', _set([AG, "rules", 7, "subset"], "lines")),
     ("h917c_subset_is_hq", "C917", AG, "hardness reads hq: hidden companies are not a subset of their own; all includes them",
      _set([AG, "rules", 7, "subset"], "hq")),
-    ("h917b_subset_no_template_uses", "C917", AG, "complexity reads support, and no template has a support company",
+    # AD-M49: a rule that reads nothing in a DIVISION refuses there (C416). h416 was a008, accepted until the ruling;
+    # h416b was h917b, which C917 blamed once in the rules before each division answered for itself.
+    ("h416_division_lacks_the_subset", "C416", T, "complexity reads support; pb:motorized_division has no support "
+     "company, so its complexity would be a baseline 0 that reads like a judgement",
+     _set([AG, "rules", 11, "subset"], "support")),
+    ("h416b_no_division_has_the_subset", "C416", [T, T, T], "complexity reads support, and no template has a support "
+     "company: each of the three divisions is refused",
      _both(_set([AG, "rules", 11, "subset"], "support"),
            lambda d: [t.__setitem__("companies", [s for s in t["companies"] if s["column"] != "support"]) for t in d[T]["templates"]] and None)),
+    ("h416c_terrain_rule_finds_no_line", "C416", T, "pb:motorized_division's only company sits in support, and hardness "
+     "reads all, so the one rule left with nothing to read is terrain's: the line sets its figure",
+     _both(_set([AG, "rules", 7, "subset"], "all"), _set([T, "templates", 1, "companies", 0, "column"], "support"))),
+    ("h417_terrain_below_zero", "C417", T, "the mortar company reads 50 in forest: pb:armored_division's line mean 866 "
+     "shifted by 50 - 1000 is below 0. pb:infantry_division's line mean 1000 shifted the same way stays at 50",
+     _set([CO, "companies", 2, "terrain", "forest"], 50)),
     ("h918_rule_reads_one_column", "C918", AG, "terrain's two-column rule is limited to line", _set([AG, "rules", 16, "subset"], "line")),
     ("h919_blend_without_weight", "C919", AG, "armour's blend has no weight", _del([AG, "rules", 5, "max_weight_per_mille"])),
     ("h919b_blend_weight_over", "C919", AG, "armour's blend weight is 1001", _set([AG, "rules", 5, "max_weight_per_mille"], 1001)),
@@ -485,9 +497,10 @@ ACCEPTED = [
      "Sealed means no edit of a bundle, not that bundles are closed",
      lambda d: d.__setitem__("mymod/bundle.json", {"format": "pb-content/bundle/1", "bundles": [
          {"id": "mymod:my_battalion", "name": "My battalion", "companies": [{"company": "pb:rifle_company", "count": 2}]}]})),
-    ("a008_subset_some_division_lacks", "complexity reads support; pb:motorized_division has no support company and is "
-     "legal. The control for h917b: a subset must select something in the set, not in every division",
-     _set([AG, "rules", 11, "subset"], "support")),
+    ("a011_terrain_exactly_zero", "the control for h417: a tank company reading 1000 in forest and mortars reading 0 put "
+     "both divisions at exactly 0, which is a figure and loads. Scaling the shift by the support count would make "
+     "pb:armored_division's two mortars -1000 and refuse it",
+     _both(_set([CO, "companies", 1, "terrain", "forest"], 1000), _set([CO, "companies", 2, "terrain", "forest"], 0))),
     ("a010_crew_zero_is_an_answer", "a vehicle whose model authors crew 0 is accepted: the control for h308b. 0 means it "
      "carries none, and the walk counts its passengers as nobody",
      _both(_set([CO, "companies", 1, "platoons", 1, "elements", 0, "vehicle"], "pb:trucks"),
