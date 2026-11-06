@@ -1,0 +1,8 @@
+{
+  "code": "C102",
+  "rule": "wrong-type",
+  "file": "pb/combat.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "refit_strength_floor's name is empty, which reads as no reason at all"
+}

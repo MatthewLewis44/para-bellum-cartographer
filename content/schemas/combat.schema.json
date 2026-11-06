@@ -43,16 +43,29 @@
       "type": "integer", "minimum": 0, "maximum": 1000
     },
     "refit_strength_floor": {
-      "description": "A company below this strength is refitting and cannot be committed, in strength points.",
-      "type": "integer", "minimum": 0
+      "description": "A COMMIT LIMIT (D103). value: a company below this strength is refitting and cannot be committed. Strength is a percentage of full, 0 to 100, so Has is the company's strength and Bound is this value, both in % strength.",
+      "$ref": "#/$defs/limit"
     },
     "reach_days": {
-      "description": "How many days of travel away a formation can still join an engagement.",
-      "type": "integer", "minimum": 0
+      "description": "A COMMIT LIMIT (D103). value: how many days of travel away a formation can still join an engagement, an integer. Has is the formation's travel time in FRACTIONAL days, and is NOT FINITE (infinity) when there is no route: a reader must show that as no route, never print it as a number. Bound is this value.",
+      "$ref": "#/$defs/limit"
     },
     "engagement_budget_points": {
-      "description": "Each side's budget in an engagement, in the same deployment points a company costs.",
-      "type": "integer", "minimum": 1
+      "description": "A COMMIT LIMIT (D103). value: each side's budget in an engagement, in the same deployment points a company costs. Has is the company's deployment_points; Bound is what is LEFT of the budget after what is already committed, not this value.",
+      "$ref": "#/$defs/limit", "properties": { "value": { "minimum": 1 } }
+    }
+  },
+  "$defs": {
+    "limit": {
+      "description": "A commit limit, with the words a player reads when it stops a commit (D103): an open set of limits is only open if what the player reads travels with the key. A reader lists the limits in this schema's order, refit_strength_floor, reach_days, engagement_budget_points, never in the file's.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "name", "unit"],
+      "properties": {
+        "value": { "type": "integer", "minimum": 0 },
+        "name": { "description": "What the player reads as the reason a company cannot be committed.", "type": "string", "minLength": 1 },
+        "unit": { "description": "What the player reads after the figures Has and Bound.", "type": "string", "minLength": 1 }
+      }
     }
   }
 }

@@ -24,15 +24,18 @@
       "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
     },
     "division_stats": {
-      "description": "The division stats the engine computes, each with where a company's value comes from: authored in company.json stats, walked from squads and vehicle crew, or a per-biome table.",
+      "description": "The division stats the engine computes, each with where a company's value comes from: authored in company.json stats, walked from squads and vehicle crew, or a per-biome table. Each carries the words and the scale a player reads it with (D106): a figure with no scale is a number with no bar.",
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["stat", "source"],
+        "required": ["stat", "source", "name", "unit", "scale_max"],
         "properties": {
           "stat": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-          "source": { "enum": ["authored", "walked", "table"] }
+          "source": { "enum": ["authored", "walked", "table"] },
+          "name": { "description": "What the player reads as the stat's label.", "type": "string", "minLength": 1 },
+          "unit": { "description": "What the player reads after the figure.", "type": "string", "minLength": 1 },
+          "scale_max": { "description": "A bar's full width: the figure that fills it. A larger figure fills the bar and still prints its number. For a table stat, each biome's figure.", "type": "integer", "minimum": 1 }
         }
       }
     },

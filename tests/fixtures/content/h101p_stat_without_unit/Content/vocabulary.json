@@ -1,0 +1,236 @@
+{
+  "format": "pb-content/vocabulary/1",
+  "_comment": "Describes the engine's code. The game NEVER reads this file to decide behaviour: stat keys and pools are fixed in C#, and a test fails (C701) if this list and the code ever disagree. It exists so the JSON Schemas and the pipeline's Python cross-check can see the engine's vocabulary. See docs/design/CONTENT_MODEL.md section 2.",
+  "stat_keys": [
+    "weight_kg",
+    "crew",
+    "speed_road_kph",
+    "speed_offroad_kph",
+    "range_km",
+    "armour_front_mm",
+    "armour_side_mm",
+    "armour_top_mm",
+    "main_gun_mm",
+    "penetration_mm",
+    "rate_of_fire_rpm",
+    "transport_passengers",
+    "reliability_per_mille",
+    "fuel_capacity_l",
+    "ceiling_m"
+  ],
+  "pools": [
+    "money",
+    "manpower",
+    "coal",
+    "steel",
+    "iron",
+    "oil",
+    "agriculture"
+  ],
+  "division_stats": [
+    {
+      "stat": "organisation",
+      "source": "authored",
+      "name": "Organisation",
+      "unit": "points",
+      "scale_max": 100
+    },
+    {
+      "stat": "soft_attack",
+      "source": "authored",
+      "name": "Soft attack",
+      "scale_max": 1000
+    },
+    {
+      "stat": "hard_attack",
+      "source": "authored",
+      "name": "Hard attack",
+      "unit": "points",
+      "scale_max": 200
+    },
+    {
+      "stat": "defence",
+      "source": "authored",
+      "name": "Defence",
+      "unit": "points",
+      "scale_max": 1000
+    },
+    {
+      "stat": "breakthrough",
+      "source": "authored",
+      "name": "Breakthrough",
+      "unit": "points",
+      "scale_max": 500
+    },
+    {
+      "stat": "armour",
+      "source": "authored",
+      "name": "Armour",
+      "unit": "points",
+      "scale_max": 50
+    },
+    {
+      "stat": "piercing",
+      "source": "authored",
+      "name": "Piercing",
+      "unit": "points",
+      "scale_max": 50
+    },
+    {
+      "stat": "hardness",
+      "source": "authored",
+      "name": "Hardness",
+      "unit": "‰",
+      "scale_max": 1000
+    },
+    {
+      "stat": "speed_km_per_day",
+      "source": "authored",
+      "name": "Speed",
+      "unit": "km/day",
+      "scale_max": 100
+    },
+    {
+      "stat": "training_days",
+      "source": "authored",
+      "name": "Training time",
+      "unit": "days",
+      "scale_max": 500
+    },
+    {
+      "stat": "deployment_points",
+      "source": "authored",
+      "name": "Deployment cost",
+      "unit": "points",
+      "scale_max": 5000
+    },
+    {
+      "stat": "complexity",
+      "source": "authored",
+      "name": "Complexity",
+      "unit": "points",
+      "scale_max": 2000
+    },
+    {
+      "stat": "money",
+      "source": "authored",
+      "name": "Money",
+      "unit": "money",
+      "scale_max": 200
+    },
+    {
+      "stat": "recce",
+      "source": "authored",
+      "name": "Recce",
+      "unit": "levels",
+      "scale_max": 5
+    },
+    {
+      "stat": "men",
+      "source": "walked",
+      "name": "Men",
+      "unit": "men",
+      "scale_max": 20000
+    },
+    {
+      "stat": "officers",
+      "source": "walked",
+      "name": "Officers",
+      "unit": "officers",
+      "scale_max": 500
+    },
+    {
+      "stat": "terrain",
+      "source": "table",
+      "name": "Terrain",
+      "unit": "‰",
+      "scale_max": 1000
+    }
+  ],
+  "aggregation_rules": [
+    "sum",
+    "average",
+    "min",
+    "max",
+    "max_mean_blend",
+    "average_lines_sum_support"
+  ],
+  "division_columns": [
+    "line",
+    "support",
+    "hq"
+  ],
+  "biomes": [
+    "plains",
+    "steppe",
+    "forest",
+    "jungle",
+    "rainforest",
+    "desert",
+    "badlands",
+    "savanna",
+    "hill",
+    "mountain",
+    "highland_plateau",
+    "glacier",
+    "tundra",
+    "taiga",
+    "marsh",
+    "swamp",
+    "mangrove",
+    "beach",
+    "atoll",
+    "volcanic_island",
+    "water",
+    "coastal_water",
+    "lake",
+    "urban"
+  ],
+  "counter_symbols": [
+    "infantry",
+    "motorized",
+    "armored"
+  ],
+  "facility_kinds": [
+    "Mine",
+    "PowerPlant",
+    "SteelMill",
+    "Refinery",
+    "RailYard",
+    "ResearchInstitute"
+  ],
+  "settlement_types": [
+    "none",
+    "suburb",
+    "town",
+    "city",
+    "metropolis"
+  ],
+  "policy_targets": [
+    {
+      "target": "military_share_per_mille",
+      "form": "share"
+    },
+    {
+      "target": "manpower_draft_per_mille",
+      "form": "share"
+    },
+    {
+      "target": "state_take_per_mille",
+      "form": "share"
+    },
+    {
+      "target": "industry_term_per_mille",
+      "form": "modifier"
+    },
+    {
+      "target": "commerce_term_per_mille",
+      "form": "modifier"
+    }
+  ],
+  "claim_roles": [
+    "civilian",
+    "construction",
+    "production"
+  ]
+}

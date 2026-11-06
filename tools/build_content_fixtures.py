@@ -299,6 +299,25 @@ MUTATIONS = [
     ("h104f_terrain_negative", "C104", CO, "a terrain value is -1: 1000 is the baseline and nothing goes below 0",
      _set([CO, "companies", 0, "terrain", "marsh"], -1)),
     ("h104g_late_negative", "C104", CB, "late_contribution_per_mille is -1", _set([CB, "late_contribution_per_mille"], -1)),
+    # D103: a commit limit carries the words the player reads, or the UI prints a key or keeps a closed list of its own.
+    ("h101m_limit_without_name", "C101", CB, "reach_days has no name, so a company out of reach would show the player a raw key",
+     _del([CB, "reach_days", "name"])),
+    ("h101n_limit_without_unit", "C101", CB, "engagement_budget_points has no unit, so Has and Bound are numbers with no unit",
+     _del([CB, "engagement_budget_points", "unit"])),
+    ("h102f_limit_name_empty", "C102", CB, "refit_strength_floor's name is empty, which reads as no reason at all",
+     _set([CB, "refit_strength_floor", "name"], "")),
+    # D106: a division stat carries its label, unit and bar width.
+    ("h101o_stat_without_name", "C101", "vocabulary.json", "organisation has no name, so the stat would be labelled by its key",
+     _del(["vocabulary.json", "division_stats", 0, "name"])),
+    ("h101p_stat_without_unit", "C101", "vocabulary.json", "soft_attack has no unit",
+     _del(["vocabulary.json", "division_stats", 1, "unit"])),
+    ("h101q_stat_without_scale", "C101", "vocabulary.json", "hard_attack has no scale_max, so its bar has no full width and a seat would invent one",
+     _del(["vocabulary.json", "division_stats", 2, "scale_max"])),
+    ("h104h_stat_scale_zero", "C104", "vocabulary.json", "defence's scale_max is 0, a bar that any figure overfills",
+     _set(["vocabulary.json", "division_stats", 3, "scale_max"], 0)),
+    # D105: a slot's group is any text, and nothing else.
+    ("h102g_group_not_text", "C102", T, "a slot's group is the number 7, not text",
+     _set([T, "templates", 0, "companies", 0, "group"], 7)),
     ("h203e_aggregation_row_twice", "C203", AG, "organisation has two rows",
      _append([AG, "rules"], {"stat": "organisation", "rule": "sum", "subset": "all"})),
     ("h301d_slot_names_no_company", "C301", T, 'a division slot names "pb:rifle_compny"',
@@ -493,6 +512,15 @@ def _class_extension(d):
 
 
 ACCEPTED = [
+    ("a013_one_division_not_two", "the shared witness that terrain is ONE truncating division (AD-M49): in forest the tank and "
+     "the mortars read 0, and pb:armored_division gains a support rifle company. Line 2000/3 and support 1000/3 shifted "
+     "from 1000 is exactly 0 and loads; truncating each mean first gives 666 + 333 - 1000 = -1, which C417 refuses",
+     _both(_set([CO, "companies", 1, "terrain", "forest"], 0), _set([CO, "companies", 2, "terrain", "forest"], 0),
+           _append([T, "templates", 2, "companies"], {"company": "pb:rifle_company", "count": 1, "column": "support"}))),
+    ("a012_slot_carries_a_group", "two slots carry a group, one named and one empty: the control for h102g. No rule reads a "
+     "group, so every division figure equals h000_valid's (the test proves it, D86)",
+     _both(_set([T, "templates", 0, "companies", 0, "group"], "Kampfgruppe Nord"),
+           _set([T, "templates", 2, "companies", 0, "group"], ""))),
     ("a007_mod_lists_own_bundle", "a mod writes a NEW bundle naming shipped companies: the control for h920. "
      "Sealed means no edit of a bundle, not that bundles are closed",
      lambda d: d.__setitem__("mymod/bundle.json", {"format": "pb-content/bundle/1", "bundles": [

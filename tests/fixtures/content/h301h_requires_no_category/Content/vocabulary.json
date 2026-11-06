@@ -30,71 +30,122 @@
   "division_stats": [
     {
       "stat": "organisation",
-      "source": "authored"
+      "source": "authored",
+      "name": "Organisation",
+      "unit": "points",
+      "scale_max": 100
     },
     {
       "stat": "soft_attack",
-      "source": "authored"
+      "source": "authored",
+      "name": "Soft attack",
+      "unit": "points",
+      "scale_max": 1000
     },
     {
       "stat": "hard_attack",
-      "source": "authored"
+      "source": "authored",
+      "name": "Hard attack",
+      "unit": "points",
+      "scale_max": 200
     },
     {
       "stat": "defence",
-      "source": "authored"
+      "source": "authored",
+      "name": "Defence",
+      "unit": "points",
+      "scale_max": 1000
     },
     {
       "stat": "breakthrough",
-      "source": "authored"
+      "source": "authored",
+      "name": "Breakthrough",
+      "unit": "points",
+      "scale_max": 500
     },
     {
       "stat": "armour",
-      "source": "authored"
+      "source": "authored",
+      "name": "Armour",
+      "unit": "points",
+      "scale_max": 50
     },
     {
       "stat": "piercing",
-      "source": "authored"
+      "source": "authored",
+      "name": "Piercing",
+      "unit": "points",
+      "scale_max": 50
     },
     {
       "stat": "hardness",
-      "source": "authored"
+      "source": "authored",
+      "name": "Hardness",
+      "unit": "‰",
+      "scale_max": 1000
     },
     {
       "stat": "speed_km_per_day",
-      "source": "authored"
+      "source": "authored",
+      "name": "Speed",
+      "unit": "km/day",
+      "scale_max": 100
     },
     {
       "stat": "training_days",
-      "source": "authored"
+      "source": "authored",
+      "name": "Training time",
+      "unit": "days",
+      "scale_max": 500
     },
     {
       "stat": "deployment_points",
-      "source": "authored"
+      "source": "authored",
+      "name": "Deployment cost",
+      "unit": "points",
+      "scale_max": 5000
     },
     {
       "stat": "complexity",
-      "source": "authored"
+      "source": "authored",
+      "name": "Complexity",
+      "unit": "points",
+      "scale_max": 2000
     },
     {
       "stat": "money",
-      "source": "authored"
+      "source": "authored",
+      "name": "Money",
+      "unit": "money",
+      "scale_max": 200
     },
     {
       "stat": "recce",
-      "source": "authored"
+      "source": "authored",
+      "name": "Recce",
+      "unit": "levels",
+      "scale_max": 5
     },
     {
       "stat": "men",
-      "source": "walked"
+      "source": "walked",
+      "name": "Men",
+      "unit": "men",
+      "scale_max": 20000
     },
     {
       "stat": "officers",
-      "source": "walked"
+      "source": "walked",
+      "name": "Officers",
+      "unit": "officers",
+      "scale_max": 500
     },
     {
       "stat": "terrain",
-      "source": "table"
+      "source": "table",
+      "name": "Terrain",
+      "unit": "‰",
+      "scale_max": 1000
     }
   ],
   "aggregation_rules": [

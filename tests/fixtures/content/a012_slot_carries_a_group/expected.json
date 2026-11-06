@@ -1,0 +1,6 @@
+{
+  "code": null,
+  "python": "accept",
+  "csharp": "accept",
+  "seeded": "two slots carry a group, one named and one empty: the control for h102g. No rule reads a group, so every division figure equals h000_valid's (the test proves it, D86)"
+}

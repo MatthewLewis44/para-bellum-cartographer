@@ -292,6 +292,10 @@ def main() -> int:
     # An accept fixture proves acceptance, not use (D86): a reader that dropped the row would pass it just as well.
     modded = cc.ContentSet(FIXTURES / "a006_mod_adds_template" / "Content").division_figures()
     check("a006's added division reaches the arithmetic, not only the reader", "mymod:cavalry_division" in modded, f"{sorted(modded)}")
+    grouped = cc.ContentSet(FIXTURES / "a012_slot_carries_a_group" / "Content")
+    check("a012's group reaches the template and changes no figure: no rule reads a group (D105)",
+          grouped.by_id["template"]["pb:infantry_division"]["companies"][0].get("group") == "Kampfgruppe Nord"
+          and grouped.division_figures() == control.division_figures())
     with_variant = cc.ContentSet(FIXTURES / "a009_vehicle_is_a_variant" / "Content")
     check("a009's variant reaches the walk through its resolved crew",
           with_variant.division_figures()["pb:armored_division"]["men"] != figs["men"], f'{figs["men"]}')

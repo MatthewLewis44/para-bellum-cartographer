@@ -38,7 +38,7 @@
           "pattern": "^[a-z][a-z0-9_]*$"
         },
         "companies": {
-          "description": "What the division is made of, for every derived figure and for force selection. The count is on the slot, so one company design serves several divisions at different counts. A brigade is a grouping on a screen, with no stats and no row here.",
+          "description": "What the division is made of, for every derived figure and for force selection. The count is on the slot, so one company design serves several divisions at different counts. A brigade is a slot's optional group, which no rule reads (D105).",
           "type": "array",
           "minItems": 1,
           "items": {
@@ -48,7 +48,8 @@
             "properties": {
               "company": { "description": "A company, by id.", "$ref": "#/$defs/id" },
               "count": { "description": "How many of that company. Required in a file; a designer offers 1 for a new slot.", "type": "integer", "minimum": 1 },
-              "column": { "description": "Which column of the division sheet, listed in Content/vocabulary.json division_columns (C413): line, support or hq. An hq company is hidden and cannot be committed.", "type": "string" }
+              "column": { "description": "Which column of the division sheet, listed in Content/vocabulary.json division_columns (C413): line, support or hq. An hq company is hidden and cannot be committed. Column is ARITHMETIC: aggregation subsets select by it, so a brigade is never written here.", "type": "string" },
+              "group": { "description": "Optional. The brigade or other grouping a designer draws this slot in, so the grouping survives a save (D105). Any text, empty included. NO RULE READS IT: it has no count, no stats, and nothing holds it, so it is not a level.", "type": "string" }
             }
           }
         },

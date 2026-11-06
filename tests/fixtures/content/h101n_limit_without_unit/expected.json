@@ -1,0 +1,8 @@
+{
+  "code": "C101",
+  "rule": "missing-key",
+  "file": "pb/combat.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "engagement_budget_points has no unit, so Has and Bound are numbers with no unit"
+}

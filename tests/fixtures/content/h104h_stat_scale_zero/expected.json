@@ -1,0 +1,8 @@
+{
+  "code": "C104",
+  "rule": "negative-value",
+  "file": "vocabulary.json",
+  "python": "refuse",
+  "csharp": "refuse",
+  "seeded": "defence's scale_max is 0, a bar that any figure overfills"
+}

@@ -9,7 +9,19 @@
   "destroy_floor_strength": 1,
   "unpierced_attack_per_mille": 500,
   "recce_narrow_per_level_per_mille": 250,
-  "refit_strength_floor": 20,
-  "reach_days": 3,
-  "engagement_budget_points": 300
+  "refit_strength_floor": {
+    "value": 20,
+    "name": "Refitting",
+    "unit": "% strength"
+  },
+  "reach_days": {
+    "value": 3,
+    "name": "Out of reach",
+    "unit": "days"
+  },
+  "engagement_budget_points": {
+    "value": 300,
+    "name": "Over budget",
+    "unit": "points"
+  }
 }

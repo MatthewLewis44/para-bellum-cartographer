@@ -1,0 +1,23 @@
+{
+  "format": "pb-content/squad/1",
+  "squads": [
+    {
+      "id": "pb:rifle_squad",
+      "name": "Rifle squad",
+      "men": 10,
+      "officers": 0
+    },
+    {
+      "id": "pb:platoon_hq",
+      "name": "Platoon headquarters",
+      "men": 5,
+      "officers": 1
+    },
+    {
+      "id": "pb:mortar_squad",
+      "name": "Mortar squad",
+      "men": 6,
+      "officers": 0
+    }
+  ]
+}
